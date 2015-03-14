@@ -5,7 +5,7 @@
 An in-memory and disk cache for pySlip tiles.
 
 Requires a wxPython application to be created before use.
-If we can create a bitmap without wxPython, we could remove this dependency.
+If we can create a wx bitmap without wxPython, we could remove this dependency.
 """
 
 import os

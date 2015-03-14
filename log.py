@@ -14,7 +14,7 @@ Based on the 'borg' recipe from [http://code.activestate.com/recipes/66531/].
 
 Log levels styled on the Python 'logging' module.
 
-Log output includes the module and line # of log() call.
+Log output includes the module and line # of the log() call.
 """
 
 import os
@@ -77,10 +77,8 @@ class Log(object):
                 # assume we have readonly filesystem
                 basefile = os.path.basename(logfile)
                 if sys.platform == 'win32':
-                    #logfile = r'C:\%s' % basefile
                     logfile = os.path.join('C:\\', basefile)
                 else:
-                    #logfile = '~/%s' % basefile
                     logfile = os.path.join('~', basefile)
 
             # try to open logfile again

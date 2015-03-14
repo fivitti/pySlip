@@ -3,7 +3,18 @@
 """
 A simple logger.
 
-TODO: Use python logging, etc.
+Simple usage:
+    import log
+    log = log.Log('my_log.log', log.Log.DEBUG)
+    log('A line in the log at the default level (DEBUG)')
+    log('A log line at WARN level', Log.WARN)
+    log.info('log line issued at INFO level')
+
+Based on the 'borg' recipe from [http://code.activestate.com/recipes/66531/].
+
+Log levels styled on the Python 'logging' module.
+
+Log output includes the module and line # of log() call.
 """
 
 import os
@@ -12,20 +23,8 @@ import datetime
 import traceback
 
 
-
 ################################################################################
-# A simple logger.
-#
-# Simple usage:
-#     import log
-#     log = log.Log('my_log.log', log.Log.DEBUG)
-#     log('A line in the log at the default level (DEBUG)')
-#     log('A log line at WARN level', Log.WARN)
-#     log.debug('log line issued at DEBUG level')
-#
-# Based on the 'borg' recipe from [http://code.activestate.com/recipes/66531/].
-#
-# Log levels styled on the Python 'logging' module.
+# A simple (?) logger.
 ################################################################################
 
 class Log(object):
@@ -52,7 +51,7 @@ class Log(object):
 
 
     def __init__(self, logfile=None, level=NOTSET, append=False,
-                 maxfname=DefaultMaxFname):
+                 max_fname=DefaultMaxFname):
         """Initialise the logging object.
 
         logfile the path to the log file
@@ -63,7 +62,7 @@ class Log(object):
         # make sure we have same state as all other log objects
         self.__dict__ = Log.__shared_state
 
-        self.maxfname = maxfname
+        self.max_fname = max_fname
 
         # don't allow logfile to change after initially set
         if not hasattr(self, 'logfile'):
@@ -139,10 +138,10 @@ class Log(object):
         # get string for log level
         loglevel = Log._level_num_to_name[level]
 
-        fname = fname[:self.maxfname]
+        fname = fname[:self.max_fname]
         self.logfd.write('%02d:%02d:%02d.%06d|%8s|%*s:%-4d|%s\n'
-                         % (hr, min, sec, msec, loglevel, self.maxfname, fname,
-                            lnum, msg))
+                         % (hr, min, sec, msec, loglevel, self.max_fname,
+                            fname, lnum, msg))
         self.logfd.flush()
 
     def critical(self, msg):

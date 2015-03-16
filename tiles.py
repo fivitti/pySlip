@@ -29,7 +29,7 @@ class Tiles(object):
         """
 
         # save the tile cache directory
-        self.tile_cache_dir = tile_cache_dir
+        self.tiles_dir = tile_cache_dir
 
         # look in tile directory for levels if none supplied
         if tile_levels is None:
@@ -75,6 +75,7 @@ class Tiles(object):
         """
 
         if level not in self.levels:
+            self.level = None
             return None
 
         # get tile info
@@ -87,7 +88,7 @@ class Tiles(object):
         self.level = level
 
         # store partial path to level dir (small speedup)
-        self.tile_level_dir = os.path.join(self.tile_cache_dir, '%d' % level)
+        self.tile_level_dir = os.path.join(self.tiles_dir, '%d' % level)
 
         # finally, return new level info
         return (self.tile_size_x * self.num_tiles_x,
@@ -105,7 +106,7 @@ class Tiles(object):
         Tile coordinates are measured from map top-left.
         """
 
-        return self.cache.GetTile(self.level, x, y)
+        return self.cache[(self.level, x, y)]
 
     def GetInfo(self, level):
         """Get tile info for a particular level.

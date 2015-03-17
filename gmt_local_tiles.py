@@ -37,17 +37,14 @@ class GMTCache(pycacheback.pyCacheBack):
 
         # unpack key
         (level, x, y) = key
-        print('key=%s' % str(key))
 
         # look for item in disk cache
         tile_dir = os.path.join(self._tiles_dir, '%d' % level)
         tile_path = os.path.join(tile_dir, self.TilePath % (x, y))
         if not os.path.exists(tile_path):
             # tile not there, return None
-            print('tile %s not found' % tile_path)
             return None
 
-        print('tile %s FOUND' % tile_path)
         # we have the tile file - read into memory, cache & return
         image = wx.Image(tile_path, wx.BITMAP_TYPE_ANY)
         bitmap = image.ConvertToBitmap()
@@ -87,8 +84,8 @@ class GMTTiles(tiles.Tiles):
                 (self.extent, self.tile_size,
                      self.sea_colour, self.land_colour) = pickle.load(fd)
         except IOError:
-            raise Exception("'%s' doesn't appear to be a local tile directory"
-                            % tiles_dir)
+            raise IOError("'%s' doesn't appear to be a local tile directory"
+                          % tiles_dir)
 
         self.tiles_dir = tiles_dir
         (self.tile_size_x, self.tile_size_y) = self.tile_size

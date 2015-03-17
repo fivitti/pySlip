@@ -14,21 +14,12 @@ import pickle
 import wx
 import gmt_local_tiles
 
-import log
 import unittest
 import shutil
 from wx.lib.embeddedimage import PyEmbeddedImage
 
 
-# if we don't have log.py, don't crash
-try:
-    import log
-    log = log.Log('pyslip.log', log.Log.DEBUG)
-except ImportError:
-    def log(*args, **kwargs):
-        pass
-
-
+# where the pre-generated GMT tiles are
 TilesDir = '/Users/r-w/pyslip/tiles'
 
 DefaultAppSize = (512, 512)
@@ -61,8 +52,6 @@ class TestGMTTiles(unittest.TestCase):
     def testSimple(self):
         """Simple tests."""
 
-        log.info('testSimple')
-
         # read all tiles in all rows of all levels
         cache = gmt_local_tiles.GMTTiles(tiles_dir=TilesDir)
         for level in cache.levels:
@@ -81,8 +70,6 @@ class TestGMTTiles(unittest.TestCase):
 
     def testErrors(self):
         """Test possible errors."""
-
-        log.info('testErrors')
 
         # try to use on-disk cache that doesn't exist
         with self.assertRaises(IOError):

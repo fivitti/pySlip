@@ -11,7 +11,7 @@ See, for example, pyslip_demo.py and pyslip_demo_net.py.
 import os
 import glob
 import wx
-import tile_cache
+import pycacheback
 
 
 ######
@@ -41,7 +41,7 @@ class Tiles(object):
             tile_levels.sort()
 
         # setup the tile cache
-        self.cache = tile_cache.TileCache(tile_cache_dir, tile_levels)
+        self.cache = pycacheback.pyCacheBack(tile_cache_dir, tile_levels)
 
         # save the levels to be served
         self.levels = tile_levels

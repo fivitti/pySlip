@@ -131,41 +131,24 @@ class GMTTiles(tiles.Tiles):
 
         return info
 
-    def ConvertGeo2TileCoords(self, lat_deg, lon_deg, zoom,
-                              ppd_x=None, ppd_y=None,
-                              map_tlat=None, map_blat=None,
-                              map_llon=None, map_rlon=None):
-        """Convert lon/lat to tile fractional coordinates.
+    def Geo2Tile(self, ygeo, xgeo):
+        """Convert geo to tile fractional coordinates for level in use.
 
-        lat_deg   geo latitude in degrees
-        lon_deg   geo longitude in degrees
-        zoom      the map 'level'
-        ppd_x     the 'pixel per degree' value in the X direction
-        ppd_y     the 'pixel per degree' value in the Y direction
-        map_tlat  latitude of top edge of map
-        map_blat  latitude of bottom edge of map
-        map_llon  longitude of left edge of map
-        map_rlon  longitude of right edge of map
-
-        Not all of the above arguments need be supplied, depending on
-        the type of tiles.
+        ygeo   geo latitude in degrees
+        xgeo   geo longitude in degrees
 
         Note that we assume the point *is* on the map!
         """
 
-        raise Exception('You must override Tiles.ConvertGeo2TileCoords()')
+        raise Exception('You must override Tiles.Geo2Tile()')
 
-    def ConvertTileCoords2Geo(xtile, ytile, zoom, ppd_x=None, ppd_y=None):
-        """Convert tile fractional coordinates to lon/lat.
+    def Tile2Geo(self, ytile, xtile):
+        """Convert tile fractional coordinates to geo for level in use.
 
-        xtile  tile fractional X coordinate
         ytile  tile fractional Y coordinate
-        zoom   the map 'level'
-        ppd_x  the 'pixel per degree' value in the X direction
-        ppd_y  the 'pixel per degree' value in the Y direction
+        xtile  tile fractional X coordinate
 
-        Not all of the above arguments need be supplied, depending on
-        the type of tiles.
+        Note that we assume the point *is* on the map!
         """
 
-        raise Exception('You must override Tiles.ConvertView2Geo()')
+        raise Exception('You must override Tiles.Tile2Geo()')

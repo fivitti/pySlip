@@ -19,21 +19,26 @@ import pycacheback
 ######
 
 class Tiles(object):
+
+    DefaultTilesDir = '_=TILES=_'
+
     """An object to source tiles for pyslip."""
 
-    def __init__(self, tile_cache_dir, tile_levels=None):
+    def __init__(self, tiles_dir, tile_levels=None):
         """Initialise a Tiles instance.
 
-        tile_cache_dir  tile cache directory, may contain tiles
-        tile_levels     list of tile levels to be served
+        tiles_dir    tile cache directory, may contain tiles
+        tile_levels  list of tile levels to be served
         """
 
         # save the tile cache directory
-        self.tiles_dir = tile_cache_dir
+        if tiles_dir is None:
+            tiles_dir = self.DefaultTilesDir
+        self.tiles_dir = tiles_dir
 
         # look in tile directory for levels if none supplied
         if tile_levels is None:
-            glob_pattern = os.path.join(tile_cache_dir, '[0-9]*')
+            glob_pattern = os.path.join(tiles_dir, '[0-9]*')
             tile_levels = []
             for p in glob.glob(glob_pattern):
                 filename = int(os.path.basename(p))
@@ -41,14 +46,15 @@ class Tiles(object):
             tile_levels.sort()
 
         # setup the tile cache
-        self.cache = pycacheback.pyCacheBack(tile_cache_dir, tile_levels)
+        self.cache = pycacheback.pyCacheBack(tiles_dir, tile_levels)
 
         # save the levels to be served
         self.levels = tile_levels
 
-        # set min and max tile levels
+        # set min and max tile levels and current level
         self.min_level = min(self.levels)
         self.max_level = max(self.levels)
+        self.level = None
 
         # this function is called when a pending tile becomes available
         self.available_callback = None
@@ -74,18 +80,18 @@ class Tiles(object):
         in a Cartesian coordinate system.
         """
 
+        # set level we are currently serving
         if level not in self.levels:
-            self.level = None
+#            self.level = None
             return None
+
+        self.level = level
 
         # get tile info
         info = self.GetInfo(level)
         if info is None:            # level not used
             return None
         (self.num_tiles_x, self.num_tiles_y, self.ppd_x, self.ppd_y) = info
-
-        # set level we are currently serving
-        self.level = level
 
         # store partial path to level dir (small speedup)
         self.tile_level_dir = os.path.join(self.tiles_dir, '%d' % level)
@@ -121,41 +127,24 @@ class Tiles(object):
 
         raise Exception('You must override Tiles.GetInfo()')
 
-    def ConvertGeo2TileCoords(self, lat_deg, lon_deg, zoom,
-                              ppd_x=None, ppd_y=None,
-                              map_tlat=None, map_blat=None,
-                              map_llon=None, map_rlon=None):
-        """Convert lon/lat to tile fractional coordinates.
+    def Geo2Tile(self, ygeo, xgeo):
+        """Convert geo to tile fractional coordinates for level in use.
 
-        lat_deg   geo latitude in degrees
-        lon_deg   geo longitude in degrees
-        zoom      the map 'level'
-        ppd_x     the 'pixel per degree' value in the X direction
-        ppd_y     the 'pixel per degree' value in the Y direction
-        map_tlat  latitude of top edge of map
-        map_blat  latitude of bottom edge of map
-        map_llon  longitude of left edge of map
-        map_rlon  longitude of right edge of map
-
-        Not all of the above arguments need be supplied, depending on
-        the type of tiles.
+        ygeo   geo latitude in degrees
+        xgeo   geo longitude in degrees
 
         Note that we assume the point *is* on the map!
         """
 
-        raise Exception('You must override Tiles.ConvertGeo2TileCoords()')
+        raise Exception('You must override Tiles.Geo2Tile()')
 
-    def ConvertTileCoords2Geo(xtile, ytile, zoom, ppd_x=None, ppd_y=None):
-        """Convert tile fractional coordinates to lon/lat.
+    def Tile2Geo(self, ytile, xtile):
+        """Convert tile fractional coordinates to geo for level in use.
 
-        xtile  tile fractional X coordinate
         ytile  tile fractional Y coordinate
-        zoom   the map 'level'
-        ppd_x  the 'pixel per degree' value in the X direction
-        ppd_y  the 'pixel per degree' value in the Y direction
+        xtile  tile fractional X coordinate
 
-        Not all of the above arguments need be supplied, depending on
-        the type of tiles.
+        Note that we assume the point *is* on the map!
         """
 
-        raise Exception('You must override Tiles.ConvertView2Geo()')
+        raise Exception('You must override Tiles.Tile2Geo()')

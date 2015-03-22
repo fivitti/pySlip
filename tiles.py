@@ -74,32 +74,39 @@ class Tiles(object):
 
         level  The required level
 
-        Returns a tuple (map_width, map_height, ppd_x, ppd_y) if successful,
-        else None.  The width/height values are pixels.  The ppd_? values are
-        pixels-per-degree values for the X and Y directions and are valid only
-        in a Cartesian coordinate system.
+        Returns None if unsuccessful, else something non-None.
+
+        This is dependant on tiles, coordinate system syste, etc, so must
+        be fully implemented in child classes.
+
+#        Returns a tuple (map_width, map_height, ppd_x, ppd_y) if successful,
+#        else None.  The width/height values are pixels.  The ppd_? values are
+#        pixels-per-degree values for the X and Y directions and are valid only
+#        in a Cartesian coordinate system.
         """
 
-        # set level we are currently serving
-        if level not in self.levels:
-#            self.level = None
-            return None
+        raise Exception('You must override Tiles.UseLevel()')
 
-        self.level = level
-
-        # get tile info
-        info = self.GetInfo(level)
-        if info is None:            # level not used
-            return None
-        (self.num_tiles_x, self.num_tiles_y, self.ppd_x, self.ppd_y) = info
-
-        # store partial path to level dir (small speedup)
-        self.tile_level_dir = os.path.join(self.tiles_dir, '%d' % level)
-
-        # finally, return new level info
-        return (self.tile_size_x * self.num_tiles_x,
-                self.tile_size_y * self.num_tiles_y,
-                self.ppd_x, self.ppd_y)
+#        # set level we are currently serving
+#        if level not in self.levels:
+##            self.level = None
+#            return None
+#
+#        self.level = level
+#
+#        # get tile info
+#        info = self.GetInfo(level)
+#        if info is None:            # level not used
+#            return None
+#        (self.num_tiles_x, self.num_tiles_y, self.ppd_x, self.ppd_y) = info
+#
+#        # store partial path to level dir (small speedup)
+#        self.tile_level_dir = os.path.join(self.tiles_dir, '%d' % level)
+#
+#        # finally, return new level info
+#        return (self.tile_size_x * self.num_tiles_x,
+#                self.tile_size_y * self.num_tiles_y,
+#                self.ppd_x, self.ppd_y)
 
     def GetTile(self, x, y):
         """Get bitmap for tile at tile coords (x, y) and current level.

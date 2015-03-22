@@ -109,6 +109,28 @@ class GMTTiles(tiles.Tiles):
         # setup the tile cache (note, no callback set since net unused)
         self.cache = GMTCache(tiles_dir=self.tiles_dir, max_lru=DefaultMaxLRU)
 
+    def UseLevel(self, level):
+        """Prepare to serve tiles from the required level.                                                                          
+
+        level  the required level                                                                                                   
+        """
+
+        if level not in self.levels:                                                                                               
+            return None                                                                                                            
+        self.level = level                                                                                                         
+                                                                                                                                   
+        # get tile info                                                                                                            
+        info = self.GetInfo(level)                                                                                                 
+        if info is None:            # level doesn't exist                                                                          
+            return None                                                                                                            
+        (self.num_tiles_x, self.num_tiles_y, self.ppd_x, self.ppd_y) = info                                                        
+                                                                                                                                   
+        # store partial path to level dir (small speedup)                                                                          
+        self.tile_level_dir = os.path.join(self.tiles_dir, '%d' % level)                                                           
+                                                                                                                                   
+        # finally, return True
+        return True
+
     def GetInfo(self, level):
         """Get tile info for a particular level.
 
@@ -137,12 +159,23 @@ class GMTTiles(tiles.Tiles):
         ygeo   geo latitude in degrees
         xgeo   geo longitude in degrees
 
+        Returns (ytile, xtile).
+
         Note that we assume the point *is* on the map!
         """
 
-        raise Exception('You must override Tiles.Geo2Tile()')
+        # get extent information
+        (min_xgeo, max_xgeo, min_ygeo, max_ygeo) = self.extent
 
-    def Tile2Geo(self, ytile, xtile):
+        # convert geo coords to 'geo-like' coords with origin at top-left
+        x = xgeo - min_xgeo
+        y = max_ygeo - ygeo
+        tdeg_x = self.tile_size_x / self.ppd_x
+        tdeg_y = self.tile_size_y / self.ppd_y
+
+        return (x/tdeg_x, y/tdeg_y)
+
+    def Tile2Geo(self, xtile, ytile):
         """Convert tile fractional coordinates to geo for level in use.
 
         ytile  tile fractional Y coordinate
@@ -151,4 +184,13 @@ class GMTTiles(tiles.Tiles):
         Note that we assume the point *is* on the map!
         """
 
-        raise Exception('You must override Tiles.Tile2Geo()')
+        # get extent information
+        (min_xgeo, max_xgeo, min_ygeo, max_ygeo) = self.extent
+
+        # compute tile degree sizes and position in the coordinate system
+        tdeg_x = self.tile_size_x / self.ppd_x
+        tdeg_y = self.tile_size_y / self.ppd_y
+        xgeo = ytile*tdeg_y + min_xgeo
+        ygeo = max_ygeo - xtile*tdeg_x
+
+        return (ytile*tdeg_y, xtile*tdeg_x)

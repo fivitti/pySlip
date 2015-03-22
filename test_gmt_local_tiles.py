@@ -49,7 +49,7 @@ class TestGMTTiles(unittest.TestCase):
     TileWidth = 256
     TileHeight = 256
 
-    def testSimple(self):
+    def XtestSimple(self):
         """Simple tests."""
 
         # read all tiles in all rows of all levels
@@ -57,7 +57,10 @@ class TestGMTTiles(unittest.TestCase):
         for level in cache.levels:
             info = cache.UseLevel(level)
             if info:
-                (width_px, height_px, ppd_x, ppd_y) = info
+                width_px = self.TileWidth * cache.num_tiles_x
+                height_px = self.TileHeight * cache.num_tiles_y
+                ppd_x = cache.ppd_x
+                ppd_y = cache.ppd_y
                 num_tiles_width = int(width_px / self.TileWidth)
                 num_tiles_height = int(height_px / self.TileHeight)
                 for x in range(num_tiles_width):
@@ -65,10 +68,8 @@ class TestGMTTiles(unittest.TestCase):
                         bmp = cache.GetTile(x, y)
                         msg = "Can't find tile (%d,%d,%d)!?" % (level, x, y)
                         self.failIf(bmp is None, msg)
-            else:
-                print('level %d not available' % level)
 
-    def testErrors(self):
+    def XtestErrors(self):
         """Test possible errors."""
 
         # try to use on-disk cache that doesn't exist
@@ -86,7 +87,10 @@ class TestGMTTiles(unittest.TestCase):
         cache = gmt_local_tiles.GMTTiles(tiles_dir=TilesDir)
         level = cache.levels[0]
         info = cache.UseLevel(level)
-        (width_px, height_px, ppd_x, ppd_y) = info
+        width_px = self.TileWidth * cache.num_tiles_x
+        height_px = self.TileHeight * cache.num_tiles_y
+        ppd_x = cache.ppd_x
+        ppd_y = cache.ppd_y
         num_tiles_width = int(width_px / self.TileWidth)
         num_tiles_height = int(height_px / self.TileHeight)
         self.assertFalse(info is None,
@@ -96,6 +100,34 @@ class TestGMTTiles(unittest.TestCase):
                         'Using bad coords (%d,%d) got bmp=%s'
                         % (num_tiles_width, num_tiles_height, str(bmp)))
 
+    def testConvert(self):
+        """Test geo2map conversions."""
+
+        cache = gmt_local_tiles.GMTTiles(tiles_dir=TilesDir)
+
+        # get tile covering Greenwich observatory
+#        xgeo = -0.0005  # Greenwich observatory
+#        ygeo = 51.4768534
+        xgeo = 7.605916 # Deutsches Eck
+        ygeo = 50.364444
+        for level in [0, 1, 2, 3, 4]:
+            info = cache.UseLevel(level)
+            (xtile, ytile) = cache.Geo2Tile(ygeo, xgeo)
+            bmp = cache.GetTile(int(xtile), int(ytile))
+
+            pt_px_x = int((xtile - int(xtile)) * cache.tile_size_x)
+            pt_px_y = int((ytile - int(ytile)) * cache.tile_size_y)
+
+            dc = wx.MemoryDC()
+            dc.SelectObject(bmp)
+            text = "o"
+            (tw, th) = dc.GetTextExtent(text)
+            print('pt_px_x=%d, tw=%d, pt_px_x-tw/2=%d' % (pt_px_x, tw, pt_px_x-tw/2))
+            print('pt_px_y=%d, th=%d, pt_px_y-th/2=%d' % (pt_px_y, th, pt_px_y-th/2))
+            dc.DrawText(text, pt_px_x-tw/2,  pt_px_y-th/2)
+            dc.SelectObject(wx.NullBitmap)
+
+            bmp.SaveFile('xyzzy_%d.jpg' % level, wx.BITMAP_TYPE_JPEG)
 
 app = wx.App()
 app_frame = AppFrame()

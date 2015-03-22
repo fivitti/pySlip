@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Test the local GMT tiles code.
+Test the OSM tiles code.
 
 Requires a wxPython application to be created before use.
 If we can create a bitmap without wxPython, we could remove this dependency.
@@ -12,18 +12,18 @@ import os
 import glob
 import pickle
 import wx
-import gmt_local_tiles
+import osm_tiles
 
 import unittest
 import shutil
 from wx.lib.embeddedimage import PyEmbeddedImage
 
 
-# where the pre-generated GMT tiles are
+# where the OSM tiles are cached on disk
 TilesDir = '/Users/r-w/pyslip/tiles'
 
 DefaultAppSize = (512, 512)
-DemoName = 'GMT Tiles Cache Test'
+DemoName = 'OSM Tiles Cache Test'
 DemoVersion = '0.1'
 
 
@@ -43,9 +43,9 @@ class AppFrame(wx.Frame):
     def onClose(self, event):
         self.Destroy()
 
-class TestGMTTiles(unittest.TestCase):
+class TestOSMTiles(unittest.TestCase):
 
-    # for GMT tiles
+    # for OSM tiles
     TileWidth = 256
     TileHeight = 256
 
@@ -53,15 +53,17 @@ class TestGMTTiles(unittest.TestCase):
         """Simple tests."""
 
         # read all tiles in all rows of all levels
-        cache = gmt_local_tiles.GMTTiles(tiles_dir=TilesDir)
+        cache = osm_tiles.OSMTiles(tiles_dir=TilesDir)
         for level in cache.levels:
             info = cache.UseLevel(level)
             if info:
                 (width_px, height_px, ppd_x, ppd_y) = info
                 num_tiles_width = int(width_px / self.TileWidth)
                 num_tiles_height = int(height_px / self.TileHeight)
-                for x in range(num_tiles_width):
-                    for y in range(num_tiles_height):
+#                for x in range(num_tiles_width):
+#                    for y in range(num_tiles_height):
+                for x in range(4):
+                    for y in range(4):
                         bmp = cache.GetTile(x, y)
                         msg = "Can't find tile (%d,%d,%d)!?" % (level, x, y)
                         self.failIf(bmp is None, msg)
@@ -71,19 +73,15 @@ class TestGMTTiles(unittest.TestCase):
     def testErrors(self):
         """Test possible errors."""
 
-        # try to use on-disk cache that doesn't exist
-        with self.assertRaises(IOError):
-            cache = gmt_local_tiles.GMTTiles(tiles_dir='_=XYZZY=_')
-
         # check that using level outside map levels returns None
-        cache = gmt_local_tiles.GMTTiles(tiles_dir=TilesDir)
+        cache = osm_tiles.OSMTiles(tiles_dir=TilesDir)
         level = cache.levels[-1] + 1      # get level # that DOESN'T exist
         info = cache.UseLevel(level)
         self.assertTrue(info is None,
                         'Using bad level (%d) got info=%s' % (level, str(info)))
 
         # check that reading tile outside map returns None
-        cache = gmt_local_tiles.GMTTiles(tiles_dir=TilesDir)
+        cache = osm_tiles.OSMTiles(tiles_dir=TilesDir)
         level = cache.levels[0]
         info = cache.UseLevel(level)
         (width_px, height_px, ppd_x, ppd_y) = info
@@ -91,10 +89,20 @@ class TestGMTTiles(unittest.TestCase):
         num_tiles_height = int(height_px / self.TileHeight)
         self.assertFalse(info is None,
                         'Using good level (%d) got info=%s' % (level, str(info)))
-        bmp = cache.GetTile(num_tiles_width, num_tiles_height)
-        self.assertTrue(bmp is None,
-                        'Using bad coords (%d,%d) got bmp=%s'
-                        % (num_tiles_width, num_tiles_height, str(bmp)))
+# OSM returns an empty tile if you request outside map limits
+#        bmp = cache.GetTile(num_tiles_width, num_tiles_height)
+#        self.assertTrue(bmp is None,
+#                        'Using bad coords (%d,%d) got bmp=%s'
+#                        % (num_tiles_width, num_tiles_height, str(bmp)))
+        info = cache.UseLevel(1)
+        bmp = cache.GetTile(0, 0)
+        bmp.SaveFile('xyzzy00.jpg', wx.BITMAP_TYPE_JPEG)
+        bmp = cache.GetTile(0, 1)
+        bmp.SaveFile('xyzzy01.jpg', wx.BITMAP_TYPE_JPEG)
+        bmp = cache.GetTile(1, 0)
+        bmp.SaveFile('xyzzy10.jpg', wx.BITMAP_TYPE_JPEG)
+        bmp = cache.GetTile(1, 1)
+        bmp.SaveFile('xyzzy11.jpg', wx.BITMAP_TYPE_JPEG)
 
 
 app = wx.App()

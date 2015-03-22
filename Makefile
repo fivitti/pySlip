@@ -8,4 +8,4 @@ test:
 
 
 clean:
-	rm -Rf *.pyc *.log
+	rm -Rf *.pyc *.log *.jpg

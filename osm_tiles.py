@@ -9,11 +9,25 @@ Uses pyCacheBack to provide in-memory and on-disk caching.
 
 import os
 import glob
+import math
 import pickle
+import threading
+import traceback
+import urllib2
+import Queue
 import wx
+from wx.lib.embeddedimage import PyEmbeddedImage
 
 import tiles
 import pycacheback
+
+# if we don't have log.py, don't crash
+try:
+    import log
+    log = log.Log('pyslip.log', log.Log.DEBUG)
+except ImportError:
+    def log(*args, **kwargs):
+        pass
 
 
 # tiles stored at <basepath>/<level>/<x>/<y>.png
@@ -68,7 +82,7 @@ class OSMCache(pycacheback.pyCacheBack):
         """
 
         # look for item in disk cache
-        tile_path = os.path.join(self._tiles_dir, self.TilePath % key)
+        tile_path = os.path.join(self._tiles_dir, TilePath % key)
         if not os.path.exists(tile_path):
             # tile not there, raise KeyError
             raise KeyError
@@ -88,8 +102,8 @@ class OSMCache(pycacheback.pyCacheBack):
                      y      integer tile coordinate
         """
 
-        tile_path = os.path.join(self._tiles_dir, self.TilePath % key)
-        image.SaveFile(tile_path, wx.BITMAP_TYPE_JPEG) 
+        tile_path = os.path.join(self._tiles_dir, TilePath % key)
+        image.SaveFile(tile_path, wx.BITMAP_TYPE_JPEG)
 
 ################################################################################
 # Worker class for internet tile retrieval
@@ -144,7 +158,7 @@ class TileWorker(threading.Thread):
 
 # where earlier-cached tiles will be
 # this can be overridden in the OSMTiles() constructor
-DefaultTileDir = 'tiles'
+DefaultTilesDir = 'tiles'
 
 # set maximum number of in-memory tiles for each level
 DefaultMaxLRU = 10000
@@ -179,20 +193,30 @@ class OSMTiles(tiles.Tiles):
 # satellite tiles
 #    TileLevels = range(13)         # [0, ..., 12] for the satellite tiles
 
-    def __init__(self, tile_cache_dir, tile_levels, callback=None,
+    def __init__(self, tiles_dir=None, tile_levels=None, callback=None,
                  http_proxy=None, pending_file=None, error_file=None):
         """Override the base class for local tiles.
 
-        tile_cache_dir  tile cache directory, may contain tiles
-        tile_levels     list of tile levels to be served
-        callback        caller function to call on tile available
-        http_proxy      HTTP proxy to use if there is a firewall
-        pending_file    path to picture file for the 'pending' tile
-        error_file      path to picture file for the 'error' tile
+        tiles_dir     tile cache directory, may contain tiles
+        tile_levels   list of tile levels to be served
+        callback      caller function to call on tile available
+        http_proxy    HTTP proxy to use if there is a firewall
+        pending_file  path to picture file for the 'pending' tile
+        error_file    path to picture file for the 'error' tile
         """
 
+        # check tiles_dir & tile_levels
+        if tiles_dir is None:
+            tiles_dir = DefaultTilesDir
+        self.tiles_dir = tiles_dir
+
+        if tile_levels is None:
+            tile_levels = self.TileLevels
+        self.levels = tile_levels
+        self.level = None
+
         # first, initialize with base code
-        Tiles.__init__(self, tile_cache_dir, tile_levels)
+#        Tiles.__init__(self, tiles_dir, tile_levels)
 
         # save the CallAfter() function
         self.callback = callback
@@ -201,15 +225,14 @@ class OSMTiles(tiles.Tiles):
         self.extent = (-180.0, 180.0, -85.0511, 85.0511)
 
         # prepare tile cache if not already there
-        self.tile_cache_dir = tile_cache_dir
-        if not os.path.isdir(tile_cache_dir):
-            if os.path.isfile(tile_cache_dir):
+        if not os.path.isdir(tiles_dir):
+            if os.path.isfile(tiles_dir):
                 msg = ("%s doesn't appear to be a tile cache directory"
-                       % tile_cache_dir)
+                       % tiles_dir)
                 raise Exception(msg)
-            os.makedirs(tile_cache_dir)
+            os.makedirs(tiles_dir)
         for level in self.TileLevels:
-            level_dir = os.path.join(tile_cache_dir, '%d' % level)
+            level_dir = os.path.join(tiles_dir, '%d' % level)
             if not os.path.isdir(level_dir):
                 os.makedirs(level_dir)
 
@@ -228,14 +251,14 @@ class OSMTiles(tiles.Tiles):
             self.pending_tile_image = wx.Image(pending_file, wx.BITMAP_TYPE_ANY)
             self.pending_tile = self.pending_tile_image.ConvertToBitmap()
         else:
-            self.pending_tile_image = PyEmbeddedImage(self.PendingImage)
+            self.pending_tile_image = PyEmbeddedImage(PendingImage)
             self.pending_tile = self.pending_tile_image.GetBitmap()
 
         if error_file:
             self.error_tile_image = wx.Image(error_file, wx.BITMAP_TYPE_ANY)
             self.error_tile = self.error_tile_image.ConvertToBitmap()
         else:
-            self.error_tile_image = PyEmbeddedImage(self.ErrorImage)
+            self.error_tile_image = PyEmbeddedImage(ErrorImage)
             self.error_tile = self.error_tile_image.GetBitmap()
 
         # test for firewall - use proxy (if supplied)
@@ -284,6 +307,9 @@ class OSMTiles(tiles.Tiles):
         value will be None.
         """
 
+        self.num_tiles_x = math.pow(2, self.level)
+        self.num_tiles_y = math.pow(2, self.level)
+
         return (self.num_tiles_x, self.num_tiles_y, None, None)
 
     def GetTile(self, x, y):
@@ -301,7 +327,7 @@ class OSMTiles(tiles.Tiles):
 
         try:
             tile = self.cache[(self.level, x, y)]
-        else KeyError:
+        except KeyError:
             # start process of getting tile from 'net, return 'pending' image
             self.GetInternetTile(self.level, x, y)
             tile = self.pending_tile
@@ -352,42 +378,24 @@ class OSMTiles(tiles.Tiles):
     def _cache_tile(self, image, bitmap, level, x, y):
         pass
 
+    def Geo2Tile(self, ygeo, xgeo):
+        """Convert geo to tile fractional coordinates for level in use.
 
-    def ConvertGeo2TileCoords(self, lat_deg, lon_deg, zoom,
-                              ppd_x=None, ppd_y=None,
-                              map_tlat=None, map_blat=None,
-                              map_llon=None, map_rlon=None):
-        """Convert lon/lat to tile fractional coordinates.
-
-        lat_deg   geo latitude in degrees
-        lon_deg   geo longitude in degrees
-        zoom      the map 'level'
-        ppd_x     the 'pixel per degree' value in the X direction
-        ppd_y     the 'pixel per degree' value in the Y direction
-        map_tlat  latitude of top edge of map
-        map_blat  latitude of bottom edge of map
-        map_llon  longitude of left edge of map
-        map_rlon  longitude of right edge of map
-
-        Not all of the above arguments need be supplied, depending on
-        the type of tiles.
+        ygeo   geo latitude in degrees
+        xgeo   geo longitude in degrees
 
         Note that we assume the point *is* on the map!
         """
 
-        raise Exception('You must override Tiles.ConvertGeo2TileCoords()')
+        raise Exception('You must override Tiles.Geo2Tile()')
 
-    def ConvertTileCoords2Geo(xtile, ytile, zoom, ppd_x=None, ppd_y=None):
-        """Convert tile fractional coordinates to lon/lat.
+    def Tile2Geo(self, ytile, xtile):
+        """Convert tile fractional coordinates to geo for level in use.
 
-        xtile  tile fractional X coordinate
         ytile  tile fractional Y coordinate
-        zoom   the map 'level'
-        ppd_x  the 'pixel per degree' value in the X direction
-        ppd_y  the 'pixel per degree' value in the Y direction
+        xtile  tile fractional X coordinate
 
-        Not all of the above arguments need be supplied, depending on
-        the type of tiles.
+        Note that we assume the point *is* on the map!
         """
 
-        raise Exception('You must override Tiles.ConvertView2Geo()')
+        raise Exception('You must override Tiles.Tile2Geo()')

@@ -49,7 +49,7 @@ class TestOSMTiles(unittest.TestCase):
     TileWidth = 256
     TileHeight = 256
 
-    def testSimple(self):
+    def XtestSimple(self):
         """Simple tests."""
 
         # read all tiles in all rows of all levels
@@ -70,7 +70,7 @@ class TestOSMTiles(unittest.TestCase):
             else:
                 print('level %d not available' % level)
 
-    def testErrors(self):
+    def XtestErrors(self):
         """Test possible errors."""
 
         # check that using level outside map levels returns None
@@ -104,7 +104,7 @@ class TestOSMTiles(unittest.TestCase):
         bmp = cache.GetTile(1, 1)
         bmp.SaveFile('xyzzy11.jpg', wx.BITMAP_TYPE_JPEG)
 
-    def testConvert(self):
+    def XtestConvert(self):
         """Test geo2map conversions.
 
         This can't be automatic, it's a 'by hand' thing.

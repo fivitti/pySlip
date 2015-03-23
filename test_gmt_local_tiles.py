@@ -49,7 +49,7 @@ class TestGMTTiles(unittest.TestCase):
     TileWidth = 256
     TileHeight = 256
 
-    def XtestSimple(self):
+    def testSimple(self):
         """Simple tests."""
 
         # read all tiles in all rows of all levels
@@ -69,7 +69,7 @@ class TestGMTTiles(unittest.TestCase):
                         msg = "Can't find tile (%d,%d,%d)!?" % (level, x, y)
                         self.failIf(bmp is None, msg)
 
-    def XtestErrors(self):
+    def testErrors(self):
         """Test possible errors."""
 
         # try to use on-disk cache that doesn't exist
@@ -100,8 +100,11 @@ class TestGMTTiles(unittest.TestCase):
                         'Using bad coords (%d,%d) got bmp=%s'
                         % (num_tiles_width, num_tiles_height, str(bmp)))
 
-    def testConvert(self):
-        """Test geo2map conversions."""
+    def XtestConvert(self):
+        """Test geo2map conversions.
+        
+        This is normally turned off as it is a "by hand" sort of check.
+        """
 
         cache = gmt_local_tiles.GMTTiles(tiles_dir=TilesDir)
 
@@ -122,8 +125,6 @@ class TestGMTTiles(unittest.TestCase):
             dc.SelectObject(bmp)
             text = "o"
             (tw, th) = dc.GetTextExtent(text)
-            print('pt_px_x=%d, tw=%d, pt_px_x-tw/2=%d' % (pt_px_x, tw, pt_px_x-tw/2))
-            print('pt_px_y=%d, th=%d, pt_px_y-th/2=%d' % (pt_px_y, th, pt_px_y-th/2))
             dc.DrawText(text, pt_px_x-tw/2,  pt_px_y-th/2)
             dc.SelectObject(wx.NullBitmap)
 

@@ -20,7 +20,7 @@ from wx.lib.embeddedimage import PyEmbeddedImage
 
 
 # where the OSM tiles are cached on disk
-TilesDir = '/Users/r-w/pyslip/tiles'
+TilesDir = 'tiles'
 
 DefaultAppSize = (512, 512)
 DemoName = 'OSM Tiles Cache Test'
@@ -103,6 +103,41 @@ class TestOSMTiles(unittest.TestCase):
         bmp.SaveFile('xyzzy10.jpg', wx.BITMAP_TYPE_JPEG)
         bmp = cache.GetTile(1, 1)
         bmp.SaveFile('xyzzy11.jpg', wx.BITMAP_TYPE_JPEG)
+
+    def testConvert(self):
+        """Test geo2map conversions.
+
+        This can't be automatic, it's a 'by hand' thing.
+        So it's generally turned off.
+        """
+
+        import time
+
+        cache = osm_tiles.OSMTiles(tiles_dir=TilesDir)
+
+        # get tile covering Greenwich observatory
+        #xgeo = -0.0005  # Greenwich observatory
+        #ygeo = 51.4768534
+        xgeo = 7.605916 # Deutsches Eck
+        ygeo = 50.364444
+        for level in [0, 1, 2, 3, 4]:
+            info = cache.UseLevel(level)
+            (xtile, ytile) = cache.Geo2Tile(ygeo, xgeo)
+            bmp = cache.GetTile(int(xtile), int(ytile))
+
+            pt_px_x = int((xtile - int(xtile)) * cache.tile_size_x)
+            pt_px_y = int((ytile - int(ytile)) * cache.tile_size_y)
+
+            dc = wx.MemoryDC()
+            dc.SelectObject(bmp)
+            text = "o"
+            (tw, th) = dc.GetTextExtent(text)
+            dc.DrawText(text, pt_px_x-tw/2,  pt_px_y-th/2)
+            dc.SelectObject(wx.NullBitmap)
+
+            bmp.SaveFile('xyzzy_%d.jpg' % level, wx.BITMAP_TYPE_JPEG)
+        # we have to delay for internet response
+        time.sleep(30)
 
 
 app = wx.App()

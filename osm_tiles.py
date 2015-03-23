@@ -144,6 +144,7 @@ class TileWorker(threading.Thread):
                 else:
                     # tile not available!
                     image = self.error_tile_image
+                image.SaveFile('osm_%d_%d_%d.jpg' % (level, x, y), wx.BITMAP_TYPE_JPEG)
                 wx.CallAfter(self.callafter, level, x, y, image)
             except urllib2.HTTPError, e:
                 log('ERROR getting tile %d,%d,%d from %s\n%s'
@@ -296,6 +297,28 @@ class OSMTiles(tiles.Tiles):
                 self.workers.append(worker)
                 worker.start()
 
+    def UseLevel(self, level):
+        """Prepare to serve tiles from the required level.
+
+        level  the required level
+        """
+
+        if level not in self.levels:
+            return None
+        self.level = level
+
+        # get tile info
+        info = self.GetInfo(level)
+        if info is None:            # level doesn't exist
+            return None
+        (self.num_tiles_x, self.num_tiles_y, self.ppd_x, self.ppd_y) = info
+
+        # store partial path to level dir (small speedup)
+        self.tile_level_dir = os.path.join(self.tiles_dir, '%d' % level)
+
+        # finally, return True
+        return True
+
     def GetInfo(self, level):
         """Get tile info for a particular level.
 
@@ -339,7 +362,7 @@ class OSMTiles(tiles.Tiles):
 
         level, x, y  identify the required tile
 
-        If we aren't already getting this tile, queue a request and
+        If we don't already have this tile (or getting it), queue a request and
         also put the request into a 'queued request' dictionary.  We
         do this since we can't peek into a Queue to see what's there.
         """
@@ -376,7 +399,20 @@ class OSMTiles(tiles.Tiles):
         wx.CallAfter(self.available_callback, level, x, y, image, bitmap)
 
     def _cache_tile(self, image, bitmap, level, x, y):
-        pass
+        """Save a tile update from the internet.
+
+        image   wxPython image
+        bitmap  bitmap of the image
+        level   zoom level
+        x       tile X coordinate
+        y       tile Y coordinate
+
+        We may already have a tile at (level, x, y).  Update in-memory cache
+        and on-disk cache with this new one.
+        """
+
+        self.cache[(level, x, y)] = bitmap
+        self.cache._put_to_back(image, level, x, y)
 
     def Geo2Tile(self, ygeo, xgeo):
         """Convert geo to tile fractional coordinates for level in use.
@@ -385,9 +421,15 @@ class OSMTiles(tiles.Tiles):
         xgeo   geo longitude in degrees
 
         Note that we assume the point *is* on the map!
+
+        Code taken from [http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames]
         """
 
-        raise Exception('You must override Tiles.Geo2Tile()')
+        lat_rad = math.radians(ygeo)
+        n = 2.0 ** self.level
+        xtile = (xgeo + 180.0) / 360.0 * n
+        ytile = (1.0 - math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi) / 2.0 * n
+        return (xtile, ytile)
 
     def Tile2Geo(self, ytile, xtile):
         """Convert tile fractional coordinates to geo for level in use.
@@ -396,6 +438,12 @@ class OSMTiles(tiles.Tiles):
         xtile  tile fractional X coordinate
 
         Note that we assume the point *is* on the map!
+
+        Code taken from [http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames]
         """
 
-        raise Exception('You must override Tiles.Tile2Geo()')
+        n = 2.0 ** self.level
+        xgeo = xtile / n * 360.0 - 180.0
+        yrad = math.atan(math.sinh(math.pi * (1 - 2 * ytile / n)))
+        ygeo = math.degrees(yrad)
+        return (ygeo, xgeo)

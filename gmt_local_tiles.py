@@ -66,16 +66,12 @@ class GMTTiles(tiles.Tiles):
 
     TileInfoFilename = "tile.info"
 
-    def __init__(self, tiles_dir=None, tile_levels=None):
+    def __init__(self, tiles_dir=DefaultTileDir, tile_levels=None):
         """Initialise a GMT local tiles instance.
 
         tiles_dir  tile cache directory, contains GMT tiles
         tile_levels     list of tile levels to be served
         """
-
-        # see if on-disk cache directory is specified
-        if tiles_dir is None:
-            tiles_dir = DefaultTileDir
 
         # open top-level GMT info file (it MUST be there!)
         info_file = os.path.join(tiles_dir, self.TileInfoFilename)

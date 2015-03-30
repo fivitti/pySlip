@@ -216,6 +216,10 @@ class OSMTiles(tiles.Tiles):
         self.levels = tile_levels
         self.level = None
 
+        # set min and max tile levels
+        self.min_level = min(self.levels)
+        self.max_level = max(self.levels)
+
         # first, initialize with base code
 #        Tiles.__init__(self, tiles_dir, tile_levels)
 
@@ -330,8 +334,8 @@ class OSMTiles(tiles.Tiles):
         value will be None.
         """
 
-        self.num_tiles_x = math.pow(2, self.level)
-        self.num_tiles_y = math.pow(2, self.level)
+        self.num_tiles_x = int(math.pow(2, self.level))
+        self.num_tiles_y = int(math.pow(2, self.level))
 
         return (self.num_tiles_x, self.num_tiles_y, None, None)
 

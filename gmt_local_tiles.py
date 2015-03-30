@@ -106,26 +106,30 @@ class GMTTiles(tiles.Tiles):
         self.cache = GMTCache(tiles_dir=self.tiles_dir, max_lru=DefaultMaxLRU)
 
     def UseLevel(self, level):
-        """Prepare to serve tiles from the required level.                                                                          
+        """Prepare to serve tiles from the required level.
 
-        level  the required level                                                                                                   
+        level  the required level
+
+        Throws Exception if level not found.
         """
 
-        if level not in self.levels:                                                                                               
-            return None                                                                                                            
-        self.level = level                                                                                                         
-                                                                                                                                   
-        # get tile info                                                                                                            
-        info = self.GetInfo(level)                                                                                                 
-        if info is None:            # level doesn't exist                                                                          
-            return None                                                                                                            
-        (self.num_tiles_x, self.num_tiles_y, self.ppd_x, self.ppd_y) = info                                                        
-                                                                                                                                   
-        # store partial path to level dir (small speedup)                                                                          
-        self.tile_level_dir = os.path.join(self.tiles_dir, '%d' % level)                                                           
-                                                                                                                                   
-        # finally, return True
-        return True
+        if level not in self.levels:
+            raise Exception("Level '%s' not used" % str(level))
+#            return None
+        self.level = level
+
+        # get tile info
+        info = self.GetInfo(level)
+        if info is None:            # level doesn't exist
+            raise Exception("Level '%s' not used" % str(level))
+#            return None
+        (self.num_tiles_x, self.num_tiles_y, self.ppd_x, self.ppd_y) = info
+
+        # store partial path to level dir (small speedup)
+        self.tile_level_dir = os.path.join(self.tiles_dir, '%d' % level)
+
+#        # finally, return True
+#        return True
 
     def GetInfo(self, level):
         """Get tile info for a particular level.

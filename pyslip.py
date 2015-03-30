@@ -870,6 +870,7 @@ class PySlip(_BufferedCanvas):
                 h = h_cache
             else:
                 fname_cache = fname
+                log('fname=%s' % str(fname))
                 img = wx.Image(fname, wx.BITMAP_TYPE_ANY)
                 bmp_cache = bmap = img.ConvertToBitmap()
                 (w, h) = bmap.GetSize()
@@ -1340,13 +1341,14 @@ class PySlip(_BufferedCanvas):
         log('GotoPosition: lon=%.4f, lat=%.4f' % (lon, lat))
 
         # get fractional tile coords of centre of view
-        (xtile, ytile) = self.tiles.ConvertGeo2TileCoords(lat, lon, self.level,
-                                                          ppd_x=self.ppd_x,
-                                                          ppd_y=self.ppd_y,
-                                                          map_tlat=self.map_tlat,
-                                                          map_blat=self.map_blat,
-                                                          map_llon=self.map_llon,
-                                                          map_rlon=self.map_rlon)
+        (xtile, ytile) = self.tiles.Geo2Tile(lat, lon)
+#        (xtile, ytile) = self.tiles.ConvertGeo2TileCoords(lat, lon, self.level,
+#                                                          ppd_x=self.ppd_x,
+#                                                          ppd_y=self.ppd_y,
+#                                                          map_tlat=self.map_tlat,
+#                                                          map_blat=self.map_blat,
+#                                                          map_llon=self.map_llon,
+#                                                          map_rlon=self.map_rlon)
         log('GotoPosition: xtile=%s, ytile=%s' % (str(xtile), str(ytile)))
 
         # now calculate view offsets, top, left, bottom and right
@@ -1916,36 +1918,48 @@ class PySlip(_BufferedCanvas):
         self.RecalcViewLonLatLimits()
 
     def RecalcViewLonLatLimits(self):
-        """Recalculate the view lon/lat extent values.
+        """Recalculate the view geo extent values.
 
         Assumes only:
             self.view_offset_x
             self.view_offset_y
             self.view_width
             self.view_height
-        values have been set.
+        values have been set.  All are map pixel values.
         """
 
         log('RecalcViewLonLatLimits: self.ppd_x=%.3f, self.ppd_y=%.3f' % (self.ppd_x, self.ppd_y))
         log('RecalcViewLonLatLimits: self.view_offset_x=%s, self.view_offset_y=%s' % (str(self.view_offset_x), str(self.view_offset_y)))
         log('RecalcViewLonLatLimits: self.map_llon=%s, self.map_tlat=%s' % (str(self.map_llon), str(self.map_tlat)))
 
-        (self.view_llon, self.view_tlat) = \
-                self.tiles.ConvertView2Geo((0, 0),
-                                           self.view_offset_x,
-                                           self.view_offset_y,
-                                           self.map_llon,
-                                           self.map_tlat,
-                                           self.ppd_x,
-                                           self.ppd_y)
-        (self.view_rlon, self.view_blat) = \
-                self.tiles.ConvertView2Geo((self.view_width, self.view_height),
-                                           self.view_offset_x,
-                                           self.view_offset_y,
-                                           self.map_llon,
-                                           self.map_tlat,
-                                           self.ppd_x,
-                                           self.ppd_y)
+#        (self.view_llon, self.view_tlat) = \
+#                self.tiles.ConvertView2Geo((0, 0),
+#                                           self.view_offset_x,
+#                                           self.view_offset_y,
+#                                           self.map_llon,
+#                                           self.map_tlat,
+#                                           self.ppd_x,
+#                                           self.ppd_y)
+        tltile_x = self.view_offset_x/self.tiles.tile_size_x
+        tltile_y = self.view_offset_y/self.tiles.tile_size_y
+        (self.view_tlat, self.view_llon) = self.tiles.Tile2Geo(tltile_x,
+                                                               tltile_y)
+        log('tltile_x=%s, tltile_y=%s' % (str(tltile_x), str(tltile_y)))
+        log('self.view_tlat=%f, self.view_llon=%f' % (self.view_tlat, self.view_llon))
+
+#        (self.view_rlon, self.view_blat) = \
+#                self.tiles.ConvertView2Geo((self.view_width, self.view_height),
+#                                           self.view_offset_x,
+#                                           self.view_offset_y,
+#                                           self.map_llon,
+#                                           self.map_tlat,
+#                                           self.ppd_x,
+#                                           self.ppd_y)
+        (self.view_blat, self.view_rlon) = self.tiles.Tile2Geo(tltile_x + 1.0,
+                                                               tltile_y + 1.0)
+        log('tltile_x+1.0=%s, tltile_y+1.0=%s' % (str(tltile_x+1.0), str(tltile_y+1.0)))
+        log('self.view_blat=%f, self.view_rlon=%f' % (self.view_blat, self.view_rlon))
+
         log('RecalcViewLonLatLimits: finished')
 
     def ZoomToLevel(self, level):
@@ -1960,21 +1974,22 @@ class PySlip(_BufferedCanvas):
         log('ZoomToLevel: level=%d' % level)
 
         if self.min_level <= level <= self.max_level:
-            map_extent = self.tiles.UseLevel(level)
-            if map_extent:
-                self.level = level
-                (self.map_width, self.map_height,
-                     self.ppd_x, self.ppd_y) = map_extent
-                (self.map_llon, self.map_rlon,
-                        self.map_blat, self.map_tlat) = self.tiles.extent
+            self.tiles.UseLevel(level)
+            self.level = level
+            self.map_width = self.tiles.num_tiles_x * self.tiles.tile_size_x
+            self.map_height = self.tiles.num_tiles_y * self.tiles.tile_size_y
+#            (self.map_width, self.map_height,
+#                 self.ppd_x, self.ppd_y) = map_extent
+            (self.map_llon, self.map_rlon,
+                    self.map_blat, self.map_tlat) = self.tiles.extent
 
-                # raise level change event
-                self.RaiseLevelChangeEvent(level)
+            # raise level change event
+            self.RaiseLevelChangeEvent(level)
 
-                log('ZoomToLevel: self.map_tlat=%.3f, self.map_blat=%.3f' % (self.map_tlat, self.map_blat))
-                log('ZoomToLevel: self.ppd_x=%.3f, self.ppd_y=%.3f' % (self.ppd_x, self.ppd_y))
+            log('ZoomToLevel: self.map_tlat=%.3f, self.map_blat=%.3f' % (self.map_tlat, self.map_blat))
+            log('ZoomToLevel: self.ppd_x=%.3f, self.ppd_y=%.3f' % (self.ppd_x, self.ppd_y))
 
-                return True
+            return True
 
         return False
 
@@ -2340,14 +2355,20 @@ class PySlip(_BufferedCanvas):
 
         if self.mouse_position_event:
             event = _PySlipEvent(_myEVT_PYSLIP_POSITION, self.GetId())
+            log('RaiseMousePositionEvent: posn=%s, event=%s' % (str(posn), str(event)))
             if posn and self.PositionIsOnMap(posn):
-                event.position = self.tiles.ConvertView2Geo(posn,
-                                                            self.view_offset_x,
-                                                            self.view_offset_y,
-                                                            self.map_llon,
-                                                            self.map_tlat,
-                                                            self.ppd_x,
-                                                            self.ppd_y)
+                (posn_x, posn_y) = posn
+                tile_x = float(self.view_offset_x + posn_x)/self.tile_size_x
+                tile_y = float(self.view_offset_y + posn_y)/self.tile_size_y
+                log('tile_x=%s, tile_y=%s' % (str(tile_x), str(tile_y)))
+                event.position = self.tiles.Tile2Geo(tile_x, tile_y)
+#                event.position = self.tiles.ConvertView2Geo(posn,
+#                                                            self.view_offset_x,
+#                                                            self.view_offset_y,
+#                                                            self.map_llon,
+#                                                            self.map_tlat,
+#                                                            self.ppd_x,
+#                                                            self.ppd_y)
             else:
                 event.position = None
             self.GetEventHandler().ProcessEvent(event)

@@ -834,6 +834,8 @@ class PySlip(_BufferedCanvas):
         where the image is displayed relative to the hotspot.
         """
 
+        log('AddImageLayer: map_rel=%s, data=%s' % (str(map_rel), str(data)))
+
         # get global attribute values
         default_placement = kwargs.get('placement',
                                        self.DefaultImagePlacement)
@@ -849,6 +851,8 @@ class PySlip(_BufferedCanvas):
         # load all image files, convert to bitmaps, create draw_data iterable
         draw_data = []
         for d in data:
+            log('d=%s' % str(d))
+
             if len(d) == 4:
                 (lon, lat, fname, attributes) = d
             elif len(d) == 3:
@@ -878,6 +882,7 @@ class PySlip(_BufferedCanvas):
                 h_cache = h
             draw_data.append((lon, lat, bmap, w, h, placement.lower(),
                               offset_x, offset_y, data))
+        log('draw_data=%s' % str(draw_data))
 
         return self.AddLayer(self.DrawImageLayer, draw_data, map_rel,
                              visible=visible, show_levels=show_levels,
@@ -1229,12 +1234,16 @@ class PySlip(_BufferedCanvas):
         map_rel  points relative to map if True, else relative to view
         """
 
+        log('DrawImageLayer: map_rel=%s, images=%s' % (str(map_rel), str(images)))
+
         # draw images on map/view
         if map_rel:
             for (lon, lat, bmap, w, h, place, x_off, y_off, idata) in images:
                 w2 = w / 2
                 h2 = h / 2
                 pt = self.ConvertGeo2ViewMasked((lon, lat))
+                log('DrawImageLayer: lon=%s, lat=%s, pt=%s'
+                        % (str(lon), str(lat), str(pt)))
                 if pt:
                     (x, y) = pt
                     exec self.image_map_placement[place]
@@ -1426,9 +1435,13 @@ class PySlip(_BufferedCanvas):
         """
 
         (lon, lat) = lonlat
+        log('ConvertGeo2ViewMasked: lon=%s, lat=%s' % (str(lon), str(lat)))
+        log('ConvertGeo2ViewMasked: .view_llon=%s, .view_rlon=%s, .view_blat=%s, .view_tlat=%s'
+                % (str(self.view_llon), str(self.view_rlon), str(self.view_blat), str(self.view_tlat)))
 
         if (self.view_llon <= lon <= self.view_rlon and
                 self.view_blat <= lat <= self.view_tlat):
+            log('within view')
             (x, y) = self.tiles.Geo2Tile(lat, lon)
             return (x - self.view_offset_x, y - self.view_offset_y)
 #            return self.tiles.ConvertGeo2View(lonlat,
@@ -1439,6 +1452,7 @@ class PySlip(_BufferedCanvas):
 #                                              self.ppd_x,
 #                                              self.ppd_y)
 
+        log('NOT within view, return None')
         return None
 
     ######

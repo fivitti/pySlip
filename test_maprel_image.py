@@ -6,7 +6,7 @@
 import wx
 
 import pyslip
-import local_tiles
+from gmt_local_tiles import GMTTiles as Tiles
 
 
 ######
@@ -18,7 +18,7 @@ DefaultAppSize = (600, 400)
 TileDirectory = 'tiles'
 MinTileLevel = 0
 InitViewLevel = 2
-InitViewPosition = (85.0, -5.0)
+InitViewPosition = (133.0, -27.0)
 
 arrow = 'graphics/arrow_right.png'
 
@@ -47,7 +47,7 @@ class TestFrame(wx.Frame):
         self.SetMinSize(DefaultAppSize)
 
         # create the tile source object
-        self.tile_src = local_tiles.LocalTiles(TileDirectory, None)
+        self.tile_src = Tiles(TileDirectory)
 
         # create the PySlip widget
         self.pyslip = pyslip.PySlip(self, tile_src=self.tile_src,

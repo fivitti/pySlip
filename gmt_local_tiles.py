@@ -153,23 +153,26 @@ class GMTTiles(tiles.Tiles):
 
         return info
 
-    def Geo2Tile(self, ygeo, xgeo):
+    def Geo2Tile(self, xgeo, ygeo):
         """Convert geo to tile fractional coordinates for level in use.
 
-        ygeo   geo latitude in degrees
         xgeo   geo longitude in degrees
+        ygeo   geo latitude in degrees
 
-        Returns (ytile, xtile).
+        Returns (xtile, ytile).
 
         Note that we assume the point *is* on the map!
+
+        This is an easy transformation as geo coordinates are Cartesian.
         """
 
         # get extent information
         (min_xgeo, max_xgeo, min_ygeo, max_ygeo) = self.extent
 
-        # convert geo coords to 'geo-like' coords with origin at top-left
+        # get 'geo-like' coords with origin at top-left
         x = xgeo - min_xgeo
         y = max_ygeo - ygeo
+
         tdeg_x = self.tile_size_x / self.ppd_x
         tdeg_y = self.tile_size_y / self.ppd_y
 
@@ -178,10 +181,12 @@ class GMTTiles(tiles.Tiles):
     def Tile2Geo(self, xtile, ytile):
         """Convert tile fractional coordinates to geo for level in use.
 
-        ytile  tile fractional Y coordinate
         xtile  tile fractional X coordinate
+        ytile  tile fractional Y coordinate
 
         Note that we assume the point *is* on the map!
+
+        This is an easy transformation as geo coordinates are Cartesian.
         """
 
         # get extent information
@@ -190,7 +195,137 @@ class GMTTiles(tiles.Tiles):
         # compute tile degree sizes and position in the coordinate system
         tdeg_x = self.tile_size_x / self.ppd_x
         tdeg_y = self.tile_size_y / self.ppd_y
-        xgeo = ytile*tdeg_y + min_xgeo
-        ygeo = max_ygeo - xtile*tdeg_x
+        xgeo = xtile*tdeg_x + min_xgeo
+        ygeo = max_ygeo - ytile*tdeg_y
 
-        return (ytile*tdeg_y, xtile*tdeg_x)
+        return (xgeo, ygeo)
+
+
+if __name__ == '__main__':
+    import unittest
+
+    class TestGMTTiles(unittest.TestCase):
+
+        def test_Tile2Geo(self):
+            """Exercise tiles.Tile2Geo() at various known places."""
+
+            tiles = GMTTiles(tiles_dir=DefaultTileDir)
+            tiles.UseLevel(2)
+            (min_lon, max_lon, min_lat, max_lat) = tiles.extent
+
+            # check lon/lat of top left corner of map
+            expect_lon = min_lon
+            expect_lat = max_lat
+            tile_x = 0.0
+            tile_y = 0.0
+            (lon, lat) = tiles.Tile2Geo(tile_x, tile_y)
+            msg = 'Expected geo (%f,%f) but got (%f,%f)' % (expect_lon, expect_lat, lon, lat)
+            self.assertAlmostEqual(expect_lon, lon, places=4, msg=msg)
+            self.assertAlmostEqual(expect_lat, lat, places=4, msg=msg)
+
+            # check lon/lat of bottom left corner of map
+            expect_lon = min_lon
+            expect_lat = min_lat
+            tile_x = 0.0
+            tile_y = tiles.num_tiles_y
+            (lon, lat) = tiles.Tile2Geo(tile_x, tile_y)
+            msg = 'Expected geo (%f,%f) but got (%f,%f)' % (expect_lon, expect_lat, lon, lat)
+            self.assertAlmostEqual(expect_lon, lon, places=4, msg=msg)
+            self.assertAlmostEqual(expect_lat, lat, places=4, msg=msg)
+
+            # check lon/lat of top right corner of map
+            expect_lon = max_lon
+            expect_lat = max_lat
+            tile_x = tiles.num_tiles_x
+            tile_y = 0.0
+            (lon, lat) = tiles.Tile2Geo(tile_x, tile_y)
+            msg = 'Expected geo (%f,%f) but got (%f,%f)' % (expect_lon, expect_lat, lon, lat)
+            self.assertAlmostEqual(expect_lon, lon, places=4, msg=msg)
+            self.assertAlmostEqual(expect_lat, lat, places=4, msg=msg)
+
+            # check lon/lat of bottom right corner of map
+            expect_lon = max_lon
+            expect_lat = min_lat
+            tile_x = tiles.num_tiles_x
+            tile_y = tiles.num_tiles_y
+            (lon, lat) = tiles.Tile2Geo(tile_x, tile_y)
+            msg = 'Expected geo (%f,%f) but got (%f,%f)' % (expect_lon, expect_lat, lon, lat)
+            self.assertAlmostEqual(expect_lon, lon, places=4, msg=msg)
+            self.assertAlmostEqual(expect_lat, lat, places=4, msg=msg)
+
+            # check lon/lat of middle of map
+            expect_lon = min_lon + (max_lon - min_lon)/2.0
+            expect_lat = 0.0
+            tile_x = tiles.num_tiles_x / 2.0
+            tile_y = tiles.num_tiles_y / 2.0
+            (lon, lat) = tiles.Tile2Geo(tile_x, tile_y)
+            msg = 'Expected geo (%f,%f) but got (%f,%f)' % (expect_lon, expect_lat, lon, lat)
+            self.assertAlmostEqual(expect_lon, lon, places=4, msg=msg)
+            self.assertAlmostEqual(expect_lat, lat, places=4, msg=msg)
+
+        def test_Geo2Tile(self):
+            """Exercise Geo2Tile() at various known places."""
+
+            tiles = GMTTiles(tiles_dir=DefaultTileDir)
+            tiles.UseLevel(2)
+            (min_lon, max_lon, min_lat, max_lat) = tiles.extent
+
+            # calculate where (0,0)(Tile) should be in geo coords, check
+            expect_xtile = 0.0
+            expect_ytile = 0.0
+            geo_x = min_lon
+            geo_y = max_lat
+            (xtile, ytile) = tiles.Geo2Tile(geo_x, geo_y)
+            msg = ('Expected tile (%f,%f) but got (%f,%f)'
+                   % (expect_xtile, expect_ytile, xtile, ytile))
+            self.assertAlmostEqual(expect_xtile, xtile, places=4, msg=msg)
+            self.assertAlmostEqual(expect_ytile, ytile, places=4, msg=msg)
+
+            # calculate where (.num_tiles_x,0)(Tile) should be in geo coords, check
+            expect_xtile = tiles.num_tiles_x
+            expect_ytile = 0.0
+            geo_x = max_lon
+            geo_y = max_lat
+            (xtile, ytile) = tiles.Geo2Tile(geo_x, geo_y)
+            msg = ('Expected tile (%f,%f) but got (%f,%f)'
+                   % (expect_xtile, expect_ytile, xtile, ytile))
+            self.assertAlmostEqual(expect_xtile, xtile, places=4, msg=msg)
+            self.assertAlmostEqual(expect_ytile, ytile, places=4, msg=msg)
+
+            # calculate where (0,.num_tiles_x)(Tile) should be in geo coords, check
+            expect_xtile = 0.0
+            expect_ytile = tiles.num_tiles_y
+            geo_x = min_lon
+            geo_y = min_lat
+            (xtile, ytile) = tiles.Geo2Tile(geo_x, geo_y)
+            msg = ('Expected tile (%f,%f) but got (%f,%f)'
+                   % (expect_xtile, expect_ytile, xtile, ytile))
+            self.assertAlmostEqual(expect_xtile, xtile, places=4, msg=msg)
+            self.assertAlmostEqual(expect_ytile, ytile, places=4, msg=msg)
+
+            # calculate where (.num_tiles_x,.num_tiles_x)(Tile) should be in geo coords, check
+            expect_xtile = tiles.num_tiles_x
+            expect_ytile = tiles.num_tiles_y
+            geo_x = max_lon
+            geo_y = min_lat
+            (xtile, ytile) = tiles.Geo2Tile(geo_x, geo_y)
+            msg = ('Expected tile (%f,%f) but got (%f,%f)'
+                   % (expect_xtile, expect_ytile, xtile, ytile))
+            self.assertAlmostEqual(expect_xtile, xtile, places=4, msg=msg)
+            self.assertAlmostEqual(expect_ytile, ytile, places=4, msg=msg)
+
+            # calculate where (.num_tiles_x/2,.num_tiles_x/2)(Tile) should be in geo coords, check
+            expect_xtile = tiles.num_tiles_x/2.0
+            expect_ytile = tiles.num_tiles_y/2.0
+            geo_x = min_lon + (max_lon-min_lon)/2.0
+            geo_y = min_lat + (max_lat-min_lat)/2.0
+            (xtile, ytile) = tiles.Geo2Tile(geo_x, geo_y)
+            msg = ('Expected tile (%f,%f) but got (%f,%f)'
+                   % (expect_xtile, expect_ytile, xtile, ytile))
+            self.assertAlmostEqual(expect_xtile, xtile, places=4, msg=msg)
+            self.assertAlmostEqual(expect_ytile, ytile, places=4, msg=msg)
+
+    suite = unittest.makeSuite(TestGMTTiles, 'test')
+    runner = unittest.TextTestRunner()
+    runner.run(suite)
+

@@ -55,7 +55,8 @@ class TestGMTTiles(unittest.TestCase):
         # read all tiles in all rows of all levels
         cache = gmt_local_tiles.GMTTiles(tiles_dir=TilesDir)
         for level in cache.levels:
-            info = cache.UseLevel(level)
+            cache.UseLevel(level)
+            info = cache.GetInfo(level)
             if info:
                 width_px = self.TileWidth * cache.num_tiles_x
                 height_px = self.TileHeight * cache.num_tiles_y
@@ -79,22 +80,20 @@ class TestGMTTiles(unittest.TestCase):
         # check that using level outside map levels returns None
         cache = gmt_local_tiles.GMTTiles(tiles_dir=TilesDir)
         level = cache.levels[-1] + 1      # get level # that DOESN'T exist
-        info = cache.UseLevel(level)
-        self.assertTrue(info is None,
-                        'Using bad level (%d) got info=%s' % (level, str(info)))
+        msg = "Using bad level (%d) didn't raise exception?" % level
+        with self.assertRaises(Exception, msg=msg):
+            cache.UseLevel(level)
 
         # check that reading tile outside map returns None
         cache = gmt_local_tiles.GMTTiles(tiles_dir=TilesDir)
-        level = cache.levels[0]
-        info = cache.UseLevel(level)
+        level = cache.levels[0] # known good level
+        cache.UseLevel(level)
         width_px = self.TileWidth * cache.num_tiles_x
         height_px = self.TileHeight * cache.num_tiles_y
         ppd_x = cache.ppd_x
         ppd_y = cache.ppd_y
         num_tiles_width = int(width_px / self.TileWidth)
         num_tiles_height = int(height_px / self.TileHeight)
-        self.assertFalse(info is None,
-                        'Using good level (%d) got info=%s' % (level, str(info)))
         bmp = cache.GetTile(num_tiles_width, num_tiles_height)
         self.assertTrue(bmp is None,
                         'Using bad coords (%d,%d) got bmp=%s'
@@ -114,7 +113,7 @@ class TestGMTTiles(unittest.TestCase):
         xgeo = 7.605916 # Deutsches Eck
         ygeo = 50.364444
         for level in [0, 1, 2, 3, 4]:
-            info = cache.UseLevel(level)
+            cache.UseLevel(level)
             (xtile, ytile) = cache.Geo2Tile(ygeo, xgeo)
             bmp = cache.GetTile(int(xtile), int(ytile))
 

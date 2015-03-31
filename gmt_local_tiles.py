@@ -69,8 +69,8 @@ class GMTTiles(tiles.Tiles):
     def __init__(self, tiles_dir=DefaultTileDir, tile_levels=None):
         """Initialise a GMT local tiles instance.
 
-        tiles_dir  tile cache directory, contains GMT tiles
-        tile_levels     list of tile levels to be served
+        tiles_dir    tile cache directory, contains GMT tiles
+        tile_levels  list of tile levels to be served
         """
 
         # open top-level GMT info file (it MUST be there!)
@@ -115,14 +115,12 @@ class GMTTiles(tiles.Tiles):
 
         if level not in self.levels:
             raise Exception("Level '%s' not used" % str(level))
-#            return None
         self.level = level
 
         # get tile info
         info = self.GetInfo(level)
         if info is None:            # level doesn't exist
             raise Exception("Level '%s' not used" % str(level))
-#            return None
         (self.num_tiles_x, self.num_tiles_y, self.ppd_x, self.ppd_y) = info
 
         # store partial path to level dir (small speedup)

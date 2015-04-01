@@ -1176,13 +1176,6 @@ class PySlip(_BufferedCanvas):
                 for lonlat in p:
                     (lon, lat) = lonlat
                     (x, y) = self.tiles.Geo2Tile(lat, lon)
-#                    (x, y) = self.tiles.ConvertGeo2View(lonlat,
-#                                                        self.view_offset_x,
-#                                                        self.view_offset_y,
-#                                                        self.view_llon,
-#                                                        self.view_tlat,
-#                                                        self.ppd_x,
-#                                                        self.ppd_y)
                     p_lonlat.append((x - self.view_offset_x + x_off,
                                      y - self.view_offset_y + y_off))
 
@@ -1354,13 +1347,6 @@ class PySlip(_BufferedCanvas):
 
         # get fractional tile coords of centre of view
         (xtile, ytile) = self.tiles.Geo2Tile(lat, lon)
-#        (xtile, ytile) = self.tiles.ConvertGeo2TileCoords(lat, lon, self.level,
-#                                                          ppd_x=self.ppd_x,
-#                                                          ppd_y=self.ppd_y,
-#                                                          map_tlat=self.map_tlat,
-#                                                          map_blat=self.map_blat,
-#                                                          map_llon=self.map_llon,
-#                                                          map_rlon=self.map_rlon)
         log('GotoPosition: xtile=%s, ytile=%s' % (str(xtile), str(ytile)))
 
         # now calculate view offsets, top, left, bottom and right
@@ -1444,13 +1430,6 @@ class PySlip(_BufferedCanvas):
             log('within view')
             (x, y) = self.tiles.Geo2Tile(lat, lon)
             return (x - self.view_offset_x, y - self.view_offset_y)
-#            return self.tiles.ConvertGeo2View(lonlat,
-#                                              self.view_offset_x,
-#                                              self.view_offset_y,
-#                                              self.view_llon,
-#                                              self.view_tlat,
-#                                              self.ppd_x,
-#                                              self.ppd_y)
 
         log('NOT within view, return None')
         return None
@@ -1567,31 +1546,12 @@ class PySlip(_BufferedCanvas):
         if not self.was_dragging:
             if self.is_box_select:
                 # possible box selection
-#                ll_corner_v = (self.sbox_1_x, self.sbox_1_y)
-#                tr_corner_v = (self.sbox_1_x + self.sbox_w,
-#                               self.sbox_1_y + self.sbox_h)
-
                 ll_corner_x = (self.sbox_1_x+self.view_offset_x) / self.tile_size_x
                 ll_corner_y = (self.sbox_1_y+self.view_offset_y) / self.tile_size_y
 
                 ll_corner_t = self.tiles.Tile2Geo(ll_corner_x, ll_corner_y)
                 tr_corner_t = self.tiles.Tile2Geo(ll_corner_x + 1.0,
                                                   ll_corner_y + 1.0)
-
-#                ll_corner_m = self.tiles.ConvertView2Geo(ll_corner_v,
-#                                                         self.view_offset_x,
-#                                                         self.view_offset_y,
-#                                                         self.map_llon,
-#                                                         self.map_tlat,
-#                                                         self.ppd_x,
-#                                                         self.ppd_y)
-#                tr_corner_m = self.tiles.ConvertView2Geo(tr_corner_v,
-#                                                         self.view_offset_x,
-#                                                         self.view_offset_y,
-#                                                         self.map_llon,
-#                                                         self.map_tlat,
-#                                                         self.ppd_x,
-#                                                         self.ppd_y)
 
                 # check each layer for a box select event
                 # we work on a copy as user response could change order
@@ -1621,14 +1581,6 @@ class PySlip(_BufferedCanvas):
                 clickpt_t_x = (clickpt_v_x_self.view_offset_x)/self.tile_size_x
                 clickpt_t_y = (clickpt_v_y_self.view_offset_y)/self.tile_size_y
                 clickpt_g = self.tiles.Tile2Geo(clickpt_t_x, clickpt_t_y)
-
-#                clickpt_m = self.tiles.ConvertView2Geo(clickpt_v,
-#                                                       self.view_offset_x,
-#                                                       self.view_offset_y,
-#                                                       self.map_llon,
-#                                                       self.map_tlat,
-#                                                       self.ppd_x,
-#                                                       self.ppd_y)
 
                 # check each layer for a point select callback
                 # we work on a copy as user callback could change order
@@ -1725,31 +1677,12 @@ class PySlip(_BufferedCanvas):
         # if any layers interested, inform of possible select
         if self.is_box_select:
             # possible box selection
-#            ll_corner_v = (self.sbox_1_x, self.sbox_1_y)
-#            tr_corner_v = (self.sbox_1_x + self.sbox_w,
-#                           self.sbox_1_y + self.sbox_h)
-
             ll_corner_x = (self.sbox_1_x+self.view_offset_x) / self.tile_size_x
             ll_corner_y = (self.sbox_1_y+self.view_offset_y) / self.tile_size_y
 
             ll_corner_g = self.tiles.Tile2Geo(ll_corner_x, ll_corner_y)
             tr_corner_g = self.tiles.Tile2Geo(ll_corner_x + self.sbox_w,
                                               ll_corner_y + self.sbox_h)
-
-#            ll_corner_m = self.tiles.ConvertView2Geo(ll_corner_v,
-#                                                     self.view_offset_x,
-#                                                     self.view_offset_y,
-#                                                     self.map_llon,
-#                                                     self.map_tlat,
-#                                                     self.ppd_x,
-#                                                     self.ppd_y)
-#            tr_corner_m = self.tiles.ConvertView2Geo(tr_corner_v,
-#                                                     self.view_offset_x,
-#                                                     self.view_offset_y,
-#                                                     self.map_llon,
-#                                                     self.map_tlat,
-#                                                     self.ppd_x,
-#                                                     self.ppd_y)
 
             # check each layer for a box select event
             # we work on a copy as user response could change order
@@ -1779,13 +1712,7 @@ class PySlip(_BufferedCanvas):
             clickpt_v_x = clickpt_v_x + self.view_offset_x
             clickpt_v_y = clickpt_v_y + self.view_offset_y
             clickpt_m = self.tiles.Tile2Geo(clickpt_v_x, clickpt_v_y)
-#            clickpt_m = self.tiles.ConvertView2Geo(clickpt_v,
-#                                                   self.view_offset_x,
-#                                                   self.view_offset_y,
-#                                                   self.map_llon,
-#                                                   self.map_tlat,
-#                                                   self.ppd_x,
-#                                                   self.ppd_y)
+
             # check each layer for a point select callback
             # we work on a copy as user callback could change order
             for id in self.layer_z_order[:]:
@@ -1979,14 +1906,6 @@ class PySlip(_BufferedCanvas):
         log('RecalcViewLonLatLimits: self.view_offset_x=%s, self.view_offset_y=%s' % (str(self.view_offset_x), str(self.view_offset_y)))
         log('RecalcViewLonLatLimits: self.map_llon=%s, self.map_tlat=%s' % (str(self.map_llon), str(self.map_tlat)))
 
-#        (self.view_llon, self.view_tlat) = \
-#                self.tiles.ConvertView2Geo((0, 0),
-#                                           self.view_offset_x,
-#                                           self.view_offset_y,
-#                                           self.map_llon,
-#                                           self.map_tlat,
-#                                           self.ppd_x,
-#                                           self.ppd_y)
         tltile_x = self.view_offset_x/self.tiles.tile_size_x
         tltile_y = self.view_offset_y/self.tiles.tile_size_y
         (self.view_tlat, self.view_llon) = self.tiles.Tile2Geo(tltile_x,
@@ -1994,14 +1913,6 @@ class PySlip(_BufferedCanvas):
         log('tltile_x=%s, tltile_y=%s' % (str(tltile_x), str(tltile_y)))
         log('self.view_tlat=%f, self.view_llon=%f' % (self.view_tlat, self.view_llon))
 
-#        (self.view_rlon, self.view_blat) = \
-#                self.tiles.ConvertView2Geo((self.view_width, self.view_height),
-#                                           self.view_offset_x,
-#                                           self.view_offset_y,
-#                                           self.map_llon,
-#                                           self.map_tlat,
-#                                           self.ppd_x,
-#                                           self.ppd_y)
         (self.view_blat, self.view_rlon) = self.tiles.Tile2Geo(tltile_x + 1.0,
                                                                tltile_y + 1.0)
         log('tltile_x+1.0=%s, tltile_y+1.0=%s' % (str(tltile_x+1.0), str(tltile_y+1.0)))
@@ -2409,13 +2320,6 @@ class PySlip(_BufferedCanvas):
                 tile_y = float(self.view_offset_y + posn_y)/self.tile_size_y
                 log('tile_x=%s, tile_y=%s' % (str(tile_x), str(tile_y)))
                 event.position = self.tiles.Tile2Geo(tile_x, tile_y)
-#                event.position = self.tiles.ConvertView2Geo(posn,
-#                                                            self.view_offset_x,
-#                                                            self.view_offset_y,
-#                                                            self.map_llon,
-#                                                            self.map_tlat,
-#                                                            self.ppd_x,
-#                                                            self.ppd_y)
             else:
                 event.position = None
             self.GetEventHandler().ProcessEvent(event)

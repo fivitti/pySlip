@@ -114,7 +114,7 @@ class TestGMTTiles(unittest.TestCase):
         ygeo = 50.364444
         for level in [0, 1, 2, 3, 4]:
             cache.UseLevel(level)
-            (xtile, ytile) = cache.Geo2Tile(ygeo, xgeo)
+            (xtile, ytile) = cache.Geo2Tile(xgeo, ygeo)
             bmp = cache.GetTile(int(xtile), int(ytile))
 
             pt_px_x = int((xtile - int(xtile)) * cache.tile_size_x)

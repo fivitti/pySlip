@@ -547,9 +547,6 @@ class PySlip(_BufferedCanvas):
         self.map_width = None           # map size in pixels
         self.map_height = None
 
-        self.ppd_x = 0                  # pixel_per_degree for current tileset
-        self.ppd_y = 0
-
         self.view_offset_x = 0          # map pixel offset at left & top of view
         self.view_offset_y = 0
 
@@ -834,7 +831,8 @@ class PySlip(_BufferedCanvas):
         where the image is displayed relative to the hotspot.
         """
 
-        log('AddImageLayer: map_rel=%s, data=%s' % (str(map_rel), str(data)))
+        log('AddImageLayer: map_rel=%s, visible=%s, data=%s'
+            % (str(map_rel), str(visible), str(data)))
 
         # get global attribute values
         default_placement = kwargs.get('placement',
@@ -1134,7 +1132,7 @@ class PySlip(_BufferedCanvas):
             dc = wx.GCDC(dc)		# allow transparent colours
             for (lon, lat, place,
                  radius, colour, x_off, y_off, pdata) in data:
-                pt = self.ConvertGeo2ViewMasked((lon, lat))
+                pt = self.ConvertGeo2ViewMasked(lon, lat)
                 if pt:
                     dc.SetPen(wx.Pen(colour))
                     dc.SetBrush(wx.Brush(colour))
@@ -1175,7 +1173,7 @@ class PySlip(_BufferedCanvas):
                 p_lonlat = []
                 for lonlat in p:
                     (lon, lat) = lonlat
-                    (x, y) = self.tiles.Geo2Tile(lat, lon)
+                    (x, y) = self.tiles.Geo2Tile(lon, lat)
                     p_lonlat.append((x - self.view_offset_x + x_off,
                                      y - self.view_offset_y + y_off))
 
@@ -1234,7 +1232,7 @@ class PySlip(_BufferedCanvas):
             for (lon, lat, bmap, w, h, place, x_off, y_off, idata) in images:
                 w2 = w / 2
                 h2 = h / 2
-                pt = self.ConvertGeo2ViewMasked((lon, lat))
+                pt = self.ConvertGeo2ViewMasked(lon, lat)
                 log('DrawImageLayer: lon=%s, lat=%s, pt=%s'
                         % (str(lon), str(lat), str(pt)))
                 if pt:
@@ -1272,7 +1270,7 @@ class PySlip(_BufferedCanvas):
                      fontname, fontsize, x_off, y_off, data) = t
 
                 # convert geo position to view (returns None if off-view)
-                pt = self.ConvertGeo2ViewMasked((lon, lat))
+                pt = self.ConvertGeo2ViewMasked(lon, lat)
                 if pt:
                     (x, y) = pt
 
@@ -1346,7 +1344,7 @@ class PySlip(_BufferedCanvas):
         log('GotoPosition: lon=%.4f, lat=%.4f' % (lon, lat))
 
         # get fractional tile coords of centre of view
-        (xtile, ytile) = self.tiles.Geo2Tile(lat, lon)
+        (xtile, ytile) = self.tiles.Geo2Tile(lon, lat)
         log('GotoPosition: xtile=%s, ytile=%s' % (str(xtile), str(ytile)))
 
         # now calculate view offsets, top, left, bottom and right
@@ -1411,16 +1409,16 @@ class PySlip(_BufferedCanvas):
     # Convert between geo and view coordinates
     ######
 
-    def ConvertGeo2ViewMasked(self, lonlat):
+    def ConvertGeo2ViewMasked(self, lon, lat):
         """Convert a geo (lon+lat) position to view pixel coords.
 
-        lonlat  (longitude, latitude) of point
+        lon  longitude of point
+        lat  latitude of point
 
-        Return screen pixels coordinates of the point (x,y) or None
+        Return screen pixels coordinates of the point (lon,lat) or None
         if point is off-view.
         """
 
-        (lon, lat) = lonlat
         log('ConvertGeo2ViewMasked: lon=%s, lat=%s' % (str(lon), str(lat)))
         log('ConvertGeo2ViewMasked: .view_llon=%s, .view_rlon=%s, .view_blat=%s, .view_tlat=%s'
                 % (str(self.view_llon), str(self.view_rlon), str(self.view_blat), str(self.view_tlat)))
@@ -1428,7 +1426,7 @@ class PySlip(_BufferedCanvas):
         if (self.view_llon <= lon <= self.view_rlon and
                 self.view_blat <= lat <= self.view_tlat):
             log('within view')
-            (x, y) = self.tiles.Geo2Tile(lat, lon)
+            (x, y) = self.tiles.Geo2Tile(lon, lat)
             return (x - self.view_offset_x, y - self.view_offset_y)
 
         log('NOT within view, return None')
@@ -1902,7 +1900,6 @@ class PySlip(_BufferedCanvas):
         values have been set.  All are map pixel values.
         """
 
-        log('RecalcViewLonLatLimits: self.ppd_x=%.3f, self.ppd_y=%.3f' % (self.ppd_x, self.ppd_y))
         log('RecalcViewLonLatLimits: self.view_offset_x=%s, self.view_offset_y=%s' % (str(self.view_offset_x), str(self.view_offset_y)))
         log('RecalcViewLonLatLimits: self.map_llon=%s, self.map_tlat=%s' % (str(self.map_llon), str(self.map_tlat)))
 
@@ -1936,8 +1933,6 @@ class PySlip(_BufferedCanvas):
             self.level = level
             self.map_width = self.tiles.num_tiles_x * self.tiles.tile_size_x
             self.map_height = self.tiles.num_tiles_y * self.tiles.tile_size_y
-#            (self.map_width, self.map_height,
-#                 self.ppd_x, self.ppd_y) = map_extent
             (self.map_llon, self.map_rlon,
                     self.map_blat, self.map_tlat) = self.tiles.extent
 
@@ -1945,7 +1940,6 @@ class PySlip(_BufferedCanvas):
             self.RaiseLevelChangeEvent(level)
 
             log('ZoomToLevel: self.map_tlat=%.3f, self.map_blat=%.3f' % (self.map_tlat, self.map_blat))
-            log('ZoomToLevel: self.ppd_x=%.3f, self.ppd_y=%.3f' % (self.ppd_x, self.ppd_y))
 
             return True
 

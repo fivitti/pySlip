@@ -6,7 +6,7 @@
 import wx
 
 import pyslip
-import local_tiles
+from gmt_local_tiles import GMTTiles as Tiles
 
 
 ######
@@ -61,7 +61,7 @@ class TestFrame(wx.Frame):
         self.panel.ClearBackground()
 
         # create the tile source object
-        self.tile_src = local_tiles.LocalTiles(TileDirectory, None)
+        self.tile_src = Tiles(TileDirectory, None)
 
         # build the GUI
         self.make_gui(self.panel)

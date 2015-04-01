@@ -20,7 +20,8 @@ from wx.lib.embeddedimage import PyEmbeddedImage
 
 
 # where the OSM tiles are cached on disk
-TilesDir = 'tiles'
+TilesDir = 'osm_tiles'
+
 
 DefaultAppSize = (512, 512)
 DemoName = 'OSM Tiles Cache Test'
@@ -49,21 +50,21 @@ class TestOSMTiles(unittest.TestCase):
     TileWidth = 256
     TileHeight = 256
 
-    def XtestSimple(self):
+    def testSimple(self):
         """Simple tests."""
 
         # read all tiles in all rows of all levels
         cache = osm_tiles.OSMTiles(tiles_dir=TilesDir)
         for level in cache.levels:
-            info = cache.UseLevel(level)
+            cache.UseLevel(level)
+            info = cache.GetInfo(level)
             if info:
                 (width_px, height_px, ppd_x, ppd_y) = info
                 num_tiles_width = int(width_px / self.TileWidth)
                 num_tiles_height = int(height_px / self.TileHeight)
-#                for x in range(num_tiles_width):
+                y = 0
+                for x in range(num_tiles_width):
 #                    for y in range(num_tiles_height):
-                for x in range(4):
-                    for y in range(4):
                         bmp = cache.GetTile(x, y)
                         msg = "Can't find tile (%d,%d,%d)!?" % (level, x, y)
                         self.failIf(bmp is None, msg)

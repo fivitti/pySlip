@@ -18,17 +18,17 @@ DefaultAppSize = (600, 400)
 TileDirectory = 'tiles'
 MinTileLevel = 0
 InitViewLevel = 2
-InitViewPosition = (133.0, -27.0)
+InitViewPosition = (158.0, -20.0)
 
 arrow = 'graphics/arrow_right.png'
 
-ImageMapData = [(130, -21, arrow, {'offset_x':   0, 'offset_y': 0}),
-                (130, -22, arrow, {'offset_x':  -5, 'offset_y': 0}),
-                (130, -23, arrow, {'offset_x': -10, 'offset_y': 0}),
-                (130, -24, arrow, {'offset_x': -15, 'offset_y': 0}),
-                (130, -25, arrow, {'offset_x': -20, 'offset_y': 0}),
-                (130, -26, arrow, {'offset_x': -25, 'offset_y': 0}),
-                (130, -27, arrow, {'offset_x': -30, 'offset_y': 0})
+ImageMapData = [(158, -17, arrow, {'offset_x': 0, 'offset_y': 0}),
+                (158, -18, arrow, {'offset_x': 0, 'offset_y': 0}),
+                (158, -19, arrow, {'offset_x': 0, 'offset_y': 0}),
+                (158, -20, arrow, {'offset_x': 0, 'offset_y': 0}),
+                (158, -21, arrow, {'offset_x': 0, 'offset_y': 0}),
+                (158, -22, arrow, {'offset_x': 0, 'offset_y': 0}),
+                (158, -23, arrow, {'offset_x': 0, 'offset_y': 0})
                ]
 
 PolygonMapData = [(((130,-21),(130,-27)),
@@ -51,7 +51,9 @@ class TestFrame(wx.Frame):
 
         # create the PySlip widget
         self.pyslip = pyslip.PySlip(self, tile_src=self.tile_src,
-                                    min_level=MinTileLevel)
+                                    min_level=MinTileLevel,
+                                    size=DefaultAppSize)
+        self.Fit()
 
         # set initial view position
         self.pyslip.GotoLevelAndPosition(InitViewLevel, InitViewPosition)

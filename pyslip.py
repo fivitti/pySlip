@@ -166,6 +166,8 @@ class _BufferedCanvas(wx.Panel):
 
         self.view_width = width
         self.view_height = height
+        log('OnSize: .view_width=%d, .view_height=%d'
+            % (self.view_width, self.view_height))
 
         # call onSize callback, if registered
         if self.onSizeCallback:
@@ -1427,7 +1429,13 @@ class PySlip(_BufferedCanvas):
                 self.view_blat <= lat <= self.view_tlat):
             log('within view')
             (x, y) = self.tiles.Geo2Tile(lon, lat)
-            return (x - self.view_offset_x, y - self.view_offset_y)
+            log('ConvertGeo2ViewMasked: Geo2Tile(%s,%s) returned (%s,%s)'
+                % (str(lon), str(lat), str(x), str(y)))
+            log('ConvertGeo2ViewMasked: .view_offset_x=%s, .view_offset_y=%s'
+                % (str(self.view_offset_x), str(self.view_offset_y)))
+            res_x = (x * self.tiles.tile_size_x) - self.view_offset_x
+            res_y = (y * self.tiles.tile_size_y) - self.view_offset_y
+            return (res_x, res_y)
 
         log('NOT within view, return None')
         return None
@@ -1576,8 +1584,8 @@ class PySlip(_BufferedCanvas):
                 # possible point selection
                 clickpt_v = event.GetPositionTuple()
                 (clickpt_v_x, clickpt_v_y) = clickpt_v
-                clickpt_t_x = (clickpt_v_x_self.view_offset_x)/self.tile_size_x
-                clickpt_t_y = (clickpt_v_y_self.view_offset_y)/self.tile_size_y
+                clickpt_t_x = (clickpt_v_x+self.view_offset_x)/self.tile_size_x
+                clickpt_t_y = (clickpt_v_y+self.view_offset_y)/self.tile_size_y
                 clickpt_g = self.tiles.Tile2Geo(clickpt_t_x, clickpt_t_y)
 
                 # check each layer for a point select callback
@@ -1895,25 +1903,35 @@ class PySlip(_BufferedCanvas):
         Assumes only:
             self.view_offset_x
             self.view_offset_y
-            self.view_width
-            self.view_height
+            self.tiles.tile_size_x
+            self.tiles.tile_size_y
         values have been set.  All are map pixel values.
         """
 
-        log('RecalcViewLonLatLimits: self.view_offset_x=%s, self.view_offset_y=%s' % (str(self.view_offset_x), str(self.view_offset_y)))
-        log('RecalcViewLonLatLimits: self.map_llon=%s, self.map_tlat=%s' % (str(self.map_llon), str(self.map_tlat)))
+        log('RecalcViewLonLatLimits: .view_offset_x=%s, .view_offset_y=%s'
+            % (str(self.view_offset_x), str(self.view_offset_y)))
+        log('RecalcViewLonLatLimits: .tiles.tile_size_x=%s, .tiles.tile_size_y=%s'
+            % (str(self.tiles.tile_size_x), str(self.tiles.tile_size_y)))
 
-        tltile_x = self.view_offset_x/self.tiles.tile_size_x
-        tltile_y = self.view_offset_y/self.tiles.tile_size_y
-        (self.view_tlat, self.view_llon) = self.tiles.Tile2Geo(tltile_x,
+        # get geo coords of top-left of view
+        tltile_x = float(self.view_offset_x)/self.tiles.tile_size_x
+        tltile_y = float(self.view_offset_y)/self.tiles.tile_size_y
+        log('RecalcViewLonLatLimits: TL: tltile_x=%s, tltile_y=%s'
+            % (str(tltile_x), str(tltile_y)))
+        (self.view_llon, self.view_tlat) = self.tiles.Tile2Geo(tltile_x,
                                                                tltile_y)
-        log('tltile_x=%s, tltile_y=%s' % (str(tltile_x), str(tltile_y)))
-        log('self.view_tlat=%f, self.view_llon=%f' % (self.view_tlat, self.view_llon))
+        log('RecalcViewLonLatLimits: self.view_tlat=%f, self.view_llon=%f'
+            % (self.view_tlat, self.view_llon))
 
-        (self.view_blat, self.view_rlon) = self.tiles.Tile2Geo(tltile_x + 1.0,
-                                                               tltile_y + 1.0)
-        log('tltile_x+1.0=%s, tltile_y+1.0=%s' % (str(tltile_x+1.0), str(tltile_y+1.0)))
-        log('self.view_blat=%f, self.view_rlon=%f' % (self.view_blat, self.view_rlon))
+        # then get geo coords of bottom-right of view
+        tltile_x = float(self.view_offset_x+self.view_width)/self.tiles.tile_size_x
+        tltile_y = float(self.view_offset_y+self.view_height)/self.tiles.tile_size_y
+        log('RecalcViewLonLatLimits: BR: tltile_x=%s, tltile_y=%s'
+            % (str(tltile_x), str(tltile_y)))
+        (self.view_rlon, self.view_blat) = self.tiles.Tile2Geo(tltile_x,
+                                                               tltile_y)
+        log('RecalcViewLonLatLimits: .view_blat=%f, .view_rlon=%f'
+            % (self.view_blat, self.view_rlon))
 
         log('RecalcViewLonLatLimits: finished')
 
@@ -1926,7 +1944,8 @@ class PySlip(_BufferedCanvas):
         Maintain centre of map, if possible.
         """
 
-        log('ZoomToLevel: level=%d' % level)
+        log('ZoomToLevel: level=%d, .min_level=%d, .max_level=%d'
+            % (level, self.min_level, self.max_level))
 
         if self.min_level <= level <= self.max_level:
             self.tiles.UseLevel(level)
@@ -2016,8 +2035,8 @@ class PySlip(_BufferedCanvas):
         """Get list of points inside box.
 
         layer  reference to layer object we are working on
-        p1     one corner point of selection box (tile coords)
-        p2     opposite corner point of selection box (tile coords)
+        p1     one corner point of selection box (tile coords, (x,y))
+        p2     opposite corner point of selection box (tile coords, (x,y))
 
         We have to figure out which corner is which.
 
@@ -2087,8 +2106,8 @@ class PySlip(_BufferedCanvas):
         """Get list of images inside box p1-p2.
 
         layer  reference to layer object we are working on
-        p1     one corner point of selection box (tile coords)
-        p2     opposite corner point of selection box (tile coords)
+        p1     one corner point of selection box (tile coords, (x,y))
+        p2     opposite corner point of selection box (tile coords, (x,y))
 
         We have to figure out which corner is which.
 
@@ -2137,8 +2156,8 @@ class PySlip(_BufferedCanvas):
         """Get list of polygons inside box p1-p2.
 
         layer  reference to layer object we are working on
-        p1     one corner point of selection box (tile coords)
-        p2     opposite corner point of selection box (tile coords)
+        p1     one corner point of selection box (tile coords, (x,y))
+        p2     opposite corner point of selection box (tile coords, (x,y))
 
         We have to figure out which corner is which.
 
@@ -2178,8 +2197,8 @@ class PySlip(_BufferedCanvas):
         """Get list of text objects inside box p1-p2.
 
         layer  reference to layer object we are working on
-        p1     one corner point of selection box (tile coords)
-        p2     opposite corner point of selection box (tile coords)
+        p1     one corner point of selection box (tile coords, (x,y))
+        p2     opposite corner point of selection box (tile coords, (x,y))
 
         We have to figure out which corner is which.
 

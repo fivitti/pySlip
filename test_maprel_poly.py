@@ -18,7 +18,7 @@ DefaultAppSize = (600, 400)
 TileDirectory = 'tiles'
 MinTileLevel = 0
 InitViewLevel = 2
-InitViewPosition = (105.0, 20.0)
+InitViewPosition = (145.0, -10.0)
 
 
 ################################################################################
@@ -43,79 +43,23 @@ class TestFrame(wx.Frame):
                           title=('PySlip %s - map-relative polygon test'
                                  % pyslip.__version__))
         self.SetMinSize(DefaultAppSize)
-        self.panel = wx.Panel(self, wx.ID_ANY)
-        self.panel.SetBackgroundColour(wx.WHITE)
-        self.panel.ClearBackground()
-
-        # build the GUI
-        self.make_gui(self.panel)
-
-        # do initialisation stuff - all the application stuff
-        self.init()
-
-        # add test text layer
-        self.poly_layer = self.pyslip.AddPolygonLayer(PolyMapData,
-                                                      map_rel=True,
-                                                      name='<poly_map_layer>')
-        self.text_layer = self.pyslip.AddTextLayer(TextMapData, map_rel=True,
-                                                   name='<text_map_layer>')
-
-
-        # finally, set up application window position
-        self.Centre()
-
-#####
-# Build the GUI
-#####
-
-    def make_gui(self, parent):
-        """Create application GUI."""
-
-        # start application layout
-        all_display = wx.BoxSizer(wx.HORIZONTAL)
-        parent.SetSizer(all_display)
-
-        # put map view in left of horizontal box
-        sl_box = self.make_gui_view(parent)
-        all_display.Add(sl_box, proportion=1, border=1, flag=wx.EXPAND)
-                        
-        parent.SetSizerAndFit(all_display)
-
-    def make_gui_view(self, parent):
-        """Build the map view widget
-
-        parent  reference to the widget parent
-
-        Returns the static box sizer.
-        """
 
         # create the tile source object
-        self.tile_src = Tiles(TileDirectory, None)
+        self.tile_src = Tiles(TileDirectory)
 
         # create gui objects
-        sb = AppStaticBox(parent, '')
-        self.pyslip = pyslip.PySlip(parent, tile_src=self.tile_src,
-                                    min_level=MinTileLevel)
+        self.pyslip = pyslip.PySlip(self, tile_src=self.tile_src,
+                                    min_level=MinTileLevel,
+                                    size=DefaultAppSize)
+        self.Fit()
 
-        # lay out objects
-        box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
-        box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
-
-        return box
-
-    ######
-    # Finish initialization of data, etc
-    ######
-
-    def init(self):
-        global PolyMapData, TextMapData
-
+        # create polygon data
         open_poly = ((145,5),(135,5),(135,-5),(145,-5))
         closed_poly = ((145,-20),(135,-20),(135,-10),(145,-10))
         filled_poly = ((170,-20),(160,-20),(160,-10),(170,-10))
         closed_filled_poly = ((170,5),(160,5),(160,-5),(170,-5))
 
-        PolyMapData = [[open_poly, {'width': 2}],
+        polymapdata = [[open_poly, {'width': 2}],
                        [closed_poly, {'width': 10, 'color': '#00ff0040',
                                       'closed': True}],
                        [filled_poly, {'colour': 'blue',
@@ -126,7 +70,7 @@ class TestFrame(wx.Frame):
                                              'filled': True,
                                              'fillcolour': 'yellow'}]]
 
-        TextMapData = [(135, 5, 'open', {'placement': 'ce'}),
+        textmapdata = [(135, 5, 'open', {'placement': 'ce'}),
                        (135, -10, 'closed', {'placement': 'ce'}),
                        (170, -10, 'open but filled (translucent)', {'placement': 'cw'}),
                        (170, 5, 'closed & filled (solid)', {'placement': 'cw'}),
@@ -135,8 +79,18 @@ class TestFrame(wx.Frame):
         # set initial view position
         self.pyslip.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
 
-        # force pyslip initialisation
-        self.pyslip.OnSize()
+        # add test text layer
+        self.poly_layer = self.pyslip.AddPolygonLayer(polymapdata,
+                                                      map_rel=True,
+                                                      name='<poly_map_layer>',
+                                                      size=DefaultAppSize)
+        self.text_layer = self.pyslip.AddTextLayer(textmapdata, map_rel=True,
+                                                   name='<text_map_layer>')
+
+
+        # finally, set up application window position
+        self.Centre()
+        self.Show(True)
 
 ################################################################################
 

@@ -196,7 +196,7 @@ class _Layer(object):
         map_rel      True if layer is map-relative, else layer-relative
         visible      layer visibility
         show_levels  list of levels at which to auto-show the level
-        selectable   True if select operates on this layer, Else False
+        selectable   True if select operates on this layer, else False
         name         the name of the layer (for debug)
         type         a layer 'type' flag
         """
@@ -529,6 +529,7 @@ class PySlip(_BufferedCanvas):
         """
 
         # create and initialise the base panel
+#        super(_BufferedCanvas, self).__init__(parent=parent, **kwargs)
         _BufferedCanvas.__init__(self, parent=parent, **kwargs)
         self.SetBackgroundColour(PySlip.BackgroundColour)
 
@@ -1166,18 +1167,24 @@ class PySlip(_BufferedCanvas):
         map_rel  points relative to map if True, else relative to view
         """
 
+        log('DrawPolygonLayer: dc=%s, map_rel=%s, data=%s'
+            % (str(dc), str(map_rel), str(data)))
+
         # draw polygons on map/view
         if map_rel:
             dc = wx.GCDC(dc)		# allow transparent colours
             for (p, place, width, colour, closed,
                  filled, fillcolour, x_off, y_off, pdata) in data:
                 # gather all polygon points as view coords
+                log('DrawPolygonLayer: MAP: p=%s' % str(p))
                 p_lonlat = []
                 for lonlat in p:
                     (lon, lat) = lonlat
                     (x, y) = self.tiles.Geo2Tile(lon, lat)
-                    p_lonlat.append((x - self.view_offset_x + x_off,
-                                     y - self.view_offset_y + y_off))
+                    v_x = x*self.tiles.tile_size_x - self.view_offset_x + x_off
+                    v_y = y*self.tiles.tile_size_y - self.view_offset_y + y_off
+                    p_lonlat.append((v_x, v_y))
+                log('DrawPolygonLayer: AFTER, p_lonlat=%s' % str(p_lonlat))
 
                 dc.SetPen(wx.Pen(colour, width=width))
 

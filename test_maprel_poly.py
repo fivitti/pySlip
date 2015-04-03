@@ -55,9 +55,11 @@ class TestFrame(wx.Frame):
 
         # create polygon data
         open_poly = ((145,5),(135,5),(135,-5),(145,-5))
-        closed_poly = ((145,-20),(135,-20),(135,-10),(145,-10))
+        #closed_poly = ((145,-20),(135,-20),(135,-10),(145,-10))
+        closed_poly = ((170,5),(160,5),(160,-5),(170,-5))
         filled_poly = ((170,-20),(160,-20),(160,-10),(170,-10))
-        closed_filled_poly = ((170,5),(160,5),(160,-5),(170,-5))
+        #closed_filled_poly = ((170,5),(160,5),(160,-5),(170,-5))
+        closed_filled_poly = ((145,-20),(135,-20),(135,-10),(145,-10))
 
         polymapdata = [[open_poly, {'width': 2}],
                        [closed_poly, {'width': 10, 'color': '#00ff0040',
@@ -70,10 +72,12 @@ class TestFrame(wx.Frame):
                                              'filled': True,
                                              'fillcolour': 'yellow'}]]
 
-        textmapdata = [(135, 5, 'open', {'placement': 'ce'}),
-                       (135, -10, 'closed', {'placement': 'ce'}),
-                       (170, -10, 'open but filled (translucent)', {'placement': 'cw'}),
-                       (170, 5, 'closed & filled (solid)', {'placement': 'cw'}),
+        textmapdata = [(135, 5, 'open', {'placement': 'ce', 'radius': 0}),
+                       (170, 5, 'closed', {'placement': 'cw', 'radius': 0}),
+                       (170, -10, 'open but filled (translucent)',
+                           {'placement': 'cw', 'radius': 0}),
+                       (135, -10, 'closed & filled (solid)',
+                           {'placement': 'ce', 'radius': 0}),
                       ]
 
         # set initial view position

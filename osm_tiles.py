@@ -259,18 +259,32 @@ class OSMCache(pycacheback.pyCacheBack):
         bitmap = image.ConvertToBitmap()
         return bitmap
 
-    def _put_to_back(self, image, level, x, y):
+    def _put_to_back(self, key, value):
         """Put a bitmap into on-disk cache.
 
-        image  the wx.Image to save
-        key    a tuple: (level, x, y)
-               where level  level for bitmap
-                     x      integer tile coordinate
-                     y      integer tile coordinate
+        value  the wx.Image to save
+        key     a tuple: (level, x, y)
+                where level  level for bitmap
+                      x      integer tile coordinate
+                      y      integer tile coordinate
         """
 
         tile_path = os.path.join(self._tiles_dir, TilePath % key)
-        image.SaveFile(tile_path, wx.BITMAP_TYPE_JPEG)
+        log('SAVING: tile_path=%s' % str(tile_path))
+        value.SaveFile(tile_path, wx.BITMAP_TYPE_JPEG)
+
+#    def _put_to_back(self, image, level, x, y):
+#        """Put a bitmap into on-disk cache.
+#
+#        image  the wx.Image to save
+#        key    a tuple: (level, x, y)
+#               where level  level for bitmap
+#                     x      integer tile coordinate
+#                     y      integer tile coordinate
+#        """
+#
+#        tile_path = os.path.join(self._tiles_dir, TilePath % key)
+#        image.SaveFile(tile_path, wx.BITMAP_TYPE_JPEG)
 
 ################################################################################
 # Worker class for internet tile retrieval
@@ -311,7 +325,7 @@ class TileWorker(threading.Thread):
                 else:
                     # tile not available!
                     image = self.error_tile_image
-                image.SaveFile('osm_%d_%d_%d.jpg' % (level, x, y), wx.BITMAP_TYPE_JPEG)
+#                image.SaveFile('osm_%d_%d_%d.jpg' % (level, x, y), wx.BITMAP_TYPE_JPEG)
                 wx.CallAfter(self.callafter, level, x, y, image)
             except urllib2.HTTPError, e:
                 log('ERROR getting tile %d,%d,%d from %s\n%s'
@@ -554,7 +568,7 @@ class OSMTiles(tiles.Tiles):
         # convert image to bitmap, save in cache
         bitmap = image.ConvertToBitmap()
 
-        image.SaveFile('osm_%d_%d_%d.jpg' % (level, x, y), wx.BITMAP_TYPE_JPEG)
+#        image.SaveFile('osm_%d_%d_%d.jpg' % (level, x, y), wx.BITMAP_TYPE_JPEG)
         
         self._cache_tile(image, bitmap, level, x, y)
 
@@ -584,7 +598,7 @@ class OSMTiles(tiles.Tiles):
         """
 
         self.cache[(level, x, y)] = bitmap
-        self.cache._put_to_back(image, level, x, y)
+        self.cache._put_to_back((level, x, y), image)
 
     def Geo2Tile(self, xgeo, ygeo):
         """Convert geo to tile fractional coordinates for level in use.

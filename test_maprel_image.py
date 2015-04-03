@@ -31,7 +31,7 @@ ImageMapData = [(158, -17, arrow, {'offset_x': 0, 'offset_y': 0}),
                 (158, -23, arrow, {'offset_x': 0, 'offset_y': 0})
                ]
 
-PolygonMapData = [(((130,-21),(130,-27)),
+PolygonMapData = [(((158,-17),(158,-23)),
                       {'width': 1, 'colour': 'black', 'filled': False})
                  ]
 

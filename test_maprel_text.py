@@ -35,18 +35,6 @@ TextMapData = [(151.20, -33.85, 'Sydney cc', {'placement': 'cc'}),
 
 
 ################################################################################
-# Override the wx.StaticBox class to show our style
-################################################################################
-
-class AppStaticBox(wx.StaticBox):
-    
-    def __init__(self, parent, label, *args, **kwargs):
-        if label:
-            label = '  ' + label + '  '
-        wx.StaticBox.__init__(self, parent, wx.ID_ANY, label,
-                              *args, **kwargs)
-                                            
-################################################################################
 # The main application frame
 ################################################################################
 
@@ -64,7 +52,12 @@ class TestFrame(wx.Frame):
         self.tile_src = Tiles(TileDirectory, None)
 
         # build the GUI
-        self.make_gui(self.panel)
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel.SetSizer(box)
+        self.pyslip = pyslip.PySlip(self.panel, tile_src=self.tile_src,
+                                    min_level=MinTileLevel)
+        box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
+        self.panel.SetSizerAndFit(box)
 
         # add test test layer
         self.text_layer = self.pyslip.AddTextLayer(TextMapData,
@@ -88,11 +81,9 @@ class TestFrame(wx.Frame):
         # start application layout
         all_display = wx.BoxSizer(wx.HORIZONTAL)
         parent.SetSizer(all_display)
-
-        # put map view in left of horizontal box
-        sl_box = self.make_gui_view(parent)
-        all_display.Add(sl_box, proportion=1, border=1, flag=wx.EXPAND)
-                        
+        self.pyslip = pyslip.PySlip(parent, tile_src=self.tile_src,
+                                    min_level=MinTileLevel)
+        all_display.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
         parent.SetSizerAndFit(all_display)
 
     def make_gui_view(self, parent):

@@ -45,15 +45,20 @@ class TestFrame(wx.Frame):
                           title=('PySlip %s - map-relative image test'
                                  % pyslip.__version__))
         self.SetMinSize(DefaultAppSize)
+        self.panel = wx.Panel(self, wx.ID_ANY)
+        self.panel.SetBackgroundColour(wx.WHITE)
+        self.panel.ClearBackground()
 
         # create the tile source object
         self.tile_src = Tiles(TileDirectory)
 
-        # create the PySlip widget
-        self.pyslip = pyslip.PySlip(self, tile_src=self.tile_src,
-                                    min_level=MinTileLevel,
-                                    size=DefaultAppSize)
-        self.Fit()
+        # build the GUI
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel.SetSizer(box)
+        self.pyslip = pyslip.PySlip(self.panel, tile_src=self.tile_src,
+                                    min_level=MinTileLevel)
+        box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
+        self.panel.SetSizerAndFit(box)
 
         # set initial view position
         self.pyslip.GotoLevelAndPosition(InitViewLevel, InitViewPosition)

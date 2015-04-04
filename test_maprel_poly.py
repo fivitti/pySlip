@@ -18,21 +18,34 @@ DefaultAppSize = (600, 400)
 TileDirectory = 'tiles'
 MinTileLevel = 0
 InitViewLevel = 2
-InitViewPosition = (145.0, -10.0)
+InitViewPosition = (152.0, -8.0)
+
+# create polygon data
+OpenPoly = ((145,5),(135,5),(135,-5),(145,-5))
+ClosedPoly = ((170,5),(160,5),(160,-5),(170,-5))
+FilledPoly = ((170,-20),(160,-20),(160,-10),(170,-10))
+ClosedFilledPoly = ((145,-20),(135,-20),(135,-10),(145,-10))
+
+PolyMapData = [[OpenPoly, {'width': 2}],
+               [ClosedPoly, {'width': 10, 'color': '#00ff0040',
+                             'closed': True}],
+               [FilledPoly, {'colour': 'blue',
+                             'filled': True,
+                             'fillcolour': '#00ff0022'}],
+               [ClosedFilledPoly, {'colour': 'black',
+                                   'closed': True,
+                                   'filled': True,
+                                   'fillcolour': 'yellow'}]]
+
+TextMapData = [(135, 5, 'open', {'placement': 'ce', 'radius': 0}),
+               (170, 5, 'closed', {'placement': 'cw', 'radius': 0}),
+               (170, -10, 'open but filled (translucent)',
+                   {'placement': 'cw', 'radius': 0}),
+               (135, -10, 'closed & filled (solid)',
+                   {'placement': 'ce', 'radius': 0}),
+              ]
 
 
-################################################################################
-# Override the wx.StaticBox class to show our style
-################################################################################
-
-class AppStaticBox(wx.StaticBox):
-    
-    def __init__(self, parent, label, *args, **kwargs):
-        if label:
-            label = '  ' + label + '  '
-        wx.StaticBox.__init__(self, parent, wx.ID_ANY, label,
-                              *args, **kwargs)
-                                            
 ################################################################################
 # The main application frame
 ################################################################################
@@ -43,52 +56,30 @@ class TestFrame(wx.Frame):
                           title=('PySlip %s - map-relative polygon test'
                                  % pyslip.__version__))
         self.SetMinSize(DefaultAppSize)
+        self.panel = wx.Panel(self, wx.ID_ANY)
+        self.panel.SetBackgroundColour(wx.WHITE)
+        self.panel.ClearBackground()
 
         # create the tile source object
-        self.tile_src = Tiles(TileDirectory)
+        self.tile_src = Tiles(TileDirectory, None)
 
-        # create gui objects
-        self.pyslip = pyslip.PySlip(self, tile_src=self.tile_src,
-                                    min_level=MinTileLevel,
-                                    size=DefaultAppSize)
-        self.Fit()
-
-        # create polygon data
-        open_poly = ((145,5),(135,5),(135,-5),(145,-5))
-        #closed_poly = ((145,-20),(135,-20),(135,-10),(145,-10))
-        closed_poly = ((170,5),(160,5),(160,-5),(170,-5))
-        filled_poly = ((170,-20),(160,-20),(160,-10),(170,-10))
-        #closed_filled_poly = ((170,5),(160,5),(160,-5),(170,-5))
-        closed_filled_poly = ((145,-20),(135,-20),(135,-10),(145,-10))
-
-        polymapdata = [[open_poly, {'width': 2}],
-                       [closed_poly, {'width': 10, 'color': '#00ff0040',
-                                      'closed': True}],
-                       [filled_poly, {'colour': 'blue',
-                                      'filled': True,
-                                      'fillcolour': '#00ff0022'}],
-                       [closed_filled_poly, {'colour': 'black',
-                                             'closed': True,
-                                             'filled': True,
-                                             'fillcolour': 'yellow'}]]
-
-        textmapdata = [(135, 5, 'open', {'placement': 'ce', 'radius': 0}),
-                       (170, 5, 'closed', {'placement': 'cw', 'radius': 0}),
-                       (170, -10, 'open but filled (translucent)',
-                           {'placement': 'cw', 'radius': 0}),
-                       (135, -10, 'closed & filled (solid)',
-                           {'placement': 'ce', 'radius': 0}),
-                      ]
+        # build the GUI
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel.SetSizer(box)
+        self.pyslip = pyslip.PySlip(self.panel, tile_src=self.tile_src,
+                                    min_level=MinTileLevel)
+        box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
+        self.panel.SetSizerAndFit(box)
 
         # set initial view position
         self.pyslip.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
 
         # add test text layer
-        self.poly_layer = self.pyslip.AddPolygonLayer(polymapdata,
+        self.poly_layer = self.pyslip.AddPolygonLayer(PolyMapData,
                                                       map_rel=True,
                                                       name='<poly_map_layer>',
                                                       size=DefaultAppSize)
-        self.text_layer = self.pyslip.AddTextLayer(textmapdata, map_rel=True,
+        self.text_layer = self.pyslip.AddTextLayer(TextMapData, map_rel=True,
                                                    name='<text_map_layer>')
 
 

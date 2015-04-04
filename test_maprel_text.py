@@ -18,7 +18,7 @@ DefaultAppSize = (600, 400)
 TileDirectory = 'tiles'
 MinTileLevel = 0
 InitViewLevel = 2
-InitViewPosition = (85.0, -5.0)
+InitViewPosition = (133.87, -23.7)      # Alice Springs                                                                             
 
 TextMapData = [(151.20, -33.85, 'Sydney cc', {'placement': 'cc'}),
                (144.95, -37.84, 'Melbourne ne', {'placement': 'ne'}),
@@ -58,6 +58,9 @@ class TestFrame(wx.Frame):
                                     min_level=MinTileLevel)
         box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
         self.panel.SetSizerAndFit(box)
+        self.panel.Layout()
+        self.Centre()
+        self.Show(True)
 
         # add test test layer
         self.text_layer = self.pyslip.AddTextLayer(TextMapData,
@@ -67,9 +70,6 @@ class TestFrame(wx.Frame):
 
         # set initial view position
         self.pyslip.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
-
-        # finally, set up application window position
-        self.Centre()
 
 #####
 # Build the GUI

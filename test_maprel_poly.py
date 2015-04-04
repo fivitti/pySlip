@@ -70,6 +70,9 @@ class TestFrame(wx.Frame):
                                     min_level=MinTileLevel)
         box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
         self.panel.SetSizerAndFit(box)
+        self.panel.Layout()
+        self.Centre()
+        self.Show(True)
 
         # set initial view position
         self.pyslip.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
@@ -81,11 +84,6 @@ class TestFrame(wx.Frame):
                                                       size=DefaultAppSize)
         self.text_layer = self.pyslip.AddTextLayer(TextMapData, map_rel=True,
                                                    name='<text_map_layer>')
-
-
-        # finally, set up application window position
-        self.Centre()
-        self.Show(True)
 
 ################################################################################
 

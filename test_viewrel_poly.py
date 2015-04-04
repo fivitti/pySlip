@@ -67,7 +67,10 @@ class TestFrame(wx.Frame):
         self.pyslip = pyslip.PySlip(self.panel, tile_src=self.tile_src,                                                             
                                     min_level=MinTileLevel)                                                                         
         box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)                                                                
-        self.panel.SetSizerAndFit(box)                                                                                              
+        self.panel.SetSizer(box)                                                                                                    
+        self.panel.Layout()                                                                                                         
+        self.Centre()                                                                                                               
+        self.Show(True)              
 
         # set initial view position
         self.pyslip.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
@@ -78,9 +81,6 @@ class TestFrame(wx.Frame):
                                                       name='<poly_map_layer>',
                                                       offset_x=0, offset_y=0,
                                                       closed=True)
-
-        # finally, set up application window position
-        self.Centre()
 
 ################################################################################
 

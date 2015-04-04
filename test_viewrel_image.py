@@ -58,24 +58,21 @@ class TestFrame(wx.Frame):
         self.tile_src = Tiles(TileDirectory, None)
 
         # build the GUI                                                                                                             
-        box = wx.BoxSizer(wx.HORIZONTAL)                                                                                            
-        self.panel.SetSizer(box)                                                                                                    
+        box = wx.BoxSizer(wx.VERTICAL)
         self.pyslip = pyslip.PySlip(self.panel, tile_src=self.tile_src,                                                             
                                     min_level=MinTileLevel)                                                                         
         box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)                                                                
-        self.panel.SetSizerAndFit(box)                                                                                              
+        self.panel.SetSizer(box)
+        self.panel.Layout()
+        self.Centre()
+        self.Show(True)
 
-        # set initial view position
+        # set initial view position and add test layer(s)
         self.pyslip.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
-
-        # add test test layer
         self.text_layer = self.pyslip.AddImageLayer(ImageViewData,
                                                     map_rel=False,
                                                     name='<image_view_layer>',
                                                     offset_x=0, offset_y=0)
-
-        # finally, set up application window position
-        self.Centre()
 
 ################################################################################
 

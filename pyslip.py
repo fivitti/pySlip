@@ -142,10 +142,8 @@ class _BufferedCanvas(wx.Panel):
 
         dc = wx.BufferedDC(wx.ClientDC(self), self.buffer)
         dc.BeginDrawing()
-        dc.Clear()
-        log('Update: before self.Draw(dc)')
+        dc.Clear()      # because maybe view size > map size
         self.Draw(dc)
-        log('Update: after self.Draw(dc)')
         dc.EndDrawing()
 
     def OnPaint(self, event):
@@ -162,12 +160,13 @@ class _BufferedCanvas(wx.Panel):
             width = 1
         if height == 0:
             height = 1
-        self.buffer = wx.EmptyBitmap(width, height)
-
         self.view_width = width
         self.view_height = height
         log('OnSize: .view_width=%d, .view_height=%d'
             % (self.view_width, self.view_height))
+
+        # new off-screen buffer
+        self.buffer = wx.EmptyBitmap(width, height)
 
         # call onSize callback, if registered
         if self.onSizeCallback:
@@ -529,33 +528,47 @@ class PySlip(_BufferedCanvas):
         """
 
         # create and initialise the base panel
-#        super(_BufferedCanvas, self).__init__(parent=parent, **kwargs)
         _BufferedCanvas.__init__(self, parent=parent, **kwargs)
         self.SetBackgroundColour(PySlip.BackgroundColour)
 
         # save tile source object
         self.tiles = tile_src
+        log('__init__: .tiles=%s' % str(self.tiles))
 
+        # set tile levels stuff - allowed levels, etc
         self.max_level = max_level if max_level else self.tiles.max_level
         self.min_level = min_level if min_level else self.tiles.min_level
         self.level = start_level if start_level else self.min_level
+        log('__init__: .min_level=%s, .max_level=%s, .level=%s'
+            % (str(self.min_level), str(self.max_level), str(self.level)))
 
         self.tile_size_x = self.tiles.tile_size_x
         self.tile_size_y = self.tiles.tile_size_y
+        log('__init__: .tile_size_x=%s, .tile_size_y=%s'
+            % (str(self.tile_size_x), str(self.tile_size_y)))
 
-        # set some internal state
-        self.view_width = None          # view size in pixels
+    ######
+    # set some internal state
+    ######
+
+        # view size in pixels, set properly in OnSize()
+        self.view_width = None
         self.view_height = None
 
-        self.map_width = None           # map size in pixels
+        # map size in pixels
+        self.map_width = None       # set in UseLevel()
         self.map_height = None
+        #self.map_width = self.tiles.num_tiles_x * self.tiles.tile_size_x
+        #self.map_height = self.tiles.num_tiles_y * self.tiles.tile_size_y
 
         self.view_offset_x = 0          # map pixel offset at left & top of view
         self.view_offset_y = 0
 
-        self.view_llon = self.view_rlon = None  # view limits
+        # view left+right lon abd top+bottom lat
+        self.view_llon = self.view_rlon = None  # set in OnSize()
         self.view_tlat = self.view_blat = None
 
+        # various other state variables
         self.was_dragging = False               # True if dragging map
         self.move_dx = 0                        # drag delta values
         self.move_dy = 0
@@ -568,7 +581,7 @@ class PySlip(_BufferedCanvas):
         self.is_box_select = False              # True if box selection
         self.sbox_1_x = self.sbox_1_y = None    # box size
 
-        # layer stuff
+        # layer stuff (no layers at this point)
         self.next_layer_id = 1      # source of unique layer IDs
         self.layer_z_order = []     # layer Z order, contains layer IDs
         self.layer_mapping = {}     # maps layer ID to layer data
@@ -582,10 +595,7 @@ class PySlip(_BufferedCanvas):
         # True if we send event on level change
         self.change_level_event = True
 
-        # OK, use the tile level the user wants
-        self.ZoomToLevel(self.level)
-
-        # set up dispatch dictionary for layer select handlers
+        # set up dispatch dictionaries for layer select handlers
         # for point select
         self.layerPSelHandler = {self.TypePoint: self.GetNearestPointInLayer,
                                  self.TypeImage: self.GetNearestImageInLayer,
@@ -619,6 +629,9 @@ class PySlip(_BufferedCanvas):
 
         # set callback when parent resizes
         self.onSizeCallback = self.ResizeCallback
+
+        # finally, use the tile level the user wants
+        self.ZoomToLevel(self.level)
 
         # force a resize, which sets up the rest of the state
         self.OnSize()
@@ -1347,12 +1360,15 @@ class PySlip(_BufferedCanvas):
         """Set view to centre on a position in the current level.
 
         posn  a tuple (lon,lat) to centre view on
+
+        Sets self.view_offset_x and self.view_offset_y and then calls
+        RecalcViewLonLatLimits(), redraws widget.
         """
 
         (lon, lat) = posn
         log('GotoPosition: lon=%.4f, lat=%.4f' % (lon, lat))
 
-        # get fractional tile coords of centre of view
+        # get fractional tile coords of required centre of view
         (xtile, ytile) = self.tiles.Geo2Tile(lon, lat)
         log('GotoPosition: xtile=%s, ytile=%s' % (str(xtile), str(ytile)))
 
@@ -1369,9 +1385,8 @@ class PySlip(_BufferedCanvas):
         log('GotoPosition: self.view_height=%d, centre_pixels_from_map_top=%d, self.view_offset_y=%d'
                 % (self.view_height, centre_pixels_from_map_top, self.view_offset_y))
 
-        # set the left/right/top/bottom lon/lat extents
+        # set the left/right/top/bottom lon/lat extents and redraw view
         self.RecalcViewLonLatLimits()
-
         self.Update()
 
     def GotoLevelAndPosition(self, level, posn):
@@ -1460,6 +1475,14 @@ class PySlip(_BufferedCanvas):
         Otherwise pan the map if we are dragging.
         """
 
+        log('OnMove: ==============================================')
+        log('event.Dragging()=%s, event.LeftIsDown()=%s'
+            % (str(event.Dragging()), str(event.LeftIsDown())))
+        log('self.mouse_position_event=%s' % str(self.mouse_position_event))
+        log('OnMove: before move, .view_offset_y=%d, .view_offset_y=%d'
+            % (self.view_offset_x, self.view_offset_y))
+
+
         # for windows, set focus onto pyslip window
         # linux seems to do this automatically
         if sys.platform == 'win32' and self.FindFocus() != self:
@@ -1471,12 +1494,14 @@ class PySlip(_BufferedCanvas):
         self.RaiseMousePositionEvent((x, y))
 
         if event.Dragging() and event.LeftIsDown():
+            log('event.Dragging() and event.LeftIsDown() both True')
             # are we doing box select?
             if self.is_box_select:
                 # set select box point 2 at mouse position
                 (self.sbox_w, self.sbox_h) = (x - self.sbox_1_x,
                                               y - self.sbox_1_y)
             elif not self.last_drag_x is None:
+                log('Doing a map drag')
                 # no, just a map drag
                 self.was_dragging = True
                 dx = self.last_drag_x - x
@@ -1485,6 +1510,8 @@ class PySlip(_BufferedCanvas):
                 # move the map in the view
                 self.view_offset_x += dx
                 self.view_offset_y += dy
+                log('OnMove1: new .view_offset_x=%d, .view_offset_y=%d'
+                    % (self.view_offset_x, self.view_offset_y))
 
                 # limit drag at edges of map
                 if self.map_width > self.view_width:
@@ -1497,6 +1524,9 @@ class PySlip(_BufferedCanvas):
                     # else map < view, centre X
                     self.view_offset_x = (self.map_width
                                           - self.view_width) / 2
+                log('self.max_x_offset=%d' % self.max_x_offset)
+                log('OnMove2: new .view_offset_x=%d, .view_offset_y=%d'
+                    % (self.view_offset_x, self.view_offset_y))
 
                 if self.map_height > self.view_height:
                     # if map > view, don't allow edge to show background
@@ -1508,6 +1538,8 @@ class PySlip(_BufferedCanvas):
                     # else map < view, centre Y
                     self.view_offset_y = (self.map_height
                                           - self.view_height) / 2
+                log('OnMove3: new .view_offset_x=%d, .view_offset_y=%d'
+                    % (self.view_offset_x, self.view_offset_y))
 
                 # adjust remembered X,Y
                 self.last_drag_x = x
@@ -1515,10 +1547,13 @@ class PySlip(_BufferedCanvas):
 
                 self.RecalcViewLonLatLimits()
 
+                log('OnMove: after move, .view_offset_y=%d, .view_offset_y=%d'
+                    % (self.view_offset_x, self.view_offset_y))
+
             # redraw client area
-            log('OnMove: before Update()')
             self.Update()
-            log('OnMove: after Update()')
+
+        log('OnMove: ----------------------------------------------')
 
     def OnLeftDown(self, event):
         """Left mouse button down. Prepare for possible drag."""
@@ -1794,6 +1829,14 @@ class PySlip(_BufferedCanvas):
         if the view is smaller than the map.
         """
 
+        log('Draw: vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv')
+        log('.view_offset_x=%s, .tiles.num_tiles_x=%s, .tile_size_x=%s, .view_width=%s'
+            % (str(self.view_offset_x), str(self.tiles.num_tiles_x),
+               str(self.tile_size_x), str(self.view_width)))
+        log('.view_offset_y=%s, .tiles.num_tiles_y=%s, .tile_size_y=%s, .view_height=%s'
+            % (str(self.view_offset_y), str(self.tiles.num_tiles_y),
+               str(self.tile_size_y), str(self.view_height)))
+
         # figure out how to draw tiles
         if self.view_offset_x < 0:
             # View > Map in X - centre in X direction
@@ -1824,8 +1867,9 @@ class PySlip(_BufferedCanvas):
 
         # start pasting tiles onto the view
         # use x_pix and y_pix to place tiles
-        log('Draw: col_list=%s' % str(col_list))
-        log('Draw: row_list=%s' % str(row_list))
+        log('x_pix_start=%d, y_pix_start=%d' % (x_pix_start, y_pix_start))
+        log('col_list=%s' % str(col_list))
+        log('row_list=%s' % str(row_list))
         x_pix = x_pix_start
         for x in col_list:
             y_pix = y_pix_start
@@ -1850,6 +1894,8 @@ class PySlip(_BufferedCanvas):
             dc.DrawRectangle(self.sbox_1_x, self.sbox_1_y,
                              self.sbox_w, self.sbox_h)
 
+        log('Draw: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
+
     ######
     # Miscellaneous
     ######
@@ -1868,10 +1914,13 @@ class PySlip(_BufferedCanvas):
 
         # get new size of the view
         (self.view_width, self.view_height) = self.GetClientSizeTuple()
+        self.max_x_offset = self.map_width - self.view_width
+        log('ResizeCallback: .map_width=%d, .view_width=%d, .max_x_offset=%d'
+            % (self.map_width, self.view_width, self.max_x_offset))
+        self.max_y_offset = self.map_height - self.view_height
 
         # if map > view in X axis
         if self.map_width > self.view_width:
-            self.max_x_offset = self.map_width - self.view_width
             # do nothing unless background is showing
             # if map left edge right of view edge
             if self.view_offset_x < 0:
@@ -1882,12 +1931,10 @@ class PySlip(_BufferedCanvas):
                 self.view_offset_x = self.map_width - self.view_width
         else:
             # else view >= map - centre map in X direction
-            self.max_x_offset = self.map_width - self.view_width
             self.view_offset_x = self.max_x_offset / 2
 
         # if map > view in Y axis
         if self.map_height > self.view_height:
-            self.max_y_offset = self.map_height - self.view_height
             # do nothing unless background is showing
             # if map top edge below view edge
             if self.view_offset_y < 0:
@@ -1898,7 +1945,6 @@ class PySlip(_BufferedCanvas):
                 self.view_offset_y = self.map_height - self.view_height
         else:
             # else view >= map - centre map in Y direction
-            self.max_y_offset = self.map_height - self.view_height
             self.view_offset_y = self.max_y_offset / 2
 
         # set the left/right/top/bottom lon/lat extents
@@ -2329,19 +2375,25 @@ class PySlip(_BufferedCanvas):
         """Raise a mouse position event.
 
         posn  the new mouse position (in view pixel coordinates)
+
+        Posts a mouse position event with 'position' attribute containing
+        the geo coordinates of the mouse.
+
+        Will raise an event if mouse moves in widget view but mouse cursor
+        is NOT on map.  'position' attribute is None in that case.
         """
 
         if self.mouse_position_event:
             event = _PySlipEvent(_myEVT_PYSLIP_POSITION, self.GetId())
-            log('RaiseMousePositionEvent: posn=%s, event=%s' % (str(posn), str(event)))
             if posn and self.PositionIsOnMap(posn):
                 (posn_x, posn_y) = posn
                 tile_x = float(self.view_offset_x + posn_x)/self.tile_size_x
                 tile_y = float(self.view_offset_y + posn_y)/self.tile_size_y
-                log('tile_x=%s, tile_y=%s' % (str(tile_x), str(tile_y)))
                 event.position = self.tiles.Tile2Geo(tile_x, tile_y)
             else:
                 event.position = None
+            log('RaiseMousePositionEvent: event.position=%s'
+                % str(event.position))
             self.GetEventHandler().ProcessEvent(event)
 
     def PositionIsOnMap(self, posn):

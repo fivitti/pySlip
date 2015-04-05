@@ -336,7 +336,7 @@ DefaultTilesDir = 'osm_tiles'
 DefaultMaxLRU = 10000
 
 class OSMTiles(tiles.Tiles):
-    """An object to source OSM tiles for pyslip."""
+    """An object to source OSM tiles for pySlip."""
 
     TileSize = 256      # width/height of tiles
 
@@ -385,9 +385,6 @@ class OSMTiles(tiles.Tiles):
         # set min and max tile levels
         self.min_level = min(self.levels)
         self.max_level = max(self.levels)
-
-        # first, initialize with base code
-#        Tiles.__init__(self, tiles_dir, tile_levels)
 
         # save the CallAfter() function
         self.callback = callback
@@ -480,8 +477,8 @@ class OSMTiles(tiles.Tiles):
             return None
         (self.num_tiles_x, self.num_tiles_y, self.ppd_x, self.ppd_y) = info
 
-        # store partial path to level dir (small speedup)
-        self.tile_level_dir = os.path.join(self.tiles_dir, '%d' % level)
+#        # store partial path to level dir (small speedup)
+#        self.tile_level_dir = os.path.join(self.tiles_dir, '%d' % level)
 
         # finally, return True
         return True

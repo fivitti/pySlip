@@ -101,7 +101,7 @@ class TestGMTTiles(unittest.TestCase):
 
     def XtestConvert(self):
         """Test geo2map conversions.
-        
+
         This is normally turned off as it is a "by hand" sort of check.
         """
 

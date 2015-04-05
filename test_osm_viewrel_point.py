@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """Test PySlip view-relative points."""
 
@@ -18,7 +19,7 @@ DefaultAppSize = (600, 400)
 TileDirectory = './osm_tiles'
 MinTileLevel = 0
 InitViewLevel = 2
-InitViewPosition = (133.87, -23.7)      # Alice Springs
+InitViewPosition = (0.0, 0.0)
 
 PointViewDataNW = [( 0, 0), ( 2, 0), ( 4, 0), ( 6, 0), ( 8, 0),
                    (10, 0), ( 0, 2), ( 0, 4), ( 0, 6), ( 0, 8),

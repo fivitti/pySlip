@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """Test PySlip view-relative text."""
 
@@ -18,7 +19,7 @@ DefaultAppSize = (600, 400)
 TileDirectory = './osm_tiles'
 MinTileLevel = 0
 InitViewLevel = 2
-InitViewPosition = (133.87, -23.7)      # Alice Springs
+InitViewPosition = (0.0, 0.0)
 
 TextViewData = [(  0,   0, 'cc', {'placement':'cc','fontsize':50,'textcolour':'#ff000020'}),
                 (  0,  10, 'cn', {'placement':'cn','fontsize':45,'textcolour':'#00ff0020'}),

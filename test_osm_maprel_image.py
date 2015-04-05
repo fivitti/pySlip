@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """Test PySlip map-relative images."""
 
@@ -17,21 +18,21 @@ DefaultAppSize = (600, 400)
 
 TileDirectory = './osm_tiles'
 MinTileLevel = 0
-InitViewLevel = 2
-InitViewPosition = (158.0, -20.0)
+InitViewLevel = 4
+InitViewPosition = (129.0, -20.0)
 
 arrow = 'graphics/arrow_right.png'
 
-ImageMapData = [(158, -17, arrow, {'offset_x': 0, 'offset_y': 0}),
-                (158, -18, arrow, {'offset_x': 0, 'offset_y': 0}),
-                (158, -19, arrow, {'offset_x': 0, 'offset_y': 0}),
-                (158, -20, arrow, {'offset_x': 0, 'offset_y': 0}),
-                (158, -21, arrow, {'offset_x': 0, 'offset_y': 0}),
-                (158, -22, arrow, {'offset_x': 0, 'offset_y': 0}),
-                (158, -23, arrow, {'offset_x': 0, 'offset_y': 0})
+ImageMapData = [(129, -17, arrow, {'offset_x': 0, 'offset_y': 0}),
+                (129, -18, arrow, {'offset_x': 0, 'offset_y': 0}),
+                (129, -19, arrow, {'offset_x': 0, 'offset_y': 0}),
+                (129, -20, arrow, {'offset_x': 0, 'offset_y': 0}),
+                (129, -21, arrow, {'offset_x': 0, 'offset_y': 0}),
+                (129, -22, arrow, {'offset_x': 0, 'offset_y': 0}),
+                (129, -23, arrow, {'offset_x': 0, 'offset_y': 0})
                ]
 
-PolygonMapData = [(((158,-17),(158,-23)),
+PolygonMapData = [(((129,-17),(129,-23)),
                       {'width': 1, 'colour': 'black', 'filled': False})
                  ]
 

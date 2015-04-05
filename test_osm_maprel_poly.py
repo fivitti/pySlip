@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """Test PySlip map-relative polygons."""
 
@@ -17,13 +18,13 @@ DefaultAppSize = (600, 400)
 
 TileDirectory = './osm_tiles'
 MinTileLevel = 0
-InitViewLevel = 2
-InitViewPosition = (152.0, -8.0)
+InitViewLevel = 4
+InitViewPosition = (152.0, -9.0)
 
 # create polygon data
 OpenPoly = ((145,5),(135,5),(135,-5),(145,-5))
-ClosedPoly = ((170,5),(160,5),(160,-5),(170,-5))
-FilledPoly = ((170,-20),(160,-20),(160,-10),(170,-10))
+ClosedPoly = ((165,5),(155,5),(155,-5),(165,-5))
+FilledPoly = ((165,-20),(155,-20),(155,-10),(165,-10))
 ClosedFilledPoly = ((145,-20),(135,-20),(135,-10),(145,-10))
 
 PolyMapData = [[OpenPoly, {'width': 2}],
@@ -38,8 +39,8 @@ PolyMapData = [[OpenPoly, {'width': 2}],
                                    'fillcolour': 'yellow'}]]
 
 TextMapData = [(135, 5, 'open', {'placement': 'ce', 'radius': 0}),
-               (170, 5, 'closed', {'placement': 'cw', 'radius': 0}),
-               (170, -10, 'open but filled (translucent)',
+               (165, 5, 'closed', {'placement': 'cw', 'radius': 0}),
+               (165, -10, 'open but filled (translucent)',
                    {'placement': 'cw', 'radius': 0}),
                (135, -10, 'closed & filled (solid)',
                    {'placement': 'ce', 'radius': 0}),

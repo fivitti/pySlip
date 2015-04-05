@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """Test PySlip map-relative text."""
 
@@ -17,16 +18,16 @@ DefaultAppSize = (600, 400)
 
 TileDirectory = './osm_tiles'
 MinTileLevel = 0
-InitViewLevel = 2
-InitViewPosition = (133.87, -23.7)      # Alice Springs                                                                             
+InitViewLevel = 4
+InitViewPosition = (134.0, -25.0)
 
 TextMapData = [(151.20, -33.85, 'Sydney cc', {'placement': 'cc'}),
                (144.95, -37.84, 'Melbourne ne', {'placement': 'ne'}),
                (153.08, -27.48, 'Brisbane ce', {'placement': 'ce'}),
                (115.86, -31.96, 'Perth se', {'placement': 'se'}),
-               (138.30, -35.52, 'Adelaide cs', {'placement': 'cs'}),
-               (130.98, -12.61, 'Darwin sw', {'placement': 'sw'}),
-               (147.31, -42.96, 'Hobart cw', {'placement': 'cw'}),
+               (138.60, -34.93, 'Adelaide cs', {'placement': 'cs'}),
+               (130.83, -12.45, 'Darwin sw', {'placement': 'sw'}),
+               (147.33, -42.88, 'Hobart cw', {'placement': 'cw'}),
                (149.20, -35.31, 'Canberra nw', {'placement': 'nw',
                                                 'colour': 'red',
                                                 'textcolour': 'blue',

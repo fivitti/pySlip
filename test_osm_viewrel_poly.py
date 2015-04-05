@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """Test PySlip view-relative polygons."""
 
@@ -18,7 +19,7 @@ DefaultAppSize = (600, 400)
 TileDirectory = './osm_tiles'
 MinTileLevel = 0
 InitViewLevel = 2
-InitViewPosition = (133.87, -23.7)      # Alice Springs
+InitViewPosition = (0.0, 0.0)
 
 arrow_cn = ((0,0),(10,10),(5,10),(5,20),(-5,20),(-5,10),(-10,10))
 arrow_ne = ((-1,0),(-1,10),(-4,8),(-9,13),(-14,8),(-9,3),(-11,0))

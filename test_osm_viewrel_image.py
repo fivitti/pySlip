@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """Test PySlip view-relative images."""
 
@@ -18,7 +19,7 @@ DefaultAppSize = (600, 400)
 TileDirectory = './osm_tiles'
 MinTileLevel = 0
 InitViewLevel = 2
-InitViewPosition = (133.87, -23.7)      # Alice Springs
+InitViewPosition = (0.0, 0.0)
 
 arrow_cw = 'graphics/arrow_left.png'
 arrow_nw = 'graphics/arrow_leftup.png'

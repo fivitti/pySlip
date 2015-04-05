@@ -270,21 +270,13 @@ class OSMCache(pycacheback.pyCacheBack):
         """
 
         tile_path = os.path.join(self._tiles_dir, TilePath % key)
-        log('SAVING: tile_path=%s' % str(tile_path))
+        dir_path = os.path.dirname(tile_path)
+        try:
+            os.makedirs(dir_path)
+        except OSError:
+            # we assume it's a "directory exists' error, which we ignore
+            pass
         value.SaveFile(tile_path, wx.BITMAP_TYPE_JPEG)
-
-#    def _put_to_back(self, image, level, x, y):
-#        """Put a bitmap into on-disk cache.
-#
-#        image  the wx.Image to save
-#        key    a tuple: (level, x, y)
-#               where level  level for bitmap
-#                     x      integer tile coordinate
-#                     y      integer tile coordinate
-#        """
-#
-#        tile_path = os.path.join(self._tiles_dir, TilePath % key)
-#        image.SaveFile(tile_path, wx.BITMAP_TYPE_JPEG)
 
 ################################################################################
 # Worker class for internet tile retrieval
@@ -325,12 +317,10 @@ class TileWorker(threading.Thread):
                 else:
                     # tile not available!
                     image = self.error_tile_image
-#                image.SaveFile('osm_%d_%d_%d.jpg' % (level, x, y), wx.BITMAP_TYPE_JPEG)
                 wx.CallAfter(self.callafter, level, x, y, image)
             except urllib2.HTTPError, e:
                 log('ERROR getting tile %d,%d,%d from %s\n%s'
                     % (level, x, y, tile_url, str(e)))
-                pass
 
             self.requests.task_done()
 
@@ -454,7 +444,6 @@ class OSMTiles(tiles.Tiles):
             log(''.join(traceback.format_exc()))
 
             if http_proxy:
-                log('Try using proxy: %s' % str(http_proxy))
                 proxy = urllib2.ProxyHandler({'http': http_proxy})
                 opener = urllib2.build_opener(proxy)
                 urllib2.install_opener(opener)
@@ -577,8 +566,6 @@ class OSMTiles(tiles.Tiles):
         try:
             del self.queued_requests[(level, x, y)]
         except KeyError:
-            log('deleting non-existant queued request: %d,%d,%d'
-                % (level, x, y))
             pass
 
         # tell the world a new tile is available

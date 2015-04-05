@@ -134,9 +134,6 @@ class GMTTiles(tiles.Tiles):
         # store partial path to level dir (small speedup)
         self.tile_level_dir = os.path.join(self.tiles_dir, '%d' % level)
 
-#        # finally, return True
-#        return True
-
     def GetInfo(self, level):
         """Get tile info for a particular level.
 

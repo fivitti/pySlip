@@ -564,7 +564,11 @@ class PySlip(_BufferedCanvas):
         self.view_offset_x = 0          # map pixel offset at left & top of view
         self.view_offset_y = 0
 
-        # view left+right lon abd top+bottom lat
+        # maximum X and Y offset of view (set in ResizeCallback())
+        self.max_x_offset = None
+        self.max_y_offset = None
+
+        # view left+right lon and top+bottom lat
         self.view_llon = self.view_rlon = None  # set in OnSize()
         self.view_tlat = self.view_blat = None
 
@@ -634,6 +638,7 @@ class PySlip(_BufferedCanvas):
         self.ZoomToLevel(self.level)
 
         # force a resize, which sets up the rest of the state
+        # eventually calls ResizeCallback()
         self.OnSize()
 
     def OnTileAvailable(self, level, x, y, img, pic):
@@ -1506,6 +1511,7 @@ class PySlip(_BufferedCanvas):
                 self.was_dragging = True
                 dx = self.last_drag_x - x
                 dy = self.last_drag_y - y
+                log('dx=%d, dy=%d' % (dx, dy))
 
                 # move the map in the view
                 self.view_offset_x += dx
@@ -1520,13 +1526,15 @@ class PySlip(_BufferedCanvas):
                         self.view_offset_x = 0
                     elif self.view_offset_x > self.max_x_offset:
                         self.view_offset_x = self.max_x_offset
+                    log('self.max_x_offset=%d' % self.max_x_offset)
+                    log('OnMove2: MAP>VIEW .view_offset_x=%d, .view_offset_y=%d'
+                        % (self.view_offset_x, self.view_offset_y))
                 else:
                     # else map < view, centre X
                     self.view_offset_x = (self.map_width
                                           - self.view_width) / 2
-                log('self.max_x_offset=%d' % self.max_x_offset)
-                log('OnMove2: new .view_offset_x=%d, .view_offset_y=%d'
-                    % (self.view_offset_x, self.view_offset_y))
+                    log('OnMove2: new .view_offset_x=%d, .view_offset_y=%d'
+                        % (self.view_offset_x, self.view_offset_y))
 
                 if self.map_height > self.view_height:
                     # if map > view, don't allow edge to show background
@@ -1743,7 +1751,7 @@ class PySlip(_BufferedCanvas):
                                                             tr_corner_g)
                     else:
                         # view-relative
-                        pts = self.layerBSelHandler[l.type](l, 
+                        pts = self.layerBSelHandler[l.type](l,
                                                             (ll_corner_x,
                                                              ll_corner_y),
                                                             (ll_corner_x+self.sbox_w,
@@ -1915,9 +1923,9 @@ class PySlip(_BufferedCanvas):
         # get new size of the view
         (self.view_width, self.view_height) = self.GetClientSizeTuple()
         self.max_x_offset = self.map_width - self.view_width
+        self.max_y_offset = self.map_height - self.view_height
         log('ResizeCallback: .map_width=%d, .view_width=%d, .max_x_offset=%d'
             % (self.map_width, self.view_width, self.max_x_offset))
-        self.max_y_offset = self.map_height - self.view_height
 
         # if map > view in X axis
         if self.map_width > self.view_width:
@@ -1946,6 +1954,8 @@ class PySlip(_BufferedCanvas):
         else:
             # else view >= map - centre map in Y direction
             self.view_offset_y = self.max_y_offset / 2
+        log('ResizeCallback: NEW self.view_offset_x=%d, self.view_offset_y=%d'
+            % (self.view_offset_x, self.view_offset_y))
 
         # set the left/right/top/bottom lon/lat extents
         self.RecalcViewLonLatLimits()
@@ -2007,6 +2017,9 @@ class PySlip(_BufferedCanvas):
             self.map_height = self.tiles.num_tiles_y * self.tiles.tile_size_y
             (self.map_llon, self.map_rlon,
                     self.map_blat, self.map_tlat) = self.tiles.extent
+
+            # to set some state variables
+            self.OnSize()
 
             # raise level change event
             self.RaiseLevelChangeEvent(level)
@@ -2201,7 +2214,7 @@ class PySlip(_BufferedCanvas):
         for poly in layer.data:
             p = poly[0]
             if point_inside_polygon(ptx, pty, p):
-                return p           
+                return p
 
         return None
 
@@ -2281,6 +2294,12 @@ class PySlip(_BufferedCanvas):
     ######
     # The next two routines could be folded into one as they are the same.
     # However, if we ever implement a 'staged' zoom, we need both routines.
+    #
+    # A 'staged' zoom is something similar to google maps zoom where the
+    # existing map image is algorithimically enlarged (or diminished) and
+    # is later overwritten with the actual zoomed map tiles.  I think google
+    # is using tiles that can be enlarged (diminished) without too much
+    # reduction in detail (SVG-ish), but we'll never be doing *that*!
     ######
 
     def ZoomIn(self, xy):
@@ -2291,12 +2310,12 @@ class PySlip(_BufferedCanvas):
         The tile stuff has already been set to the correct level.
         """
 
-        # set view state
+        # predict the view offset after zoom
         (map_x, map_y) = self.GetMapCoordsFromView(xy)
         self.view_offset_x = map_x * 2 - self.view_width / 2
         self.view_offset_y = map_y * 2 - self.view_height / 2
 
-        # set some internal state through size code
+        # set some internal state through resize code
         self.ResizeCallback()
 
         self.Update()

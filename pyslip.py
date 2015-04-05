@@ -162,8 +162,6 @@ class _BufferedCanvas(wx.Panel):
             height = 1
         self.view_width = width
         self.view_height = height
-        log('OnSize: .view_width=%d, .view_height=%d'
-            % (self.view_width, self.view_height))
 
         # new off-screen buffer
         self.buffer = wx.EmptyBitmap(width, height)
@@ -533,19 +531,14 @@ class PySlip(_BufferedCanvas):
 
         # save tile source object
         self.tiles = tile_src
-        log('__init__: .tiles=%s' % str(self.tiles))
 
         # set tile levels stuff - allowed levels, etc
         self.max_level = max_level if max_level else self.tiles.max_level
         self.min_level = min_level if min_level else self.tiles.min_level
         self.level = start_level if start_level else self.min_level
-        log('__init__: .min_level=%s, .max_level=%s, .level=%s'
-            % (str(self.min_level), str(self.max_level), str(self.level)))
 
         self.tile_size_x = self.tiles.tile_size_x
         self.tile_size_y = self.tiles.tile_size_y
-        log('__init__: .tile_size_x=%s, .tile_size_y=%s'
-            % (str(self.tile_size_x), str(self.tile_size_y)))
 
     ######
     # set some internal state

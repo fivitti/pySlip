@@ -15,7 +15,7 @@ from osm_tiles import OSMTiles as Tiles
 
 DefaultAppSize = (600, 400)
 
-TileDirectory = 'osm_tiles'
+TileDirectory = './osm_tiles'
 MinTileLevel = 0
 InitViewLevel = 2
 InitViewPosition = (133.87, -23.7)      # Alice Springs                                                                             
@@ -49,7 +49,7 @@ class TestFrame(wx.Frame):
         self.panel.ClearBackground()
 
         # create the tile source object
-        self.tile_src = Tiles(TileDirectory, None)
+        self.tile_src = Tiles(TileDirectory)
 
         # build the GUI
         box = wx.BoxSizer(wx.HORIZONTAL)

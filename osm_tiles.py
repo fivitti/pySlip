@@ -324,9 +324,9 @@ class TileWorker(threading.Thread):
 
             self.requests.task_done()
 
-######
+################################################################################
 # Class for OSM tiles.   Builds on tiles.Tiles.
-######
+################################################################################
 
 # where earlier-cached tiles will be
 # this can be overridden in the OSMTiles() constructor
@@ -348,22 +348,17 @@ class OSMTiles(tiles.Tiles):
                    'http://otile3.mqcdn.com',
                    'http://otile4.mqcdn.com']
     TileURLPath = '/tiles/1.0.0/osm/%d/%d/%d.jpg'
+    TileLevels = range(17)
 # satellite tiles
 #    TileServers = ['http://oatile1.mqcdn.com',
 #                   'http://oatile2.mqcdn.com',
 #                   'http://oatile3.mqcdn.com',
 #                   'http://oatile4.mqcdn.com']
 #    TileURLPath = '/tiles/1.0.0/sat/%d/%d/%d.jpg'
+#    TileLevels = range(13)         # [0, ..., 12] for the satellite tiles
 
     # maximum pending requests for each tile server
     MaxServerRequests = 2
-
-    # available tile levels in MQ_OSM [0, ..., 16]
-    # note: some tiles in levels 13+ don't exist
-# OSM tiles
-    TileLevels = range(17)
-# satellite tiles
-#    TileLevels = range(13)         # [0, ..., 12] for the satellite tiles
 
     def __init__(self, tiles_dir=None, tile_levels=None, callback=None,
                  http_proxy=None, pending_file=None, error_file=None):

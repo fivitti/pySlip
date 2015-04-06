@@ -15,7 +15,7 @@ between the two markers shows errors in the Geo2Tile() & Tile2GEO() functions.
 import os
 import wx
 import pyslip
-from gmt_local_tiles import GMTTiles as Tiles
+from osm_tiles import OSMTiles as Tiles
 
 # If we have log.py, well and good.  Otherwise ...
 try:
@@ -40,17 +40,17 @@ InitViewPosition = (0.0, 0.0)
 # startup size of the application
 DefaultAppSize = (800, 665)
 
-# where GMT local tiles live
-TileDirectory = 'tiles'
+# where OSM local tiles live
+TileDirectory = 'osm_tiles'
 
 # the number of decimal places in a lon/lat display
 LonLatPrecision = 3
 
 # a selection of cities, position from WikiPedia, etc
 # format is ((<lon>,<lat>),<name>)
-Cities = [((0.0, 51.48), 'Greenwich, United Kingdom'),
+Cities = [((0.0, 51.4778), 'Greenwich, United Kingdom'),
           ((5.33, 60.389444), 'Bergen, Norway'),
-          ((151.209444, -33.859972), 'Sydney, Australia'),
+          ((151.209444, -33.865), 'Sydney, Australia'),
           ((-77.036667, 38.895111), 'Washington DC, USA'),
           ((132.455278, 34.385278), 'Hiroshima (広島市), Japan'),
           ((-8.008889, 31.63), 'Marrakech (مراكش), Morocco'),
@@ -111,6 +111,10 @@ class AppFrame(wx.Frame):
 
         self.tile_directory = tile_dir
         self.tile_source = Tiles(tile_dir)
+
+        # the data objects for map and view layers
+        self.map_layer = None
+        self.view_layer = None
 
         # build the GUI
         self.make_gui(self.panel)
@@ -256,21 +260,31 @@ class AppFrame(wx.Frame):
     def handle_button(self, event):
         """Handle button event."""
 
-        print('event.Id=%s, data=%s' % (str(event.Id), str(self.buttons[event.Id])))
         (posn, name) = self.buttons[event.Id]
         self.pyslip.GotoPosition(posn)
 
-    def handle_select_event(self, event):
-        """Handle a pySlip point/box SELECT event."""
+        if self.map_layer:
+            self.pyslip.DeleteLayer(self.map_layer)
+        map_data = [posn]
+        point_colour = '#0000ff40'
+        self.map_layer = self.pyslip.AddPointLayer(map_data, map_rel=True,
+                                                   placement='cc',
+                                                   color=point_colour,
+                                                   radius=11,
+                                                   visible=True,
+                                                   name='map_layer')
 
-        layer_id = event.layer_id
-
-        self.demo_select_dispatch.get(layer_id, self.null_handler)(event)
-
-    def null_handler(self, event):
-        """Routine to handle unexpected events."""
-
-        print('ERROR: null_handler!?')
+        if self.view_layer:
+            self.pyslip.DeleteLayer(self.view_layer)
+        view_data = [(((0,0),(0,-10),(0,0),(0,10),
+            (0,0),(-10,0),(0,0),(10,0)),{'colour':'#ff0000ff'},)]
+#        poly_colour = '#ff0000ff'
+        self.view_layer = self.pyslip.AddPolygonLayer(view_data, map_rel=False,
+                                                      placement='cc',
+#                                                      colour=poly_colour,
+                                                      closed=False,
+                                                      visible=True,
+                                                      name='view_layer')
 
     def handle_position_event(self, event):
         """Handle a pySlip POSITION event."""

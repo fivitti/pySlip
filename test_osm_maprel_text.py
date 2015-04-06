@@ -21,18 +21,19 @@ MinTileLevel = 0
 InitViewLevel = 4
 InitViewPosition = (134.0, -25.0)
 
-TextMapData = [(151.20, -33.85, 'Sydney cc', {'placement': 'cc'}),
-               (144.95, -37.84, 'Melbourne ne', {'placement': 'ne'}),
-               (153.08, -27.48, 'Brisbane ce', {'placement': 'ce'}),
-               (115.86, -31.96, 'Perth se', {'placement': 'se'}),
+# city positions from wikipedia.org
+TextMapData = [(151.21, -33.87, 'Sydney cc', {'placement': 'cc'}),
+               (144.96, -37.81, 'Melbourne ne', {'placement': 'ne'}),
+               (153.03, -27.47, 'Brisbane ce', {'placement': 'ce'}),
+               (115.86, -31.95, 'Perth se', {'placement': 'se'}),
                (138.60, -34.93, 'Adelaide cs', {'placement': 'cs'}),
                (130.83, -12.45, 'Darwin sw', {'placement': 'sw'}),
                (147.33, -42.88, 'Hobart cw', {'placement': 'cw'}),
-               (149.20, -35.31, 'Canberra nw', {'placement': 'nw',
+               (149.12, -35.31, 'Canberra nw', {'placement': 'nw',
                                                 'colour': 'red',
                                                 'textcolour': 'blue',
                                                 'fontsize': 10}),
-               (133.90, -23.70, 'Alice Springs cn', {'placement': 'cn'})]
+               (133.87, -23.70, 'Alice Springs cn', {'placement': 'cn'})]
 
 
 ################################################################################

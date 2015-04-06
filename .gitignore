@@ -3,4 +3,4 @@
 *.log
 .DS_Store
 tiles
-tiles_osm
+osm_tiles

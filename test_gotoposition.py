@@ -59,6 +59,7 @@ Cities = [((0.0, 51.4778), 'Greenwich, United Kingdom'),
           ((168.3475, -46.413056), 'Invercargill, New Zealand'),
           ((-147.723056, 64.843611), 'Fairbanks AK, USA'),
           ((103.851959, 1.290270), 'Singapore'),
+          ((-3.205601, 55.955279), "Maxwell's Birthplace"),
          ]
 
 # sizes of various spacers

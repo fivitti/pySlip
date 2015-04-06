@@ -1422,8 +1422,6 @@ class PySlip(_BufferedCanvas):
         if (self.view_llon <= lon <= self.view_rlon and
                 self.view_blat <= lat <= self.view_tlat):
             (x, y) = self.tiles.Geo2Tile(lon, lat)
-                % (str(lon), str(lat), str(x), str(y)))
-                % (str(self.view_offset_x), str(self.view_offset_y)))
             res_x = (x * self.tiles.tile_size_x) - self.view_offset_x
             res_y = (y * self.tiles.tile_size_y) - self.view_offset_y
             return (res_x, res_y)

@@ -116,16 +116,13 @@ if __name__ == '__main__':
         elif opt in ('-t', '--tiles'):
             tile_source = param
     tile_source = tile_source.lower()
-    print('tile_source=%s' % str(tile_source))
 
     # set up the appropriate tile source
     if tile_source == 'gmt':
         from gmt_local_tiles import GMTTiles as Tiles
-        print('Using GMT tiles')
         tile_dir = 'gmt_tiles'
     elif tile_source == 'osm':
         from osm_tiles import OSMTiles as Tiles
-        print('Using OSM tiles')
         tile_dir = 'osm_tiles'
     else:
         usage('Bad tile source: %s' % tile_source)

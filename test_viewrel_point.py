@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Test PySlip view-relative points."""
+"""Test PySlip view-relative points.
+
+Usage: test_viewrel_point.py [-h] [-t (OSM|GMT)]
+"""
 
 
 import wx
-
 import pyslip
-from osm_tiles import OSMTiles as Tiles
 
 
 ######
@@ -16,10 +17,9 @@ from osm_tiles import OSMTiles as Tiles
 
 DefaultAppSize = (600, 400)
 
-TileDirectory = './osm_tiles'
 MinTileLevel = 0
 InitViewLevel = 2
-InitViewPosition = (0.0, 0.0)
+InitViewPosition = (133.87, -23.7)      # Alice Springs
 
 PointViewDataNW = [( 0, 0), ( 2, 0), ( 4, 0), ( 6, 0), ( 8, 0),
                    (10, 0), ( 0, 2), ( 0, 4), ( 0, 6), ( 0, 8),
@@ -99,7 +99,7 @@ PointViewDataCC = [(  0,  0), (  2, -2), (  4, -4), (  6, -6),
 ################################################################################
 
 class TestFrame(wx.Frame):
-    def __init__(self):
+    def __init__(self, tile_dir):
         wx.Frame.__init__(self, None, size=DefaultAppSize,
                           title=('PySlip %s - view-relative point test'
                                  % pyslip.__version__))
@@ -109,7 +109,7 @@ class TestFrame(wx.Frame):
         self.panel.ClearBackground()
 
         # create the tile source object
-        self.tile_src = Tiles(TileDirectory)
+        self.tile_src = Tiles(tile_dir)
 
         # build the GUI                                                                                                             
         box = wx.BoxSizer(wx.HORIZONTAL)                                                                                            
@@ -175,7 +175,14 @@ class TestFrame(wx.Frame):
 
 if __name__ == '__main__':
     import sys
+    import getopt
     import traceback
+
+    # print some usage information                                                                                                  
+    def usage(msg=None):                                                                                                            
+        if msg:                                                                                                                     
+            print(msg+'\n')                                                                                                         
+        print(__doc__)        # module docstring used       
 
     # our own handler for uncaught exceptions
     def excepthook(type, value, tb):
@@ -189,8 +196,38 @@ if __name__ == '__main__':
     # plug our handler into the python system
     sys.excepthook = excepthook
 
+    # decide which tiles to use, default is GMT                                                                                     
+    argv = sys.argv[1:]                                                                                                             
+    
+    try:                                                                                                                            
+        (opts, args) = getopt.getopt(argv, 'ht:', ['help', 'tiles='])                                                               
+    except getopt.error:                                                                                                            
+        usage()                                                                                                                     
+        sys.exit(1)                                                                                                                 
+    
+    tile_source = 'GMT'                                                                                                             
+    for (opt, param) in opts:                                                                                                       
+        if opt in ['-h', '--help']:                                                                                                 
+            usage()                                                                                                                 
+            sys.exit(0)                                                                                                             
+        elif opt in ('-t', '--tiles'):                                                                                              
+            tile_source = param                                                                                                     
+    tile_source = tile_source.lower()                                                                                               
+    
+    # set up the appropriate tile source                                                                                            
+    if tile_source == 'gmt':                                                                                                        
+        from gmt_local_tiles import GMTTiles as Tiles                                                                               
+        tile_dir = 'gmt_tiles'                                                                                                      
+    elif tile_source == 'osm':                                                                                                      
+        from osm_tiles import OSMTiles as Tiles                                                                                     
+        tile_dir = 'osm_tiles'                                                                                                      
+    else:                                                                                                                           
+        usage('Bad tile source: %s' % tile_source)                                                                                  
+        sys.exit(3)                                                                                                                 
+    
+    
     # start wxPython app
     app = wx.App()
-    TestFrame().Show()
+    TestFrame(tile_dir).Show()
     app.MainLoop()
 

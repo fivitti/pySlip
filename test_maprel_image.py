@@ -8,7 +8,6 @@ Usage: test_maprel_image.py [-h] [-t (OSM|GMT)]
 
 
 import wx
-
 import pyslip
 
 
@@ -18,7 +17,6 @@ import pyslip
 
 DefaultAppSize = (600, 400)
 
-DefaultTileDirectory = 'tiles'
 MinTileLevel = 0
 InitViewLevel = 2
 InitViewPosition = (158.0, -20.0)
@@ -43,7 +41,7 @@ PolygonMapData = [(((158,-17),(158,-23)),
 ################################################################################
 
 class TestFrame(wx.Frame):
-    def __init__(self, tile_dir=None):
+    def __init__(self, tile_dir):
         wx.Frame.__init__(self, None, size=DefaultAppSize,
                           title=('PySlip %s - map-relative image test'
                                  % pyslip.__version__))
@@ -130,6 +128,6 @@ if __name__ == '__main__':
 
     # start wxPython app
     app = wx.App()
-    TestFrame(tile_dir=tile_dir).Show()
+    TestFrame(tile_dir).Show()
     app.MainLoop()
 

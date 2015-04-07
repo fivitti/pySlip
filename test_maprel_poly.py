@@ -8,9 +8,7 @@ Usage: test_maprel_poly.py [-h] [-t (OSM|GMT)]
 
 
 import wx
-
 import pyslip
-from gmt_local_tiles import GMTTiles as Tiles
 
 
 ######

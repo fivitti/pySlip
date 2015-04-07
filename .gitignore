@@ -2,5 +2,4 @@
 *.pyc
 *.log
 .DS_Store
-tiles
-osm_tiles
+gmt_tiles

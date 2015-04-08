@@ -1540,6 +1540,8 @@ class PySlip(_BufferedCanvas):
                 # possible box selection
                 ll_corner_x = (self.sbox_1_x+self.view_offset_x) / self.tile_size_x
                 ll_corner_y = (self.sbox_1_y+self.view_offset_y) / self.tile_size_y
+                tr_corner_x = (self.sbox_1_x+self.view_offset_x+self.sbox_w) / self.tile_size_x 
+                tr_corner_y = (self.sbox_1_y+self.view_offset_y+self.sbox_h) / self.tile_size_y
 
                 ll_corner_t = self.tiles.Tile2Geo(ll_corner_x, ll_corner_y)
                 tr_corner_t = self.tiles.Tile2Geo(ll_corner_x + 1.0,
@@ -1559,8 +1561,8 @@ class PySlip(_BufferedCanvas):
                         else:
                             # view-relative
                             p_data = self.layerBSelHandler[l.type](l,
-                                                                   ll_corner_v,
-                                                                   tr_corner_v)
+                                                                   (ll_corner_x, ll_corner_y),
+                                                                   (tr_corner_x, tr_corner_y))
                         self.RaiseSelectEvent(EventBoxSelect, l, p_data)
 
                         # user code possibly updated screen
@@ -1978,8 +1980,10 @@ class PySlip(_BufferedCanvas):
                 return res
         else:
             for p in layer.data:
-                dc = wx.BufferedPaintDC(self, self.buffer)
-                (dc_w, dc_h) = dc.GetSize()
+                # causes crash: : using wxPaintDC without being in a native paint event
+                dc_w = self.view_width
+                dc_h = self.view_height
+
                 dc_w2 = dc_w / 2
                 dc_h2 = dc_h / 2
                 dc_h -= 1
@@ -2029,8 +2033,9 @@ class PySlip(_BufferedCanvas):
                     result.append(((x, y), pdata))
         else:
             for p in layer.data:
-                dc = wx.BufferedPaintDC(self, self.buffer)
-                (dc_w, dc_h) = dc.GetSize()
+                dc_w = self.view_width
+                dc_h = self.view_height
+
                 dc_w2 = dc_w / 2
                 dc_h2 = dc_h / 2
                 dc_h -= 1

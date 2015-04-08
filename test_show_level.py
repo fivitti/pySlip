@@ -6,7 +6,7 @@
 import wx
 
 import pyslip
-import local_tiles
+from gmt_local_tiles import GMTTiles as Tiles 
 # if we don't have log.py, don't crash
 try:
     import log
@@ -22,7 +22,7 @@ except ImportError:
 
 DefaultAppSize = (600, 400)
 
-TileDirectory = 'tiles'
+TileDirectory = 'gmt_tiles'
 MinTileLevel = 0
 InitViewLevel = 2
 InitViewPosition = (85.0, -5.0)
@@ -137,7 +137,7 @@ class TestFrame(wx.Frame):
         """
 
         # we make the tiles object
-        self.tiles = local_tiles.LocalTiles(TileDirectory, None)
+        self.tiles = Tiles(TileDirectory, None)
 
         # create gui objects
         sb = AppStaticBox(parent, '')

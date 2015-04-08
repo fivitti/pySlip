@@ -38,7 +38,7 @@ DemoName = 'pySlip %s - Demonstration' % pyslip.__version__
 DemoVersion = '2.0'
 
 # tiles info
-TileDirectory = 'tiles'
+TileDirectory = 'gmt_tiles'
 MinTileLevel = 0
 
 # left and top edge of map and map extent in degrees
@@ -1594,7 +1594,7 @@ if __name__ == '__main__':
 
     # start wxPython app
     app = wx.App()
-    app_frame = AppFrame(tile_dir='./tiles', levels=[0,1,2,3,4])
+    app_frame = AppFrame(tile_dir=TileDirectory, levels=[0,1,2,3,4])
     app_frame.Show()
 
 ##    import wx.lib.inspection

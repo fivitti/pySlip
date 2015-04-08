@@ -41,7 +41,7 @@ DemoName = "pySlip %s - 'Net Demonstration" % pyslip.__version__
 DemoVersion = '3.0'
 
 # tiles info
-TileDirectory = 'tiles_osm'
+TileDirectory = 'osm_tiles'
 MinTileLevel = 0
 
 # map size and extents
@@ -337,9 +337,6 @@ class AppFrame(wx.Frame):
 
         # create gui objects
         sb = AppStaticBox(parent, '')
-#        tile_object = Tiles(self.tile_directory, Tiles.TileLevels,
-#                            pending_file='pending_tile.png',
-#                            error_file='error_tile.png')
         tile_object = Tiles(self.tile_directory, Tiles.TileLevels)
         self.pyslip = pyslip.PySlip(parent, tile_src=tile_object,
                                     min_level=MinTileLevel)

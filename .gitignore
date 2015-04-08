@@ -3,3 +3,4 @@
 *.log
 .DS_Store
 gmt_tiles
+osm_tiles

@@ -720,7 +720,7 @@ class PySlip(_BufferedCanvas):
             offset_y = attributes.get('offset_y', default_offset_y)
             data = attributes.get('data', default_data)
 
-            draw_data.append((x, y, placement.lower(),
+            draw_data.append((float(x), float(y), placement.lower(),
                               radius, colour, offset_x, offset_y, data))
 
         return self.AddLayer(self.DrawPointLayer, draw_data, map_rel,
@@ -1538,14 +1538,13 @@ class PySlip(_BufferedCanvas):
         if not self.was_dragging:
             if self.is_box_select:
                 # possible box selection
-                ll_corner_x = (self.sbox_1_x+self.view_offset_x) / self.tile_size_x
-                ll_corner_y = (self.sbox_1_y+self.view_offset_y) / self.tile_size_y
-                tr_corner_x = (self.sbox_1_x+self.view_offset_x+self.sbox_w) / self.tile_size_x 
-                tr_corner_y = (self.sbox_1_y+self.view_offset_y+self.sbox_h) / self.tile_size_y
+                ll_corner_x = float(self.sbox_1_x+self.view_offset_x) / self.tile_size_x
+                ll_corner_y = float(self.sbox_1_y+self.view_offset_y) / self.tile_size_y
+                tr_corner_x = float(self.sbox_1_x+self.view_offset_x+self.sbox_w) / self.tile_size_x 
+                tr_corner_y = float(self.sbox_1_y+self.view_offset_y+self.sbox_h) / self.tile_size_y
 
                 ll_corner_t = self.tiles.Tile2Geo(ll_corner_x, ll_corner_y)
-                tr_corner_t = self.tiles.Tile2Geo(ll_corner_x + 1.0,
-                                                  ll_corner_y + 1.0)
+                tr_corner_t = self.tiles.Tile2Geo(tr_corner_x, tr_corner_y)
 
                 # check each layer for a box select event
                 # we work on a copy as user response could change order
@@ -1569,11 +1568,15 @@ class PySlip(_BufferedCanvas):
                         delayed_paint = True
                 self.is_box_select = False
             else:
-                # possible point selection
+                # possible point selection, get click point in view coords
                 clickpt_v = event.GetPositionTuple()
                 (clickpt_v_x, clickpt_v_y) = clickpt_v
-                clickpt_t_x = (clickpt_v_x+self.view_offset_x)/self.tile_size_x
-                clickpt_t_y = (clickpt_v_y+self.view_offset_y)/self.tile_size_y
+
+                # get click point in tile coords
+                clickpt_t_x = float(clickpt_v_x+self.view_offset_x)/self.tile_size_x
+                clickpt_t_y = float(clickpt_v_y+self.view_offset_y)/self.tile_size_y
+
+                # get click point in geo coords
                 clickpt_g = self.tiles.Tile2Geo(clickpt_t_x, clickpt_t_y)
 
                 # check each layer for a point select callback

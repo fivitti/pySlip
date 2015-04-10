@@ -458,7 +458,7 @@ class PySlip(_BufferedCanvas):
     del placements
 
     # panel background colour
-    BackgroundColour = wx.WHITE
+    BackgroundColour = '#808080'
 
     # default text attributes - map relative
     DefaultTextPlacement = 'se'

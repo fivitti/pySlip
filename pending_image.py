@@ -1,4 +1,5 @@
 # this file contains the 'pending' tile data
+import wx
 from wx.lib.embeddedimage import PyEmbeddedImage
 
 
@@ -129,4 +130,6 @@ def getImage():
 
 
 tile_image = getImage()
+help(tile_image)
+tile_image.SaveFile('xyzzy.png', wx.BITMAP_TYPE_PNG)
 #tile_bitmap = tile_image.ConvertToBitmap()

@@ -10,7 +10,6 @@ Uses pyCacheBack to provide in-memory and on-disk caching.
 import os
 import glob
 import math
-import pickle
 import threading
 import traceback
 import urllib2

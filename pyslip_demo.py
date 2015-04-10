@@ -26,7 +26,6 @@ except ImportError:
         pass
 
 import pyslip
-from gmt_local_tiles import GMTTiles as Tiles
 
 
 ######
@@ -1449,7 +1448,7 @@ class AppFrame(wx.Frame):
                     (114.158889, +22.278333, '香港 (Hong Kong)',
                         {'placement': 'nw'}),
                     ( 96.16, +16.80, 'ရန်ကုန် (Yangon)', capital),
-                    (104.93, +11.54, ' ភ្នំពេញ (Phnom Penh)', 
+                    (104.93, +11.54, ' ភ្នំពេញ (Phnom Penh)',
                         {'placement': 'ce', 'fontsize': 12, 'color': 'red'}),
                     (100.49, +13.75, 'กรุงเทพมหานคร (Bangkok)', capital),
                     ( 77.56, +34.09, 'གླེ་(Leh)', text_placement),
@@ -1576,6 +1575,7 @@ class AppFrame(wx.Frame):
 
 if __name__ == '__main__':
     import sys
+    import getopt
     import traceback
     import tkinter_error
 
@@ -1592,9 +1592,39 @@ if __name__ == '__main__':
     # plug our handler into the python system
     sys.excepthook = excepthook
 
+    # decide which tiles to use, default is GMT
+    argv = sys.argv[1:]
+
+    try:
+        (opts, args) = getopt.getopt(argv, 'ht:', ['help', 'tiles='])
+    except getopt.error:
+        usage()
+        sys.exit(1)
+
+    tile_source = 'GMT'
+    for (opt, param) in opts:
+        if opt in ['-h', '--help']:
+            usage()
+            sys.exit(0)
+        elif opt in ('-t', '--tiles'):
+            tile_source = param
+    tile_source = tile_source.lower()
+
+    # set up the appropriate tile source
+    if tile_source == 'gmt':
+        from gmt_local_tiles import GMTTiles as Tiles
+        tile_dir = 'gmt_tiles'
+    elif tile_source == 'osm':
+        from osm_tiles import OSMTiles as Tiles
+        tile_dir = 'osm_tiles'
+    else:
+        usage('Bad tile source: %s' % tile_source)
+        sys.exit(3)
+
+
     # start wxPython app
     app = wx.App()
-    app_frame = AppFrame(tile_dir=TileDirectory, levels=[0,1,2,3,4])
+    app_frame = AppFrame(tile_dir=tile_dir) #, levels=[0,1,2,3,4])
     app_frame.Show()
 
 ##    import wx.lib.inspection

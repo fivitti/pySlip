@@ -551,8 +551,6 @@ class PySlip(_BufferedCanvas):
         # map size in pixels
         self.map_width = None       # set in UseLevel()
         self.map_height = None
-        #self.map_width = self.tiles.num_tiles_x * self.tiles.tile_size_x
-        #self.map_height = self.tiles.num_tiles_y * self.tiles.tile_size_y
 
         self.view_offset_x = 0          # map pixel offset at left & top of view
         self.view_offset_y = 0

@@ -14,9 +14,11 @@ Rather than 'slippy' I went for the slightly more formal 'pySlip' since the
 thing is written in Python and therefore must have the obligatory 'py' prefix.
 
 Even though this was originally written for a geographical application, the
-underlying system only assumes a cartesian 2D coordinate system.  So pySlip
-could be used to present a game map, 2D CAD view, or whatever.  The major
-difficulty for most uses is to generate the map tiles.
+*underlying* system only assumes a cartesian 2D coordinate system.  The tile
+source must translate between the underlying coordinates and whatever coordinate
+system the tiles use.  So pySlip could be used to present a game map, 2D CAD
+view, etc, as well as Mercator tiles provided either locally from the filesystem
+or from the internet (OpenStreetMap, for example).
 
 [1] http://wiki.openstreetmap.org/index.php/Slippy_Map
 """
@@ -1516,17 +1518,19 @@ class PySlip(_BufferedCanvas):
     def OnLeftUp(self, event):
         """Left mouse button up.
 
-        Note that when we iterate through the layer_z_order list we must
-        iterate on a *copy* as the user select process can modify
-        self.layer_z_order.
+        Could be end of a drag or point or box selection.  If it's the end of
+        a drag we don't do a lot.  If a selection we process that.
         """
 
+        # turn off any dragging
         self.last_drag_x = self.last_drag_y = None
 
+        # if required, ignore this event
         if self.ignore_next_up:
             self.ignore_next_up = False
             return
 
+        # cursor back to normal
         self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
 
         # we need a repaint to remove any selection box, but NOT YET!
@@ -1536,13 +1540,23 @@ class PySlip(_BufferedCanvas):
         if not self.was_dragging:
             if self.is_box_select:
                 # possible box selection
-                ll_corner_x = float(self.sbox_1_x+self.view_offset_x) / self.tile_size_x
-                ll_corner_y = float(self.sbox_1_y+self.view_offset_y) / self.tile_size_y
-                tr_corner_x = float(self.sbox_1_x+self.view_offset_x+self.sbox_w) / self.tile_size_x 
-                tr_corner_y = float(self.sbox_1_y+self.view_offset_y+self.sbox_h) / self.tile_size_y
+                # get selection box in view coordinates
+                ll_corner_vx = self.sbox_1_x
+                ll_corner_vy = self.sbox_1_y
+                tr_corner_vx = self.sbox_1_x + self.sbox_w
+                tr_corner_vy = self.sbox_1_y + self.sbox_h
+                log('OnLeftUp: ll_corner_vx=%d, ll_corner_vy=%d, tr_corner_vx=%d, tr_corner_vy=%d'
+                    % (ll_corner_vx, ll_corner_vy, tr_corner_vx, tr_corner_vy))
 
-                ll_corner_t = self.tiles.Tile2Geo(ll_corner_x, ll_corner_y)
-                tr_corner_t = self.tiles.Tile2Geo(tr_corner_x, tr_corner_y)
+                # selection box corners in tile coords
+                ll_corner_tx = float(ll_corner_vx+self.view_offset_x) / self.tile_size_x
+                ll_corner_ty = float(ll_corner_vy+self.view_offset_y) / self.tile_size_y
+                tr_corner_tx = float(tr_corner_vx+self.view_offset_x) / self.tile_size_x 
+                tr_corner_ty = float(tr_corner_vy+self.view_offset_y) / self.tile_size_y
+
+                # selection box in geo coords
+                ll_corner_g = self.tiles.Tile2Geo(ll_corner_tx, ll_corner_ty)
+                tr_corner_g = self.tiles.Tile2Geo(tr_corner_tx, tr_corner_ty)
 
                 # check each layer for a box select event
                 # we work on a copy as user response could change order
@@ -1551,15 +1565,17 @@ class PySlip(_BufferedCanvas):
                     # if layer visible and selectable
                     if l.selectable and l.visible:
                         if l.map_rel:
+                            log('OnLeftUp: map-rel box select')
                             # map-relative, get all points selected (if any)
-                            p_data = self.layerBSelHandler[l.type](l,
-                                                                   ll_corner_t,
-                                                                   tr_corner_t)
+                            p_data = self.layerBSelHandler[l.type]\
+                                        (l, ll_corner_g, tr_corner_g)
                         else:
+                            log('OnLeftUp: view-rel box select')
                             # view-relative
-                            p_data = self.layerBSelHandler[l.type](l,
-                                                                   (ll_corner_x, ll_corner_y),
-                                                                   (tr_corner_x, tr_corner_y))
+                            p_data = self.layerBSelHandler[l.type]\
+                                        (l,
+                                         (ll_corner_vx, ll_corner_vy),
+                                         (tr_corner_vx, tr_corner_vy))
                         self.RaiseSelectEvent(EventBoxSelect, l, p_data)
 
                         # user code possibly updated screen
@@ -1568,14 +1584,14 @@ class PySlip(_BufferedCanvas):
             else:
                 # possible point selection, get click point in view coords
                 clickpt_v = event.GetPositionTuple()
-                (clickpt_v_x, clickpt_v_y) = clickpt_v
+                (clickpt_vx, clickpt_vy) = clickpt_v
 
                 # get click point in tile coords
-                clickpt_t_x = float(clickpt_v_x+self.view_offset_x)/self.tile_size_x
-                clickpt_t_y = float(clickpt_v_y+self.view_offset_y)/self.tile_size_y
+                clickpt_tx = float(clickpt_vx+self.view_offset_x)/self.tile_size_x
+                clickpt_ty = float(clickpt_vy+self.view_offset_y)/self.tile_size_y
 
                 # get click point in geo coords
-                clickpt_g = self.tiles.Tile2Geo(clickpt_t_x, clickpt_t_y)
+                clickpt_g = self.tiles.Tile2Geo(clickpt_tx, clickpt_ty)
 
                 # check each layer for a point select callback
                 # we work on a copy as user callback could change order
@@ -1957,7 +1973,7 @@ class PySlip(_BufferedCanvas):
         """Determine if clicked location selects a point in layer data.
 
         layer  layer object we are looking in
-        pt     click geo location (lon, lat) or screen (x, y)
+        pt     click geo location (lon, lat) or view (x, y)
 
         Return None (no selection) or ((x, y), data) of closest point.
         """
@@ -1981,13 +1997,12 @@ class PySlip(_BufferedCanvas):
                 return res
         else:
             for p in layer.data:
-                # causes crash: : using wxPaintDC without being in a native paint event
                 dc_w = self.view_width
                 dc_h = self.view_height
 
                 dc_w2 = dc_w / 2
                 dc_h2 = dc_h / 2
-                dc_h -= 1
+                dc_h -= 1       # why?
                 dc_w -= 1
                 (x, y, place, _, _, x_off, y_off, pdata) = p
                 exec self.point_view_placement[place]
@@ -2014,6 +2029,9 @@ class PySlip(_BufferedCanvas):
         Return None (no selection) or list [((lon, lat), data), ...]
         of points inside the selection box.
         """
+
+        log('GetBoxSelPointsInLayer: layer=%s, p1=%s, p2=%s'
+            % (str(layer), str(p1), str(p2)))
 
 # TODO: speed this up?  Do we need to??
         # get canonical box limits
@@ -2055,6 +2073,10 @@ class PySlip(_BufferedCanvas):
         pt     click geo location (lon, lat)
 
         Return None (no selection) or data for closest image.
+
+        TODO: We shouldn't do a 'closest' algorithm.  We need to click ON the
+              image.  So we need to take into account image extent and we also
+              need to find image-relative click position.  Here or elsewhere?
         """
 
         (ptx, pty) = pt

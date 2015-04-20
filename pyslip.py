@@ -1272,70 +1272,6 @@ class PySlip(_BufferedCanvas):
                 if radius:
                     dc.DrawCircle(x, y, radius)
 
-    def DrawPolygonLayer(self, dc, data, map_rel):
-        """Draw a polygon layer.
-
-        dc       the device context to draw on
-        data     an iterable of polygon tuples:
-                     (p, placement, width, colour, closed,
-                      filled, fillcolour, offset_x, offset_y, udata)
-                 where p is an iterable of points: (x, y)
-        map_rel  points relative to map if True, else relative to view
-        """
-
-        # draw polygons on map/view
-        if map_rel:
-            dc = wx.GCDC(dc)		# allow transparent colours
-            for (p, place, width, colour, closed,
-                 filled, fillcolour, x_off, y_off, udata) in data:
-                # gather all polygon points as view coords
-                p_lonlat = []
-                for lonlat in p:
-                    (lon, lat) = lonlat
-                    (x, y) = self.tiles.Geo2Tile(lon, lat)
-                    v_x = x*self.tiles.tile_size_x - self.view_offset_x + x_off
-                    v_y = y*self.tiles.tile_size_y - self.view_offset_y + y_off
-                    p_lonlat.append((v_x, v_y))
-
-                dc.SetPen(wx.Pen(colour, width=width))
-
-                if filled:
-                    dc.SetBrush(wx.Brush(fillcolour))
-                else:
-                    dc.SetBrush(wx.TRANSPARENT_BRUSH)
-
-                if closed:
-                    dc.DrawPolygon(p_lonlat)
-                else:
-                    dc.DrawLines(p_lonlat)
-        else:   # view
-            (dc_w, dc_h) = dc.GetSize()
-            dc_w2 = dc_w / 2
-            dc_h2 = dc_h / 2
-            dc_w -= 1
-            dc_h -= 1
-            dc = wx.GCDC(dc)		# allow transparent colours
-            for (p, place, width, colour, closed,
-                 filled, fillcolour, x_off, y_off, udata) in data:
-                # fetch the exec code, don't refetch for each point in polygon
-                place_exec = self.poly_view_placement[place]
-                pp = []
-                for (x, y) in p:
-                    exec place_exec
-                    pp.append((x, y))
-
-                dc.SetPen(wx.Pen(colour, width=width))
-
-                if filled:
-                    dc.SetBrush(wx.Brush(fillcolour))
-                else:
-                    dc.SetBrush(wx.TRANSPARENT_BRUSH)
-
-                if closed:
-                    dc.DrawPolygon(pp)
-                else:
-                    dc.DrawLines(pp)
-
     def DrawImageLayer(self, dc, images, map_rel):
         """Draw an image Layer on the view.
 
@@ -1449,6 +1385,71 @@ class PySlip(_BufferedCanvas):
                 exec self.text_view_placement[place]
                 dc.SetTextForeground(textcolour)
                 dc.DrawText(tdata, x, y)
+
+    def DrawPolygonLayer(self, dc, data, map_rel):
+        """Draw a polygon layer.
+
+        dc       the device context to draw on
+        data     an iterable of polygon tuples:
+                     (p, placement, width, colour, closed,
+                      filled, fillcolour, offset_x, offset_y, udata)
+                 where p is an iterable of points: (x, y)
+        map_rel  points relative to map if True, else relative to view
+        """
+
+        # allow transparent colours
+        dc = wx.GCDC(dc)
+
+        # draw polygons on map/view
+        if map_rel:
+            for (p, place, width, colour, closed,
+                 filled, fillcolour, x_off, y_off, udata) in data:
+                # gather all polygon points as view coords
+                p_lonlat = []
+                for lonlat in p:
+                    (lon, lat) = lonlat
+                    (x, y) = self.tiles.Geo2Tile(lon, lat)
+                    v_x = x*self.tiles.tile_size_x - self.view_offset_x + x_off
+                    v_y = y*self.tiles.tile_size_y - self.view_offset_y + y_off
+                    p_lonlat.append((v_x, v_y))
+
+                dc.SetPen(wx.Pen(colour, width=width))
+
+                if filled:
+                    dc.SetBrush(wx.Brush(fillcolour))
+                else:
+                    dc.SetBrush(wx.TRANSPARENT_BRUSH)
+
+                if closed:
+                    dc.DrawPolygon(p_lonlat)
+                else:
+                    dc.DrawLines(p_lonlat)
+        else:   # view
+            (dc_w, dc_h) = dc.GetSize()
+            dc_w2 = dc_w / 2
+            dc_h2 = dc_h / 2
+            dc_w -= 1
+            dc_h -= 1
+            for (p, place, width, colour, closed,
+                 filled, fillcolour, x_off, y_off, udata) in data:
+                # fetch the exec code, don't refetch for each point in polygon
+                place_exec = self.poly_view_placement[place]
+                pp = []
+                for (x, y) in p:
+                    exec place_exec
+                    pp.append((x, y))
+
+                dc.SetPen(wx.Pen(colour, width=width))
+
+                if filled:
+                    dc.SetBrush(wx.Brush(fillcolour))
+                else:
+                    dc.SetBrush(wx.TRANSPARENT_BRUSH)
+
+                if closed:
+                    dc.DrawPolygon(pp)
+                else:
+                    dc.DrawLines(pp)
 
     ######
     # Positioning methods

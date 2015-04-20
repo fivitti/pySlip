@@ -1246,7 +1246,8 @@ class PySlip(_BufferedCanvas):
         map_rel  points relative to map if True, else relative to view
         """
 
-        dc = wx.GCDC(dc)		# allow transparent colours
+        # allow transparent colours
+        dc = wx.GCDC(dc)
 
         # draw points on map/view
         if map_rel:
@@ -1257,6 +1258,9 @@ class PySlip(_BufferedCanvas):
                     dc.SetPen(wx.Pen(colour))
                     dc.SetBrush(wx.Brush(colour))
                     (x, y) = pt
+                    log('DrawPointLayer: x=%s, y=%s, .point_map_placement[%s]=%s'
+                        % (str(x), str(y), str(place), str(self.point_map_placement[place])))
+                    exec self.point_map_placement[place]
                     if radius:
                         dc.DrawCircle(x + x_off, y + y_off, radius)
         else:   # view
@@ -1280,6 +1284,9 @@ class PySlip(_BufferedCanvas):
                    (x,y,bmap,w,h,placement,offset_x,offset_y,idata)
         map_rel  points relative to map if True, else relative to view
         """
+
+        # allow transparent colours
+        dc = wx.GCDC(dc)
 
         # draw images
         if map_rel:
@@ -2500,11 +2507,11 @@ class PySlip(_BufferedCanvas):
         can never select anything in the area.
         """
 
-        log('GeoExtent: x=%s, y=%s, placement=%s, w=%s, h=%s, x_off=%s, y_off=%s'
-            % (str(x), str(y), str(placement), str(w), str(h), str(x_off), str(y_off)))
+        log('GeoExtent: lon=%s, lat=%s, placement=%s, w=%s, h=%s, x_off=%s, y_off=%s'
+            % (str(lon), str(lat), str(placement), str(w), str(h), str(x_off), str(y_off)))
 
         # first, figure out placement from (lon, lat)
-        (x, y) = self.tiles.Geo2Tile(lon, lat)
+        (tx, ty) = self.tiles.Geo2Tile(lon, lat)
         w2 = w/2.0
         h2 = h/2.0
         #exec self.

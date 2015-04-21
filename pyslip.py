@@ -374,6 +374,40 @@ class PySlip(_BufferedCanvas):
     valid_placements = ['cc', 'nw', 'cn', 'ne', 'ce',
                         'se', 'cs', 'sw', 'cw', None, False, '']
 
+    # dictionary for map-relative point placement
+    # assumes variables x, y, dc_w, dc_h, x_off, y_off are set
+    # perturbs x and y to point centre for drawing
+    point_map_placement = {'cc': 'x=x+dc_w2;      y=y+dc_h2',
+                           'nw': 'x=x+x_off;      y=y+y_off',
+                           'cn': 'x=x+dc_w2;      y=y+y_off',
+                           'ne': 'x=x+dc_w-x_off; y=y+y_off',
+                           'ce': 'x=x+dc_w-x_off; y=y+dc_h2',
+                           'se': 'x=x+dc_w-x_off; y=y+dc_h-y_off',
+                           'cs': 'x=x+dc_w2;      y=y+dc_h-y_off',
+                           'sw': 'x=x+x_off;      y=y+dc_h-y_off',
+                           'cw': 'x=x+x_off;      y=y+dc_h2',
+                           None: '',
+                           False: '',
+                           '':   ''}
+    placements.append(point_map_placement)
+
+    # dictionary for view-relative point placement
+    # assumes variables x, y, dc_w, dc_h, x_off, y_off are set
+    # perturbs x and y to point centre for drawing
+    point_view_placement = {'cc': 'x=x+dc_w2;      y=y+dc_h2',
+                            'nw': 'x=x+x_off;      y=y+y_off',
+                            'cn': 'x=x+dc_w2;      y=y+y_off',
+                            'ne': 'x=x+dc_w-x_off; y=y+y_off',
+                            'ce': 'x=x+dc_w-x_off; y=y+dc_h2',
+                            'se': 'x=x+dc_w-x_off; y=y+dc_h-y_off',
+                            'cs': 'x=x+dc_w2;      y=y+dc_h-y_off',
+                            'sw': 'x=x+x_off;      y=y+dc_h-y_off',
+                            'cw': 'x=x+x_off;      y=y+dc_h2',
+                            None: '',
+                            False: '',
+                            '':   ''}
+    placements.append(point_view_placement)
+
     # dictionary for map-relative image placement
     # assumes variables x, y, w, h, w2, h2, x_off & y_off are set
     # perturbs x and y to top-left image corner for placing
@@ -479,26 +513,29 @@ class PySlip(_BufferedCanvas):
                             '': ''}
     placements.append(point_view_placement)
 
-    # dictionary for map-relative point placement
-    # assumes variables x, y, dc_w, dc_h, x_off, y_off are set
-    # perturbs x and y to point centre for drawing
-    point_map_placement = {'cc': 'x=x+dc_w2;      y=y+dc_h2',
-                           'nw': 'x=x+x_off;      y=y+y_off',
-                           'cn': 'x=x+dc_w2;      y=y+y_off',
-                           'ne': 'x=x+dc_w-x_off; y=y+y_off',
-                           'ce': 'x=x+dc_w-x_off; y=y+dc_h2',
-                           'se': 'x=x+dc_w-x_off; y=y+dc_h-y_off',
-                           'cs': 'x=x+dc_w2;      y=y+dc_h-y_off',
-                           'sw': 'x=x+x_off;      y=y+dc_h-y_off',
-                           'cw': 'x=x+x_off;      y=y+dc_h2',
-                           '':   ''}
-    placements.append(point_map_placement)
-
     # now pre-compile all the dictionary placement strings
     for p_dict in placements:
         for key in p_dict:
             p_dict[key] = compile(p_dict[key], 'string', 'exec')
     del placements
+
+    # how a single point in an image is perturbed
+    # this is used by ViewExtent()
+    point_view_perturb = {'cc': 'x=x+dc_w2-w2;      y=y+dc_h2-h2',
+                          'nw': 'x=x+x_off;         y=y+y_off',
+                          'cn': 'x=x+dc_w2-w2;      y=y+y_off',
+                          'ne': 'x=x+dc_w-x_off-w;  y=y+y_off',
+                          'ce': 'x=x+dc_w-x_off-w;  y=y+dc_h2-h2',
+                          'se': 'x=x+dc_w-x_off-w;  y=y+dc_h-y_off-h',
+                          'cs': 'x=x+dc_w2-w2;      y=y+dc_h-y_off-h',
+                          'sw': 'x=x+x_off;         y=y+dc_h-y_off-h',
+                          'cw': 'x=x+x_off;         y=y+dc_h2-h2',
+                          None: '',
+                          False: '',
+                          '':   '',
+                         }
+    for key in point_view_perturb:
+        point_view_perturb[key] = compile(point_view_perturb[key], 'string', 'exec')
 
     # panel background colour
     BackgroundColour = '#808080'
@@ -1012,6 +1049,8 @@ class PySlip(_BufferedCanvas):
                          data        polygon user data object
         """
 
+        log('AddPolygonLayer: data=%s' % str(data))
+
         # merge global and layer defaults
         if map_rel:
             default_placement = kwargs.get('placement',
@@ -1045,6 +1084,7 @@ class PySlip(_BufferedCanvas):
         # create draw_data iterable
         draw_data = []
         for d in data:
+            log('d=%s' % str(d))
             if len(d) == 2:
                 (p, attributes) = d
             elif len(d) == 1:
@@ -2197,13 +2237,13 @@ class PySlip(_BufferedCanvas):
         pt     click location, either geo (lon, lat) or view (x, y)
 
         Returns a list of selected objects, empty list if no selection.
-        A selected object is a tuple: ((x, y), udata, (sel_x, sel_y)).
+        A selected object is a tuple: ((sel_x, sel_y), udata).
 
         The 'sel_x' and 'sel_y' is the point inside the image where the
         selection took place.  For a map-relative selection this is just the
         click position in geo coordinates.  For a view-relative selection this
         is the relative position inside the image in pixel coordinates, top-left
-        origin.
+        origin.  'udata' is the userdata attached to the image (if any).
 
         Note that there could conceivably be more than one image selected by
         a single point click.
@@ -2224,11 +2264,16 @@ class PySlip(_BufferedCanvas):
             else:
                 # view_relative, ptx, pty, x, y are view coords
                 e = self.ViewExtent(x, y, placement, w, h, offset_x, offset_y)
+                log('GetImagesInLayer: ViewExtent returned: %s' % str(e))
+                log('ptx=%d, pty=%d' % pt)
                 (lv, rv, tv, bv) = e
-                if lv <= ptx <= rv and bv <= pty <= tv:
-                    sel_click = (ptx - x, pty - y)
-                    result.append(((x, y), udata, sel_click))
+                log('comparing: %s <= %d <= %s and %s <= %d <= %s'
+                    % (str(lv), ptx, str(rv), str(tv), pty, str(bv)))
+                if lv <= ptx <= rv and tv <= pty <= bv:
+                    sel_click = (ptx - lv, pty - tv)
+                    result.append((sel_click, udata))
 
+        log('GetImagesInLayer: returns: %s' % str(result))
         return result
 
     def GetBoxSelImagesInLayer(self, layer, p1, p2):
@@ -2506,6 +2551,7 @@ class PySlip(_BufferedCanvas):
         off the map, return a negative width/height area at a map corner so we
         can never select anything in the area.
         """
+#FIXME
 
         log('GeoExtent: lon=%s, lat=%s, placement=%s, w=%s, h=%s, x_off=%s, y_off=%s'
             % (str(lon), str(lat), str(placement), str(w), str(h), str(x_off), str(y_off)))
@@ -2515,7 +2561,6 @@ class PySlip(_BufferedCanvas):
         w2 = w/2.0
         h2 = h/2.0
         #exec self.
-        #FIXME
 
         bx = tx + w/self.tile_size_x
         by = ty + h/self.tile_size_y
@@ -2532,16 +2577,37 @@ class PySlip(_BufferedCanvas):
 
         Return the view extent of the area: (left, right, top, bottom)
         where:
-            left    longitude of left side of area
-            right   longitude of right side of area
-            top     top latitude of area
-            bottom  bottom latitude of area
+            left    pixel coords of left side of area
+            right   pixel coords of right side of area
+            top     pixel coords of top of area
+            bottom  pixel coords of bottom of area
 
         If area is 'off view' limit extent to view boundary.  If area is totally
         off the view, return a zero width/height area at a view corner.
         """
+#FIXME
 
-        return None
+        log('ViewExtent: x=%s, y=%s, placement=%s, w=%s, h=%s, x_off=%s, y_off=%s'
+            % (str(x), str(y), str(placement), str(w), str(h), str(x_off), str(y_off)))
+
+        # prepare the half values, etc
+        dc_w = float(self.view_width)
+        dc_w2 = dc_w/2.0
+        dc_h = float(self.view_height)
+        dc_h2 = dc_h/2.0
+        log('dc_w=%d, dc_w2=%s, dc_h=%d, dc_h2=%s' % (dc_w, str(dc_w2), dc_h, str(dc_h2)))
+
+        # top left corner
+        exec self.point_view_perturb[placement]
+        (left, top) = (x, y)
+        log('left=%s, top=%s' % (str(left), str(top)))
+
+        # bottom right corner
+        right = left + w
+        bottom = top + h
+        log('right=%s, bottom=%s' % (str(right), str(bottom)))
+
+        return (left, right, top, bottom)
 
     def PositionIsOnMap(self, posn):
         """Return True if 'posn' is actually on map (not just view).

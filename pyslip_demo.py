@@ -533,7 +533,8 @@ class AppFrame(wx.Frame):
         """
 
         # create widgets
-        image_obj = LayerControl(parent, 'Images, view relative')
+        image_obj = LayerControl(parent, 'Images, view relative',
+                                 selectable=True)
 
         # tie to event handler(s)
         image_obj.Bind(EVT_ONOFF, self.imageViewOnOff)
@@ -961,27 +962,58 @@ class AppFrame(wx.Frame):
             self.del_select_handler(layer)
             self.pyslip.SetLayerSelectable(layer, False)
 
-    def imageViewSelect(self, id, posn=None):
-        """View-relative image select event from pyslip."""
+    def imageViewSelect(self, event):
+        """View-relative image select event from pyslip.
+        
+        event  the wxpython event object
 
-        if posn:
-            for p in ImageViewData:
-                pp = (p[0], p[1])
-                if pp == posn:
-                    if pp == self.sel_image_view:
-                        # select again, turn point off
-                        self.sel_image_view = None
-                        self.pyslip.DeleteLayer(self.sel_image_view_layer)
-                        self.sel_image_view_layer = None
-                    else:
-                        if self.sel_image_view_layer:
-                            self.pyslip.DeleteLayer(self.sel_image_view_layer)
-                        self.sel_image_view = pp
-                        self.sel_image_view_layer = \
-                            self.pyslip.AddPointLayer((pp,), map_rel=False,
-                                                      color='#00ffff',
-                                                      radius=5, visible=True,
-                                                      name='<sel_image_view>')
+        The 'event' object has attributes:
+        evtype    the pySlip event type
+        layer_id  'id' of the layer in which the image selected exists
+        mposn     the geo coords of the click
+        point     point datas is a list of: (pt, udata)
+                    pt is an (x,y) tuple of relative click posn within the image
+                    udata is userdata attached to the image (if any).
+        vposn     the view coords of the click
+        """
+
+        log('imageViewSelect: event=%s' % str(event))
+
+        log('imageViewSelect: event.evtype=%s' % str(event.evtype))
+        log('imageViewSelect: event.layer_id=%s' % str(event.layer_id))
+        log('imageViewSelect: event.mposn=%s' % str(event.mposn))
+        log('imageViewSelect: event.point=%s' % str(event.point))
+        log('imageViewSelect: event.vposn=%s' % str(event.vposn))
+
+        # only one image selectable, remove old selection (if any)
+        if self.sel_image_view_layer:
+            # already selected, remove old selection
+            self.pyslip.DeleteLayer(self.sel_image_view_layer)
+            self.sel_image_view_layer = None
+            self.pyslip.DeleteLayer(self.sel_imagepoint_view_layer)
+            self.sel_imagepoint_view_layer = None
+
+        if event.point:
+            (pp, udata) = event.point[0]
+            (sel_x, sel_y) = pp     # select relative point in image
+
+            # add selection point
+            point = (-(CR_Width - sel_x), sel_y)
+            log('AddPointLayer((point,)=%s' % str(point))
+            self.sel_imagepoint_view_layer = \
+                self.pyslip.AddPointLayer((point,), map_rel=False,
+                                          color='green',
+                                          radius=5, visible=True,
+                                          placement='ne',
+                                          name='<sel_image_view_point>')
+
+            # add polygon outline around image
+            pdata = [(((-CR_Width,0),(0,0),(0,CR_Height),(-CR_Width,CR_Height)),
+                {'placement': 'ne', 'width': 3, 'color': 'green', 'closed': True})]
+            self.sel_image_view_layer = \
+                self.pyslip.AddPolygonLayer(pdata, map_rel=False,
+                                            name='<sel_image_view_outline>')
+
         return True
 
 ##### map-relative text layer
@@ -1332,6 +1364,7 @@ class AppFrame(wx.Frame):
         global TextViewData
         global PolyData
         global PolyViewData
+        global CR_Width, CR_Height
 
         # create PointData
         PointData = []
@@ -1407,7 +1440,8 @@ class AppFrame(wx.Frame):
             for y in range(40):
                 ImageData.append((-30+x*2, y*2-30, GlassyImg4))
 
-        ImageViewData = [(0, 0, CompassRoseGraphic, {'placement': 'ne'})]
+        ImageViewData = [(0, 0, CompassRoseGraphic, {'placement': 'ne',
+                                                     'data': 'compass rose'})]
 
         text_placement = {'placement': 'se'}
         transparent_placement = {'placement': 'se', 'colour': '#00000040'}
@@ -1496,6 +1530,7 @@ class AppFrame(wx.Frame):
         self.image_view_layer = None
         self.sel_image_view_layer = None
         self.sel_image_view = None
+        self.sel_imagepoint_view_layer = None
 
         self.text_layer = None
         self.sel_text_layer = None
@@ -1512,6 +1547,11 @@ class AppFrame(wx.Frame):
         self.poly_view_layer = None
         self.sel_poly_view_layer = None
         self.sel_poly = None
+
+        # get width and height of the compass rose image
+        cr_img = wx.Image(CompassRoseGraphic, wx.BITMAP_TYPE_ANY)
+        cr_bmap = cr_img.ConvertToBitmap()
+        (CR_Width, CR_Height) = cr_bmap.GetSize()
 
         # force pyslip initialisation
         self.pyslip.OnSize()

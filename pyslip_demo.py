@@ -964,7 +964,7 @@ class AppFrame(wx.Frame):
 
     def imageViewSelect(self, event):
         """View-relative image select event from pyslip.
-        
+
         event  the wxpython event object
 
         The 'event' object has attributes:
@@ -975,6 +975,10 @@ class AppFrame(wx.Frame):
                     pt is an (x,y) tuple of relative click posn within the image
                     udata is userdata attached to the image (if any).
         vposn     the view coords of the click
+
+        The code below doesn't assume a placement of the selected image, it
+        figures out the correct position of the 'highlight' layers.  This helps
+        with debugging, as we can move the compass rose anywhere we like.
         """
 
         log('imageViewSelect: event=%s' % str(event))
@@ -994,25 +998,61 @@ class AppFrame(wx.Frame):
             self.sel_imagepoint_view_layer = None
 
         if event.point:
+            # unpack event data
             (pp, udata) = event.point[0]
             (sel_x, sel_y) = pp     # select relative point in image
 
+            # figure out compass rose attributes
+            attr_dict = ImageViewData[0][3]
+            img_placement = attr_dict['placement']
+
             # add selection point
-            point = (-(CR_Width - sel_x), sel_y)
+            point_place_coords = {'ne': '(sel_x - CR_Width, sel_y)',
+                                  'ce': '(sel_x - CR_Width, sel_y - CR_Height/2.0)',
+                                  'se': '(sel_x - CR_Width, sel_y - CR_Height)',
+                                  'cs': '(sel_x - CR_Width/2.0, sel_y - CR_Height)',
+                                  'sw': '(sel_x, sel_y - CR_Height)',
+                                  'cw': '(sel_x, sel_y - CR_Height/2.0)',
+                                  'nw': '(sel_x, sel_y)',
+                                  'cn': '(sel_x - CR_Width/2.0, sel_y)',
+                                  'cc': '(sel_x - CR_Width/2.0, sel_y - CR_Height/2.0)',
+                                  '':   '(sel_x, sel_y)',
+                                  None: '(sel_x, sel_y)',
+                                 }
+
+            point = eval(point_place_coords[img_placement])
             log('AddPointLayer((point,)=%s' % str(point))
             self.sel_imagepoint_view_layer = \
                 self.pyslip.AddPointLayer((point,), map_rel=False,
                                           color='green',
                                           radius=5, visible=True,
-                                          placement='ne',
+                                          placement=img_placement,
                                           name='<sel_image_view_point>')
 
             # add polygon outline around image
-            pdata = [(((-CR_Width,0),(0,0),(0,CR_Height),(-CR_Width,CR_Height)),
-                {'placement': 'ne', 'width': 3, 'color': 'green', 'closed': True})]
+            (x, y) = event.vposn
+            p_dict = {'placement': img_placement, 'width': 3, 'color': 'green', 'closed': True}
+            poly_place_coords = {'ne': '(((-CR_Width,0),(0,0),(0,CR_Height),(-CR_Width,CR_Height)),p_dict)',
+                                 'ce': '(((-CR_Width,-CR_Height/2.0),(0,-CR_Height/2.0),(0,CR_Height/2.0),(-CR_Width,CR_Height/2.0)),p_dict)',
+                                 'se': '(((-CR_Width,-CR_Height),(0,-CR_Height),(0,0),(-CR_Width,0)),p_dict)',
+                                 'cs': '(((-CR_Width/2.0,-CR_Height),(CR_Width/2.0,-CR_Height),(CR_Width/2.0,0),(-CR_Width/2.0,0)),p_dict)',
+                                 'sw': '(((0,-CR_Height),(CR_Width,-CR_Height),(CR_Width,0),(0,0)),p_dict)',
+                                 'cw': '(((0,-CR_Height/2.0),(CR_Width,-CR_Height/2.0),(CR_Width,CR_Height/2.0),(0,CR_Height/2.0)),p_dict)',
+                                 'nw': '(((0,0),(CR_Width,0),(CR_Width,CR_Height),(0,CR_Height)),p_dict)',
+                                 'cn': '(((-CR_Width/2.0,0),(CR_Width/2.0,0),(CR_Width/2.0,CR_Height),(-CR_Width/2.0,CR_Height)),p_dict)',
+                                 'cc': '(((-CR_Width/2.0,-CR_Height/2.0),(CR_Width/2.0,-CR_Height/2.0),(CR_Width/2.0,CR_Height/2.0),(-CR_Width/2.0,CR_Height/2.0)),p_dict)',
+                                 '':   '(((x, y),(x+CR_Width,y),(x+CR_Width,y+CR_Height),(x,y+CR_Height)),p_dict)',
+                                 None: '(((x, y),(x+CR_Width,y),(x+CR_Width,y+CR_Height),(x,y+CR_Height)),p_dict)',
+                                }
+            pdata = eval(poly_place_coords[img_placement])
+            log('pdata=%s' % str(pdata))
             self.sel_image_view_layer = \
-                self.pyslip.AddPolygonLayer(pdata, map_rel=False,
-                                            name='<sel_image_view_outline>')
+                self.pyslip.AddPolygonLayer((pdata,), map_rel=False,
+#                                            placement=img_placement,
+#                                            color='green',
+#                                            width=5, visible=True,
+                                            name='<sel_image_view_outline>',
+                                           )
 
         return True
 
@@ -1440,7 +1480,7 @@ class AppFrame(wx.Frame):
             for y in range(40):
                 ImageData.append((-30+x*2, y*2-30, GlassyImg4))
 
-        ImageViewData = [(0, 0, CompassRoseGraphic, {'placement': 'ne',
+        ImageViewData = [(0, 0, CompassRoseGraphic, {'placement': 'cc',
                                                      'data': 'compass rose'})]
 
         text_placement = {'placement': 'se'}

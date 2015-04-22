@@ -2595,7 +2595,10 @@ class PySlip(_BufferedCanvas):
         dc_w2 = dc_w/2.0
         dc_h = float(self.view_height)
         dc_h2 = dc_h/2.0
+        w2 = w/2.0
+        h2 = h/2.0
         log('dc_w=%d, dc_w2=%s, dc_h=%d, dc_h2=%s' % (dc_w, str(dc_w2), dc_h, str(dc_h2)))
+        log('w=%s, h=%s, w2=%s, h2=%s' % (str(w), str(h), str(w2), str(h2)))
 
         # top left corner
         exec self.point_view_perturb[placement]

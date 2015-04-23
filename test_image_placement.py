@@ -2,9 +2,10 @@
 # -*- coding= utf-8 -*-
 
 """
-pySlip demonstration program with either GMT or OSM tiles.
+Program to test image map-relative and view-relative placement.
+Select which to show and experiment with placement parameters.
 
-Usage: pyslip_demo.py [-h|--help] [(-t|--tiles) (GMT|OSM)]
+Usage: test_image_placement.py [-h|--help] [(-t|--tiles) (GMT|OSM)]
 """
 
 
@@ -32,8 +33,8 @@ import pyslip
 ######
 
 # demo name/version
-DemoName = 'pySlip %s - Demonstration' % pyslip.__version__
-DemoVersion = '3.0'
+DemoName = 'Test image placement, pySlip %s' % pyslip.__version__
+DemoVersion = '1.0'
 
 # tiles info
 TileDirectory = 'tiles'
@@ -42,25 +43,8 @@ MinTileLevel = 0
 # initial view level and position
 InitViewLevel = 4
 
-# this will eventually be selectable within the app
-# a selection of cities, position from WikiPedia, etc
-#InitViewPosition = (0.0, 51.48)             # Greenwich, England
-#InitViewPosition = (5.33, 60.389444)        # Bergen, Norway
-#InitViewPosition = (151.209444, -33.859972) # Sydney, Australia
-#InitViewPosition = (-77.036667, 38.895111)  # Washington, DC, USA
-#InitViewPosition = (132.455278, 34.385278)  # Hiroshima, Japan
-InitViewPosition = (-8.008889, 31.63)       # Marrakech (مراكش), Morocco
-#InitViewPosition = (18.95, 69.65)           # Tromsø, Norway
-#InitViewPosition = (-70.933333, -53.166667) # Punta Arenas, Chile
-#InitViewPosition = (168.3475, -46.413056)   # Invercargill, New Zealand
-#InitViewPosition = (-147.723056, 64.843611) # Fairbanks, AK, USA
-#InitViewPosition = (103.851959, 1.290270)   # Singapore
-
-# levels on which various layers show
-MRPointShowLevels = [3, 4]
-MRImageShowLevels = [3, 4]
-MRTextShowLevels = [3, 4]
-MRPolyShowLevels = [3, 4]
+# initial centre map position
+InitViewPosition = (151.209444, -33.859972) # Sydney, Australia
 
 # the number of decimal places in a lon/lat display
 LonLatPrecision = 3
@@ -104,6 +88,12 @@ SelGlassyImg6 = 'graphics/selected_glassy_button_6.png'
 
 # image used for shipwrecks
 CompassRoseGraphic = 'graphics/compass_rose.png'
+
+DefaultPlacement = 'ne'
+DefaultX = 0
+DefaultY = 0
+DefaultXOffset = 0
+DefaultYOffset = 0
 
 ######
 # Various GUI layout constants
@@ -169,14 +159,18 @@ class LayerControlEvent(wx.PyCommandEvent):
 
 class LayerControl(wx.Panel):
 
-    def __init__(self, parent, title, selectable=False, editable=False,
+    def __init__(self, parent, title, filename='', placement='cc',
+                 x=0, y=0, x_offset=0, y_offset=0,
                  **kwargs):
         """Initialise a LayerControl instance.
 
         parent      reference to parent object
-        title       text to ahow in static box outline
-        selectable  True if 'selectable' checkbox is to be displayed
-        editable    True if layer can be edited
+        title       text to show in static box outline
+        filename    filename of image to show
+        placement   placement string for image
+        x, y        X and Y coords
+        x_offset    X offset of image
+        y_offset    Y offset of image
         **kwargs    keyword args for Panel
         """
 
@@ -184,81 +178,83 @@ class LayerControl(wx.Panel):
         wx.Panel.__init__(self, parent=parent, id=wx.ID_ANY, **kwargs)
         self.SetBackgroundColour(wx.WHITE)
 
-        self.selectable = selectable
-        self.editable = editable
+        self.v_filename = filename
+        self.v_placement = placement
+        self.v_x = x
+        self.v_y = y
+        self.v_x_offset = x_offset
+        self.v_y_offset = y_offset
 
         box = AppStaticBox(self, title)
         sbs = wx.StaticBoxSizer(box, orient=wx.VERTICAL)
         gbs = wx.GridBagSizer(vgap=0, hgap=0)
+        
+        self.filename = ROTextCtrl(self, filename, size=(160,25))
+        gbs.Add(self.filename, (0,1), span=(1,3), border=0)
+        label = wx.StaticText(self, wx.ID_ANY, 'filename: ')
+        gbs.Add(label, (0,0), border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
 
-        self.cbx_onoff = wx.CheckBox(self, wx.ID_ANY, label='Add layer')
-        gbs.Add(self.cbx_onoff, (0,0), span=(1,4), border=0)
+        label = wx.StaticText(self, wx.ID_ANY, 'placement: ')
+        gbs.Add(label, (1,0), border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
+        choices = ['nw', 'cn', 'ne', 'ce', 'se', 'cs', 'sw', 'cw', 'cc', '<none>']
+        style=wx.CB_DROPDOWN|wx.CB_READONLY
+        self.placement = wx.ComboBox(self, value=DefaultPlacement, size=(45,25), choices=choices, style=style)
+        gbs.Add(self.placement, (1,1), border=0)
 
-        self.cbx_show = wx.CheckBox(self, wx.ID_ANY, label='Show')
-        gbs.Add(self.cbx_show, (1,1), border=0)
-        self.cbx_show.Disable()
+        label = wx.StaticText(self, wx.ID_ANY, 'x: ')
+        gbs.Add(label, (2,0), border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
+        self.x = wx.TextCtrl(self, value=str(DefaultX), size=(45,25))
+        gbs.Add(self.x, (2,1), border=0)
 
-        if selectable:
-            self.cbx_select = wx.CheckBox(self, wx.ID_ANY, label='Select')
-            gbs.Add(self.cbx_select, (1,2), border=0)
-            self.cbx_select.Disable()
+        label = wx.StaticText(self, wx.ID_ANY, 'y: ')
+        gbs.Add(label, (2,2), border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
+        self.y = wx.TextCtrl(self, value=str(DefaultY), size=(45,25))
+        gbs.Add(self.y, (2,3), border=0)
 
-        if editable:
-            self.cbx_edit = wx.CheckBox(self, wx.ID_ANY, label='Edit')
-            gbs.Add(self.cbx_edit, (1,3), border=0)
-            self.cbx_edit.Disable()
+        label = wx.StaticText(self, wx.ID_ANY, 'x_offset: ')
+        gbs.Add(label, (3,0), border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
+        self.x = wx.TextCtrl(self, value=str(DefaultXOffset), size=(45,25))
+        gbs.Add(self.x, (3,1), border=0)
+
+        label = wx.StaticText(self, wx.ID_ANY, '  y_offset: ')
+        gbs.Add(label, (3,2), border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
+        self.y = wx.TextCtrl(self, value=str(DefaultYOffset), size=(45,25))
+        gbs.Add(self.y, (3,3), border=0)
 
         sbs.Add(gbs)
         self.SetSizer(sbs)
         sbs.Fit(self)
 
         # tie handlers to change events
-        self.cbx_onoff.Bind(wx.EVT_CHECKBOX, self.onChangeOnOff)
-        self.cbx_show.Bind(wx.EVT_CHECKBOX, self.onChangeShowOnOff)
-        if selectable:
-            self.cbx_select.Bind(wx.EVT_CHECKBOX, self.onChangeSelectOnOff)
-#        if editable:
-#            self.cbx_edit.Bind(wx.EVT_CHECKBOX, self.onChangeEditOnOff)
+        self.filename.Bind(wx.EVT_LEFT_UP, self.onFilenameChange)
+        self.placement.Bind(wx.EVT_COMBOBOX, self.onPlacementChange)
 
-    def onChangeOnOff(self, event):
-        """Main checkbox changed."""
+    def onFilenameChange(self, event):
+        """Image filename changed."""
 
-        event = LayerControlEvent(myEVT_ONOFF, self.GetId())
-        event.state = self.cbx_onoff.IsChecked()
-        self.GetEventHandler().ProcessEvent(event)
+#        event = LayerControlEvent(myEVT_ONOFF, self.GetId())
+#        event.state = self.cbx_onoff.IsChecked()
+#        self.GetEventHandler().ProcessEvent(event)
+#
+#        if self.cbx_onoff.IsChecked():
+#            self.cbx_show.Enable()
+#            self.cbx_show.SetValue(True)
+#            if self.selectable:
+#                self.cbx_select.Enable()
+#                self.cbx_select.SetValue(False)
+#            if self.editable:
+#                self.cbx_edit.Enable()
+#                self.cbx_edit.SetValue(False)
+#        else:
+#            self.cbx_show.Disable()
+#            if self.selectable:
+#                self.cbx_select.Disable()
+#            if self.editable:
+#                self.cbx_edit.Disable()
+        print('onFilenameChange')
 
-        if self.cbx_onoff.IsChecked():
-            self.cbx_show.Enable()
-            self.cbx_show.SetValue(True)
-            if self.selectable:
-                self.cbx_select.Enable()
-                self.cbx_select.SetValue(False)
-            if self.editable:
-                self.cbx_edit.Enable()
-                self.cbx_edit.SetValue(False)
-        else:
-            self.cbx_show.Disable()
-            if self.selectable:
-                self.cbx_select.Disable()
-            if self.editable:
-                self.cbx_edit.Disable()
-
-    def onChangeShowOnOff(self, event):
-        """Show checkbox changed."""
-
-        event = LayerControlEvent(myEVT_SHOWONOFF, self.GetId())
-        event.state = self.cbx_show.IsChecked()
-        self.GetEventHandler().ProcessEvent(event)
-
-    def onChangeSelectOnOff(self, event):
-        """Select checkbox changed."""
-
-        event = LayerControlEvent(myEVT_SELECTONOFF, self.GetId())
-        if self.selectable:
-            event.state = self.cbx_select.IsChecked()
-        else:
-            event_state = False
-        self.GetEventHandler().ProcessEvent(event)
+    def onPlacementChange(self, event):
+        print('onPlacementChange')
 
 ###############################################################################
 # The main application frame
@@ -267,7 +263,7 @@ class LayerControl(wx.Panel):
 class AppFrame(wx.Frame):
     def __init__(self, tile_dir=TileDirectory, levels=None):
         wx.Frame.__init__(self, None, size=DefaultAppSize,
-                          title='%s %s' % (DemoName, DemoVersion))
+                          title='%s, test version %s' % (DemoName, DemoVersion))
         self.SetMinSize(DefaultAppSize)
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.panel.SetBackgroundColour(wx.WHITE)
@@ -474,9 +470,9 @@ class AppFrame(wx.Frame):
         """
 
         # create widgets
-        point_obj = LayerControl(parent, 'Points, map relative %s'
-                                         % str(MRPointShowLevels),
-                                 selectable=True)
+        point_obj = LayerControl(parent, 'Point, map-relative',
+                                 filename='', placement='',
+                                 x=0, y=0, x_offset=0, y_offset=0)
 
         # tie to event handler(s)
         point_obj.Bind(EVT_ONOFF, self.pointOnOff)
@@ -494,8 +490,9 @@ class AppFrame(wx.Frame):
         """
 
         # create widgets
-        point_obj = LayerControl(parent, 'Points, view relative',
-                                 selectable=True)
+        point_obj = LayerControl(parent, 'Image, map-relative',
+                                 filename='', placement='',
+                                 x=0, y=0, x_offset=0, y_offset=0)
 
         # tie to event handler(s)
         point_obj.Bind(EVT_ONOFF, self.pointViewOnOff)
@@ -513,9 +510,9 @@ class AppFrame(wx.Frame):
         """
 
         # create widgets
-        image_obj = LayerControl(parent, 'Images, map relative %s'
-                                         % str(MRImageShowLevels),
-                                 selectable=True)
+        image_obj = LayerControl(parent, 'Image, map-relative',
+                                 filename='', placement='',
+                                 x=0, y=0, x_offset=0, y_offset=0)
 
         # tie to event handler(s)
         image_obj.Bind(EVT_ONOFF, self.imageOnOff)
@@ -533,8 +530,9 @@ class AppFrame(wx.Frame):
         """
 
         # create widgets
-        image_obj = LayerControl(parent, 'Images, view relative',
-                                 selectable=True)
+        image_obj = LayerControl(parent, 'Image, view-relative',
+                                 filename='', placement='',
+                                 x=0, y=0, x_offset=0, y_offset=0)
 
         # tie to event handler(s)
         image_obj.Bind(EVT_ONOFF, self.imageViewOnOff)
@@ -552,9 +550,9 @@ class AppFrame(wx.Frame):
         """
 
         # create widgets
-        text_obj = LayerControl(parent, 'Text, map relative %s'
-                                        % str(MRTextShowLevels),
-                                selectable=True, editable=True)
+        text_obj = LayerControl(parent, 'Text, map-relative',
+                                 filename='', placement='',
+                                 x=0, y=0, x_offset=0, y_offset=0)
 
         # tie to event handler(s)
         text_obj.Bind(EVT_ONOFF, self.textOnOff)
@@ -572,8 +570,9 @@ class AppFrame(wx.Frame):
         """
 
         # create widgets
-        text_view_obj = LayerControl(parent, 'Text, view relative',
-                                     selectable=True)
+        text_view_obj = LayerControl(parent, 'Text, view-relative',
+                                 filename='', placement='',
+                                 x=0, y=0, x_offset=0, y_offset=0)
 
         # tie to event handler(s)
         text_view_obj.Bind(EVT_ONOFF, self.textViewOnOff)
@@ -591,10 +590,9 @@ class AppFrame(wx.Frame):
         """
 
         # create widgets
-        poly_obj = LayerControl(parent,
-                                'Polygon, map relative %s'
-                                     % str(MRPolyShowLevels),
-                                selectable=True)
+        poly_obj = LayerControl(parent, 'Polygon, map-relative',
+                                 filename='', placement='',
+                                 x=0, y=0, x_offset=0, y_offset=0)
 
         # tie to event handler(s)
         poly_obj.Bind(EVT_ONOFF, self.polyOnOff)
@@ -612,8 +610,9 @@ class AppFrame(wx.Frame):
         """
 
         # create widgets
-        poly_view_obj = LayerControl(parent, 'Polygon, view relative',
-                                     selectable=True)
+        poly_view_obj = LayerControl(parent, 'Polygon, view-relative',
+                                 filename='', placement='',
+                                 x=0, y=0, x_offset=0, y_offset=0)
 
         # tie to event handler(s)
         poly_view_obj.Bind(EVT_ONOFF, self.polyViewOnOff)
@@ -636,13 +635,11 @@ class AppFrame(wx.Frame):
                 self.pyslip.AddPointLayer(PointData, map_rel=True,
                                           color=PointDataColour, radius=3,
                                           offset_x=0, offset_y=0, visible=True,
-                                          show_levels=MRPointShowLevels,
                                           name='<pt_layer>')
             self.xyzzy = \
                 self.pyslip.AddPointLayer(PointData, map_rel=True,
                                           color='green', radius=2,
                                           offset_x=10, offset_y=0, visible=True,
-                                          show_levels=MRPointShowLevels,
                                           name='<pt_layer2>')
         else:
             self.pyslip.DeleteLayer(self.point_layer)
@@ -708,7 +705,6 @@ class AppFrame(wx.Frame):
                     self.pyslip.AddPointLayer((point,), map_rel=True,
                                               color='#0000ff',
                                               radius=5, visible=True,
-                                              show_levels=MRPointShowLevels,
                                               name='<sel_pt_layer>')
         if event.evtype == pyslip.EventBoxSelect: # left box select
             # remove any previous selection
@@ -829,7 +825,6 @@ class AppFrame(wx.Frame):
             self.image_layer = \
                 self.pyslip.AddImageLayer(ImageData, map_rel=True,
                                           visible=True,
-                                          show_levels=MRImageShowLevels,
                                           name='<image_layer>')
         else:
             self.pyslip.DeleteLayer(self.image_layer)
@@ -1065,7 +1060,6 @@ class AppFrame(wx.Frame):
             self.text_layer = \
                 self.pyslip.AddTextLayer(TextData, map_rel=True,
                                          name='<text_layer>', visible=True,
-                                         show_levels=MRTextShowLevels,
                                          placement='ne')
         else:
             self.pyslip.DeleteLayer(self.text_layer)
@@ -1118,7 +1112,6 @@ class AppFrame(wx.Frame):
                     self.pyslip.AddPointLayer((point,), map_rel=True,
                                               color='#0000ff',
                                               radius=5, visible=True,
-                                              show_levels=MRTextShowLevels,
                                               name='<sel_text_layer>')
                 self.pyslip.PlaceLayerBelowLayer(self.sel_text_layer,
                                                  self.text_layer)
@@ -1222,7 +1215,6 @@ class AppFrame(wx.Frame):
                     self.pyslip.AddPointLayer((point,), map_rel=True,
                                               color='#80ffff',
                                               radius=5, visible=True,
-                                              show_levels=MRTextShowLevels,
                                               name='<sel_text_view_layer>')
         elif event.evtype == pyslip.EventRightPointSelect: # right pt select
             pass
@@ -1256,7 +1248,6 @@ class AppFrame(wx.Frame):
             self.poly_layer = \
                 self.pyslip.AddPolygonLayer(PolyData, map_rel=True,
                                             visible=True,
-                                            show_levels=MRPolyShowLevels,
                                             name='<poly_layer>')
         else:
             self.pyslip.DeleteLayer(self.poly_layer)

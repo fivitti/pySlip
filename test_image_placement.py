@@ -36,15 +36,15 @@ import pyslip
 DemoName = 'Test image placement, pySlip %s' % pyslip.__version__
 DemoVersion = '1.0'
 
+# initial values
+InitialViewLevel = 4
+InitiialViewPosition = (151.209444, -33.859972) # Sydney, Australia
+ImitialGraphicDir = 'graphics'
+InitialGraphic = os.path.join(ImitialGraphicDir, 'compass_rose.png')
+
 # tiles info
 TileDirectory = 'tiles'
 MinTileLevel = 0
-
-# initial view level and position
-InitViewLevel = 4
-
-# initial centre map position
-InitViewPosition = (151.209444, -33.859972) # Sydney, Australia
 
 # the number of decimal places in a lon/lat display
 LonLatPrecision = 3
@@ -106,6 +106,11 @@ VSpacerSize = (1,1)         # vertical in control pane
 # border width when packing GUI elements
 PackBorder = 0
 
+# various GUI element sizes
+FilenameBoxSize = (160, 25)
+PlacementBoxSize = (60, 25)
+OffsetBoxSize = (60, 25)
+
 
 ###############################################################################
 # Override the wx.TextCtrl class to add read-only style and background colour
@@ -143,13 +148,13 @@ class AppStaticBox(wx.StaticBox):
 # This is used to control each type of layer, whether map- or view-relative.
 ###############################################################################
 
-myEVT_ONOFF = wx.NewEventType()
-myEVT_SHOWONOFF = wx.NewEventType()
-myEVT_SELECTONOFF = wx.NewEventType()
+myEVT_POSNCHANGE = wx.NewEventType()
+myEVT_DELETE = wx.NewEventType()
+myEVT_UPDATE = wx.NewEventType()
 
-EVT_ONOFF = wx.PyEventBinder(myEVT_ONOFF, 1)
-EVT_SHOWONOFF = wx.PyEventBinder(myEVT_SHOWONOFF, 1)
-EVT_SELECTONOFF = wx.PyEventBinder(myEVT_SELECTONOFF, 1)
+EVT_POSNCHANGE = wx.PyEventBinder(myEVT_POSNCHANGE, 1)
+EVT_DELETE = wx.PyEventBinder(myEVT_DELETE, 1)
+EVT_UPDATE = wx.PyEventBinder(myEVT_UPDATE, 1)
 
 class LayerControlEvent(wx.PyCommandEvent):
     """Event sent when a LayerControl is changed."""
@@ -187,74 +192,109 @@ class LayerControl(wx.Panel):
 
         box = AppStaticBox(self, title)
         sbs = wx.StaticBoxSizer(box, orient=wx.VERTICAL)
-        gbs = wx.GridBagSizer(vgap=0, hgap=0)
-        
-        self.filename = ROTextCtrl(self, filename, size=(160,25))
-        gbs.Add(self.filename, (0,1), span=(1,3), border=0)
+        gbs = wx.GridBagSizer(vgap=2, hgap=2)
+
         label = wx.StaticText(self, wx.ID_ANY, 'filename: ')
         gbs.Add(label, (0,0), border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
+        self.filename = ROTextCtrl(self, filename, size=FilenameBoxSize)
+        gbs.Add(self.filename, (0,1), span=(1,3), border=0, flag=wx.EXPAND)
 
         label = wx.StaticText(self, wx.ID_ANY, 'placement: ')
         gbs.Add(label, (1,0), border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        choices = ['nw', 'cn', 'ne', 'ce', 'se', 'cs', 'sw', 'cw', 'cc', '<none>']
+        choices = ['nw', 'cn', 'ne', 'ce', 'se', 'cs', 'sw', 'cw', 'cc', 'none']
         style=wx.CB_DROPDOWN|wx.CB_READONLY
-        self.placement = wx.ComboBox(self, value=DefaultPlacement, size=(45,25), choices=choices, style=style)
+        self.placement = wx.ComboBox(self, value=DefaultPlacement, size=PlacementBoxSize, choices=choices, style=style)
         gbs.Add(self.placement, (1,1), border=0)
 
         label = wx.StaticText(self, wx.ID_ANY, 'x: ')
         gbs.Add(label, (2,0), border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.x = wx.TextCtrl(self, value=str(DefaultX), size=(45,25))
-        gbs.Add(self.x, (2,1), border=0)
+        self.x = wx.TextCtrl(self, value=str(DefaultX), size=OffsetBoxSize)
+        gbs.Add(self.x, (2,1), border=0, flag=wx.EXPAND)
 
         label = wx.StaticText(self, wx.ID_ANY, 'y: ')
         gbs.Add(label, (2,2), border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.y = wx.TextCtrl(self, value=str(DefaultY), size=(45,25))
-        gbs.Add(self.y, (2,3), border=0)
+        self.y = wx.TextCtrl(self, value=str(DefaultY), size=OffsetBoxSize)
+        gbs.Add(self.y, (2,3), border=0, flag=wx.EXPAND)
 
         label = wx.StaticText(self, wx.ID_ANY, 'x_offset: ')
         gbs.Add(label, (3,0), border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.x = wx.TextCtrl(self, value=str(DefaultXOffset), size=(45,25))
-        gbs.Add(self.x, (3,1), border=0)
+        self.x_offset = wx.TextCtrl(self, value=str(DefaultXOffset), size=OffsetBoxSize)
+        gbs.Add(self.x_offset, (3,1), border=0, flag=wx.EXPAND)
 
         label = wx.StaticText(self, wx.ID_ANY, '  y_offset: ')
         gbs.Add(label, (3,2), border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.y = wx.TextCtrl(self, value=str(DefaultYOffset), size=(45,25))
-        gbs.Add(self.y, (3,3), border=0)
+        self.y_offset = wx.TextCtrl(self, value=str(DefaultYOffset), size=OffsetBoxSize)
+        gbs.Add(self.y_offset, (3,3), border=0, flag=wx.EXPAND)
+
+        delete_button = wx.Button(self, label='Remove')
+        gbs.Add(delete_button, (4,2), border=5, flag=wx.EXPAND)
+        update_button = wx.Button(self, label='Update')
+        gbs.Add(update_button, (4,3), border=5, flag=wx.EXPAND)
 
         sbs.Add(gbs)
         self.SetSizer(sbs)
         sbs.Fit(self)
 
         # tie handlers to change events
-        self.filename.Bind(wx.EVT_LEFT_UP, self.onFilenameChange)
-        self.placement.Bind(wx.EVT_COMBOBOX, self.onPlacementChange)
+#        self.filename.Bind(wx.EVT_LEFT_UP, self.onFilenameChange)
+#        self.placement.Bind(wx.EVT_COMBOBOX, self.onPlacementChange)
+#        self.x.Bind(wx.EVT_TEXT, self.onPositionChange)
+#        self.y.Bind(wx.EVT_TEXT, self.onPositionChange)
+#        self.x_offset.Bind(wx.EVT_TEXT, self.onOffsetChange)
+#        self.y_offset.Bind(wx.EVT_TEXT, self.onOffsetChange)
 
-    def onFilenameChange(self, event):
-        """Image filename changed."""
+        delete_button.Bind(wx.EVT_BUTTON, self.onDelete)
+        update_button.Bind(wx.EVT_BUTTON, self.onUpdate)
 
-#        event = LayerControlEvent(myEVT_ONOFF, self.GetId())
-#        event.state = self.cbx_onoff.IsChecked()
+#    def onFilenameChange(self, event):
+#        """Image filename changed."""
+#        log('onFilenameChange')
+#        event = LayerControlEvent(myEVT_POSNCHANGE, self.GetId())
 #        self.GetEventHandler().ProcessEvent(event)
 #
-#        if self.cbx_onoff.IsChecked():
-#            self.cbx_show.Enable()
-#            self.cbx_show.SetValue(True)
-#            if self.selectable:
-#                self.cbx_select.Enable()
-#                self.cbx_select.SetValue(False)
-#            if self.editable:
-#                self.cbx_edit.Enable()
-#                self.cbx_edit.SetValue(False)
-#        else:
-#            self.cbx_show.Disable()
-#            if self.selectable:
-#                self.cbx_select.Disable()
-#            if self.editable:
-#                self.cbx_edit.Disable()
-        print('onFilenameChange')
+#    def onPlacementChange(self, event):
+#        log('onPlacementChange')
+#        event = LayerControlEvent(myEVT_POSNCHANGE, self.GetId())
+#        self.GetEventHandler().ProcessEvent(event)
+#
+#    def onPositionChange(self, event):
+#        log('onPositionChange')
+#        event = LayerControlEvent(myEVT_POSNCHANGE, self.GetId())
+#        self.GetEventHandler().ProcessEvent(event)
+#
+#    def onOffsetChange(self, event):
+#        log('onPositionChange')
+#        event = LayerControlEvent(myEVT_POSNCHANGE, self.GetId())
+#        self.GetEventHandler().ProcessEvent(event)
 
-    def onPlacementChange(self, event):
-        print('onPlacementChange')
+#    def onChange(self, event):
+#        """Image position or picture changed."""
+#
+#        log('onChange')
+#        event = LayerControlEvent(myEVT_POSNCHANGE, self.GetId())
+#        self.GetEventHandler().ProcessEvent(event)
+
+    def onDelete(self, event):
+        """Remove image from map."""
+        log('onDelete')
+        event = LayerControlEvent(myEVT_DELETE, self.GetId())
+        self.GetEventHandler().ProcessEvent(event)
+
+    def onUpdate(self, event):
+        """Update image on map."""
+
+        log('onUpdate')
+
+        event = LayerControlEvent(myEVT_UPDATE, self.GetId())
+
+        event.filename = self.filename.GetValue()
+        event.placement = self.placement.GetValue()
+        event.x = self.x.GetValue()
+        event.y = self.y.GetValue()
+        event.x_offset = self.x_offset.GetValue()
+        event.y_offset = self.y_offset.GetValue()
+
+        self.GetEventHandler().ProcessEvent(event)
 
 ###############################################################################
 # The main application frame
@@ -284,8 +324,11 @@ class AppFrame(wx.Frame):
         # create select event dispatch directory
         self.demo_select_dispatch = {}
 
+        # initialise state variables
+        self.image_layer = None
+        self.image_view_layer = None
+
         # finally, bind events to handlers
-        self.pyslip.Bind(pyslip.EVT_PYSLIP_SELECT, self.handle_select_event)
         self.pyslip.Bind(pyslip.EVT_PYSLIP_POSITION,
                          self.handle_position_event)
         self.pyslip.Bind(pyslip.EVT_PYSLIP_LEVEL, self.handle_level_change)
@@ -325,11 +368,11 @@ class AppFrame(wx.Frame):
         # create gui objects
         sb = AppStaticBox(parent, '', style=wx.NO_BORDER)
         self.pyslip = pyslip.PySlip(parent, tile_src=self.tile_source,
-                                    min_level=MinTileLevel)
+                                    min_level=MinTileLevel,
+                                    tilesets=['./tilesets'])
 
         # lay out objects
         box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
-        #box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
         box.Add(self.pyslip, proportion=1, border=0, flag=wx.EXPAND)
 
         return box
@@ -359,58 +402,23 @@ class AppFrame(wx.Frame):
         # vertical spacer
         controls.AddSpacer(VSpacerSize)
 
-        # controls for map-relative points layer
-        point = self.make_gui_point(parent)
-        controls.Add(point, proportion=0, flag=wx.EXPAND|wx.ALL)
-
-        # vertical spacer
-        controls.AddSpacer(VSpacerSize)
-
-        # controls for view-relative points layer
-        point_view = self.make_gui_point_view(parent)
-        controls.Add(point_view, proportion=0, flag=wx.EXPAND|wx.ALL)
-
-        # vertical spacer
-        controls.AddSpacer(VSpacerSize)
-
         # controls for map-relative image layer
-        image = self.make_gui_image(parent)
-        controls.Add(image, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.image = self.make_gui_image(parent)
+        controls.Add(self.image, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.image.Bind(EVT_DELETE, self.imageDelete)
+        self.image.Bind(EVT_UPDATE, self.imageUpdate)
 
         # vertical spacer
         controls.AddSpacer(VSpacerSize)
 
-        # controls for map-relative image layer
-        image_view = self.make_gui_image_view(parent)
-        controls.Add(image_view, proportion=0, flag=wx.EXPAND|wx.ALL)
+        # controls for image-relative image layer
+        self.image_view = self.make_gui_image_view(parent)
+        controls.Add(self.image_view, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.image_view.Bind(EVT_DELETE, self.imageViewDelete)
+        self.image_view.Bind(EVT_UPDATE, self.imageViewUpdate)
 
         # vertical spacer
         controls.AddSpacer(VSpacerSize)
-
-        # controls for map-relative text layer
-        text = self.make_gui_text(parent)
-        controls.Add(text, proportion=0, flag=wx.EXPAND|wx.ALL)
-
-        # vertical spacer
-        controls.AddSpacer(VSpacerSize)
-
-        # controls for view-relative text layer
-        text_view = self.make_gui_text_view(parent)
-        controls.Add(text_view, proportion=0, flag=wx.EXPAND|wx.ALL)
-
-        # vertical spacer
-        controls.AddSpacer(VSpacerSize)
-
-        # controls for map-relative polygon layer
-        poly = self.make_gui_poly(parent)
-        controls.Add(poly, proportion=0, flag=wx.EXPAND|wx.ALL)
-
-        # vertical spacer
-        controls.AddSpacer(VSpacerSize)
-
-        # controls for view-relative polygon layer
-        poly_view = self.make_gui_poly_view(parent)
-        controls.Add(poly_view, proportion=0, flag=wx.EXPAND|wx.ALL)
 
         return controls
 
@@ -461,46 +469,6 @@ class AppFrame(wx.Frame):
 
         return box
 
-    def make_gui_point(self, parent):
-        """Build the points part of the controls part of GUI.
-
-        parent  reference to parent
-
-        Returns reference to containing sizer object.
-        """
-
-        # create widgets
-        point_obj = LayerControl(parent, 'Point, map-relative',
-                                 filename='', placement='',
-                                 x=0, y=0, x_offset=0, y_offset=0)
-
-        # tie to event handler(s)
-        point_obj.Bind(EVT_ONOFF, self.pointOnOff)
-        point_obj.Bind(EVT_SHOWONOFF, self.pointShowOnOff)
-        point_obj.Bind(EVT_SELECTONOFF, self.pointSelectOnOff)
-
-        return point_obj
-
-    def make_gui_point_view(self, parent):
-        """Build the view-relative points part of the GUI.
-
-        parent  reference to parent
-
-        Returns reference to containing sizer object.
-        """
-
-        # create widgets
-        point_obj = LayerControl(parent, 'Image, map-relative',
-                                 filename='', placement='',
-                                 x=0, y=0, x_offset=0, y_offset=0)
-
-        # tie to event handler(s)
-        point_obj.Bind(EVT_ONOFF, self.pointViewOnOff)
-        point_obj.Bind(EVT_SHOWONOFF, self.pointViewShowOnOff)
-        point_obj.Bind(EVT_SELECTONOFF, self.pointViewSelectOnOff)
-
-        return point_obj
-
     def make_gui_image(self, parent):
         """Build the image part of the controls part of GUI.
 
@@ -513,11 +481,6 @@ class AppFrame(wx.Frame):
         image_obj = LayerControl(parent, 'Image, map-relative',
                                  filename='', placement='',
                                  x=0, y=0, x_offset=0, y_offset=0)
-
-        # tie to event handler(s)
-        image_obj.Bind(EVT_ONOFF, self.imageOnOff)
-        image_obj.Bind(EVT_SHOWONOFF, self.imageShowOnOff)
-        image_obj.Bind(EVT_SELECTONOFF, self.imageSelectOnOff)
 
         return image_obj
 
@@ -534,289 +497,52 @@ class AppFrame(wx.Frame):
                                  filename='', placement='',
                                  x=0, y=0, x_offset=0, y_offset=0)
 
-        # tie to event handler(s)
-        image_obj.Bind(EVT_ONOFF, self.imageViewOnOff)
-        image_obj.Bind(EVT_SHOWONOFF, self.imageViewShowOnOff)
-        image_obj.Bind(EVT_SELECTONOFF, self.imageViewSelectOnOff)
-
         return image_obj
 
-    def make_gui_text(self, parent):
-        """Build the map-relative text part of the controls part of GUI.
-
-        parent  reference to parent
-
-        Returns reference to containing sizer object.
-        """
-
-        # create widgets
-        text_obj = LayerControl(parent, 'Text, map-relative',
-                                 filename='', placement='',
-                                 x=0, y=0, x_offset=0, y_offset=0)
-
-        # tie to event handler(s)
-        text_obj.Bind(EVT_ONOFF, self.textOnOff)
-        text_obj.Bind(EVT_SHOWONOFF, self.textShowOnOff)
-        text_obj.Bind(EVT_SELECTONOFF, self.textSelectOnOff)
-
-        return text_obj
-
-    def make_gui_text_view(self, parent):
-        """Build the view-relative text part of the controls part of GUI.
-
-        parent  reference to parent
-
-        Returns reference to containing sizer object.
-        """
-
-        # create widgets
-        text_view_obj = LayerControl(parent, 'Text, view-relative',
-                                 filename='', placement='',
-                                 x=0, y=0, x_offset=0, y_offset=0)
-
-        # tie to event handler(s)
-        text_view_obj.Bind(EVT_ONOFF, self.textViewOnOff)
-        text_view_obj.Bind(EVT_SHOWONOFF, self.textViewShowOnOff)
-        text_view_obj.Bind(EVT_SELECTONOFF, self.textViewSelectOnOff)
-
-        return text_view_obj
-
-    def make_gui_poly(self, parent):
-        """Build the map-relative polygon part of the controls part of GUI.
-
-        parent  reference to parent
-
-        Returns reference to containing sizer object.
-        """
-
-        # create widgets
-        poly_obj = LayerControl(parent, 'Polygon, map-relative',
-                                 filename='', placement='',
-                                 x=0, y=0, x_offset=0, y_offset=0)
-
-        # tie to event handler(s)
-        poly_obj.Bind(EVT_ONOFF, self.polyOnOff)
-        poly_obj.Bind(EVT_SHOWONOFF, self.polyShowOnOff)
-        poly_obj.Bind(EVT_SELECTONOFF, self.polySelectOnOff)
-
-        return poly_obj
-
-    def make_gui_poly_view(self, parent):
-        """Build the view-relative polygon part of the controls part of GUI.
-
-        parent  reference to parent
-
-        Returns reference to containing sizer object.
-        """
-
-        # create widgets
-        poly_view_obj = LayerControl(parent, 'Polygon, view-relative',
-                                 filename='', placement='',
-                                 x=0, y=0, x_offset=0, y_offset=0)
-
-        # tie to event handler(s)
-        poly_view_obj.Bind(EVT_ONOFF, self.polyViewOnOff)
-        poly_view_obj.Bind(EVT_SHOWONOFF, self.polyViewShowOnOff)
-        poly_view_obj.Bind(EVT_SELECTONOFF, self.polyViewSelectOnOff)
-
-        return poly_view_obj
-
     ######
-    # pySlip demo control event handlers
+    # event handlers
     ######
-
-##### map-relative point layer
-
-    def pointOnOff(self, event):
-        """Handle OnOff event for point layer control."""
-
-        if event.state:
-            self.point_layer = \
-                self.pyslip.AddPointLayer(PointData, map_rel=True,
-                                          color=PointDataColour, radius=3,
-                                          offset_x=0, offset_y=0, visible=True,
-                                          name='<pt_layer>')
-            self.xyzzy = \
-                self.pyslip.AddPointLayer(PointData, map_rel=True,
-                                          color='green', radius=2,
-                                          offset_x=10, offset_y=0, visible=True,
-                                          name='<pt_layer2>')
-        else:
-            self.pyslip.DeleteLayer(self.point_layer)
-            self.pyslip.DeleteLayer(self.xyzzy)
-            self.point_layer = None
-            if self.sel_point_layer:
-                self.pyslip.DeleteLayer(self.sel_point_layer)
-                self.sel_point_layer = None
-                self.sel_point = None
-
-    def pointShowOnOff(self, event):
-        """Handle ShowOnOff event for point layer control."""
-
-        if event.state:
-            self.pyslip.ShowLayer(self.point_layer)
-            self.pyslip.ShowLayer(self.xyzzy)
-            if self.sel_point_layer:
-                self.pyslip.ShowLayer(self.sel_point_layer)
-        else:
-            self.pyslip.HideLayer(self.point_layer)
-            self.pyslip.HideLayer(self.xyzzy)
-            if self.sel_point_layer:
-                self.pyslip.HideLayer(self.sel_point_layer)
-
-    def pointSelectOnOff(self, event):
-        """Handle SelectOnOff event for point layer control."""
-
-        layer = self.point_layer
-        if event.state:
-            self.add_select_handler(layer, self.pointSelect)
-            self.pyslip.SetLayerSelectable(layer, True)
-        else:
-            self.del_select_handler(layer)
-            self.pyslip.SetLayerSelectable(layer, False)
-
-    def pointSelect(self, event):
-        """Handle point select exception from pyslip.
-
-        event  the event that contains these attributes:
-                   layer_id  ID of the layer the select is for
-                   sel_type  type of select event
-                   point     selected point(s) geo coords+data
-                                 ((x,y), data)
-                             (if None then no point(s) selected)
-
-        The point select is designed to be click for on,
-        then click again for off.
-        """
-
-        if event.evtype == pyslip.EventPointSelect:
-            if event.point:
-                (point, data) = event.point
-            if event.point is None or point == self.sel_point:
-                # select again, turn point off
-                self.sel_point = None
-                self.pyslip.DeleteLayer(self.sel_point_layer)
-                self.sel_point_layer = None
-            elif point:
-                if self.sel_point_layer:
-                    self.pyslip.DeleteLayer(self.sel_point_layer)
-                self.sel_point = point
-                self.sel_point_layer = \
-                    self.pyslip.AddPointLayer((point,), map_rel=True,
-                                              color='#0000ff',
-                                              radius=5, visible=True,
-                                              name='<sel_pt_layer>')
-        if event.evtype == pyslip.EventBoxSelect: # left box select
-            # remove any previous selection
-            if self.sel_point_layer:
-                self.pyslip.DeleteLayer(self.sel_point_layer)
-                self.sel_point_layer = None
-
-            if event.point:
-                pts = [pt for (pt,d) in event.point]
-                self.sel_point_layer = \
-                    self.pyslip.AddPointLayer(pts, map_rel=True,
-                                              color='#00ffff',
-                                              radius=5, visible=True,
-                                              show_levels=[3,4],
-                                              name='<boxsel_pt_layer>')
-                self.pyslip.PlaceLayerBelowLayer(self.sel_point_layer,
-                                                 self.point_layer)
-
-        return True
-
-##### view-relative point layer
-
-    def pointViewOnOff(self, event):
-        """Handle OnOff event for point view layer control."""
-
-        if event.state:
-            self.point_view_layer = \
-                self.pyslip.AddPointLayer(PointViewData, map_rel=False,
-                                          placement='se',
-                                          color=PointViewDataColour, radius=1,
-                                          visible=True,
-                                          name='<point_view_layer>')
-        else:
-            self.pyslip.DeleteLayer(self.point_view_layer)
-            self.point_view_layer = None
-            if self.sel_point_view_layer:
-                self.pyslip.DeleteLayer(self.sel_point_view_layer)
-                self.sel_point_view_layer = None
-                self.sel_point_view = None
-
-    def pointViewShowOnOff(self, event):
-        """Handle ShowOnOff event for point view layer control."""
-
-        if event.state:
-            self.pyslip.ShowLayer(self.point_view_layer)
-            if self.sel_point_view_layer:
-                self.pyslip.ShowLayer(self.sel_point_view_layer)
-        else:
-            self.pyslip.HideLayer(self.point_view_layer)
-            if self.sel_point_view_layer:
-                self.pyslip.HideLayer(self.sel_point_view_layer)
-
-    def pointViewSelectOnOff(self, event):
-        """Handle SelectOnOff event for point view layer control."""
-
-        layer = self.point_view_layer
-        if event.state:
-            self.add_select_handler(layer, self.pointViewSelect)
-            self.pyslip.SetLayerSelectable(layer, True)
-        else:
-            self.del_select_handler(layer)
-            self.pyslip.SetLayerSelectable(layer, False)
-
-    def pointViewSelect(self, event):
-        """Handle view-relative point select event from pyslip.
-
-        event  the event that contains these attributes:
-                   layer_id  ID of the layer the select is for
-                   sel_type  type of select event
-                   point     selected point(s) geo coordinates
-                             (if None then no point(s) was selected)
-
-        The point select is designed to be click for on,
-        then click again for off.
-        """
-
-        if event.evtype == pyslip.EventPointSelect:
-            if event.point:
-                (point, data) = event.point
-            if event.point is None or point == self.sel_point_view:
-                # select again, turn point off
-                self.sel_point_view = None
-                self.pyslip.DeleteLayer(self.sel_point_view_layer)
-                self.sel_point_view_layer = None
-            elif event.point:
-                if self.sel_point_view_layer:
-                    self.pyslip.DeleteLayer(self.sel_point_view_layer)
-                self.sel_point_view = point
-                self.sel_point_view_layer = \
-                    self.pyslip.AddPointLayer((point,), map_rel=False,
-                                              color='#0000ff',
-                                              radius=3, visible=True,
-                                              name='<sel_pt_view_layer>')
-        elif event.evtype == pyslip.EventBoxSelect:
-            # remove any previous selection
-            if self.sel_point_view_layer:
-                self.pyslip.DeleteLayer(self.sel_point_view_layer)
-                self.sel_point_view_layer = None
-
-            if event.point:
-                pts = [pt for (pt,d) in event.point]
-                self.sel_point_view_layer = \
-                    self.pyslip.AddPointLayer(pts, map_rel=False,
-                                              color='#00ffff',
-                                              radius=3, visible=True,
-                                              name='<boxsel_pt_view_layer>')
-                self.pyslip.PlaceLayerBelowLayer(self.sel_point_view_layer,
-                                                 self.point_view_layer)
-
-        return True
 
 ##### map-relative image layer
+
+    def imageUpdate(self, event):
+        """Display updated image."""
+
+        if self.image_layer:
+            self.pyslip.DeleteLayer(self.image_layer)
+
+        # convert values to sanity for layer attributes
+        image = ShipImg
+        placement = event.placement
+        if placement == 'none':
+            placement= ''
+        x = event.x
+        if not x:
+            x = 0
+        y = event.y
+        if not y:
+            y = 0
+        x_offset = event.x_offset
+        if not x_offset:
+            x_offset = 0
+        y_offset = event.y_offset
+        if not y_offset:
+            y_offset = 0
+
+        image_data = [(x, y, image, {'placement': placement,
+                                     'x_offset': x_offset,
+                                     'y_offset': y_offset})]
+        self.image_layer = \
+            self.pyslip.AddImageLayer(image_data, map_rel=True,
+                                      visible=True,
+                                      name='<image_layer>')
+
+    def imageDelete(self, event):
+        log('imageDelete')
+
+        if self.image_layer:
+            self.pyslip.DeleteLayer(self.image_layer)
+        self.image_layer = None
 
     def imageOnOff(self, event):
         """Handle OnOff event for map-relative image layer control."""
@@ -917,6 +643,45 @@ class AppFrame(wx.Frame):
         return True
 
 ##### view-relative image layer
+
+    def imageViewUpdate(self, event):
+        """Display updated image."""
+
+        if self.image_view_layer:
+            self.pyslip.DeleteLayer(self.image_view_layer)
+
+        # convert values to sanity for layer attributes
+        image = CompassRoseGraphic
+        placement = event.placement
+        if placement == 'none':
+            placement= ''
+        x = event.x
+        if not x:
+            x = 0
+        y = event.y
+        if not y:
+            y = 0
+        x_offset = event.x_offset
+        if not x_offset:
+            x_offset = 0
+        y_offset = event.y_offset
+        if not y_offset:
+            y_offset = 0
+
+        image_data = [(x, y, image, {'placement': placement,
+                                     'x_offset': x_offset,
+                                     'y_offset': y_offset})]
+        self.image_view_layer = \
+            self.pyslip.AddImageLayer(image_data, map_rel=False,
+                                      visible=True,
+                                      name='<image_layer>')
+
+    def imageViewDelete(self, event):
+        log('imageViewDelete')
+
+        if self.image_view_layer:
+            self.pyslip.DeleteLayer(self.image_view_layer)
+        self.image_view_layer = None
 
     def imageViewOnOff(self, event):
         """Handle OnOff event for view-relative image layer control."""
@@ -1049,337 +814,6 @@ class AppFrame(wx.Frame):
                                             name='<sel_image_view_outline>',
                                            )
 
-        return True
-
-##### map-relative text layer
-
-    def textOnOff(self, event):
-        """Handle OnOff event for map-relative text layer control."""
-
-        if event.state:
-            self.text_layer = \
-                self.pyslip.AddTextLayer(TextData, map_rel=True,
-                                         name='<text_layer>', visible=True,
-                                         placement='ne')
-        else:
-            self.pyslip.DeleteLayer(self.text_layer)
-            self.text_layer = None
-            if self.sel_text_layer:
-                self.pyslip.DeleteLayer(self.sel_text_layer)
-                self.sel_text_layer = None
-                self.sel_text_point = None
-
-    def textShowOnOff(self, event):
-        """Handle ShowOnOff event for text layer control."""
-
-        if event.state:
-            self.pyslip.ShowLayer(self.text_layer)
-            if self.sel_text_layer:
-                self.pyslip.ShowLayer(self.sel_text_layer)
-        else:
-            self.pyslip.HideLayer(self.text_layer)
-            if self.sel_text_layer:
-                self.pyslip.HideLayer(self.sel_text_layer)
-
-    def textSelectOnOff(self, event):
-        """Handle SelectOnOff event for text layer control."""
-
-        layer = self.text_layer
-        if event.state:
-            self.add_select_handler(layer, self.textSelect)
-            self.pyslip.SetLayerSelectable(layer, True)
-        else:
-            self.del_select_handler(layer)
-            self.pyslip.SetLayerSelectable(layer, False)
-
-
-    def textSelect(self, event):
-        """Map-relative text select event from pyslip."""
-
-        if event.evtype == pyslip.EventPointSelect:
-            if event.point:
-                (point, data) = event.point
-            if event.point is None or point == self.sel_text:
-                # select again, turn point off
-                self.sel_text = None
-                self.pyslip.DeleteLayer(self.sel_text_layer)
-                self.sel_text_layer = None
-            elif point:
-                if self.sel_text_layer:
-                    self.pyslip.DeleteLayer(self.sel_text_layer)
-                self.sel_text = point
-                self.sel_text_layer = \
-                    self.pyslip.AddPointLayer((point,), map_rel=True,
-                                              color='#0000ff',
-                                              radius=5, visible=True,
-                                              name='<sel_text_layer>')
-                self.pyslip.PlaceLayerBelowLayer(self.sel_text_layer,
-                                                 self.text_layer)
-        if event.evtype == pyslip.EventBoxSelect: # left box select
-            # remove any previous selection
-            if self.sel_text_layer:
-                self.pyslip.DeleteLayer(self.sel_text_layer)
-                self.sel_text_layer = None
-
-            if event.point:
-                pts = [pt for (pt,d) in event.point]
-                self.sel_text_layer = \
-                    self.pyslip.AddPointLayer(pts, map_rel=True,
-                                              color='#00ffff',
-                                              radius=5, visible=True,
-                                              show_levels=[3,4],
-                                              name='<boxsel_text_layer>')
-                self.pyslip.PlaceLayerBelowLayer(self.sel_text_layer,
-                                                 self.text_layer)
-
-        return True
-
-##### view-relative text layer
-
-    def textViewOnOff(self, event):
-        """Handle OnOff event for map-relative text layer control."""
-
-        if event.state:
-            self.text_view_layer = \
-                self.pyslip.AddTextLayer(TextViewData, map_rel=False,
-                                         name='<text_view_layer>',
-                                         placement='cn', visible=True,
-                                         fontsize=24, textcolor='#0000ff')
-        else:
-            self.pyslip.DeleteLayer(self.text_view_layer)
-            self.text_view_layer = None
-            if self.sel_text_view_layer:
-                self.pyslip.DeleteLayer(self.sel_text_view_layer)
-                self.sel_text_view_layer = None
-                self.sel_text_view_point = None
-
-    def textViewShowOnOff(self, event):
-        """Handle ShowOnOff event for text layer control."""
-
-        if event.state:
-            self.pyslip.ShowLayer(self.text_view_layer)
-            if self.sel_text_view_layer:
-                self.pyslip.ShowLayer(self.sel_text_view_layer)
-        else:
-            self.pyslip.HideLayer(self.text_view_layer)
-            if self.sel_text_view_layer:
-                self.pyslip.HideLayer(self.sel_text_view_layer)
-
-    def textViewSelectOnOff(self, event):
-        """Handle SelectOnOff event for text layer control."""
-
-        layer = self.text_view_layer
-        if event.state:
-            self.add_select_handler(layer, self.textViewSelect)
-            self.pyslip.SetLayerSelectable(layer, True)
-        else:
-            self.del_select_handler(layer)
-            self.pyslip.SetLayerSelectable(layer, False)
-
-    def textViewSelect(self, event):
-        """Map-relative text select event from pyslip."""
-
-#        if posn:
-#            for p in TextData:
-#                pp = (p[0], p[1])
-#                if pp == posn:
-#                    if pp == self.sel_view_text:
-#                        # select again, turn point off
-#                        self.sel_view_text = None
-#                        self.pyslip.DeleteLayer(self.sel_text_view_layer)
-#                        self.sel_text_view_layer = None
-#                    else:
-#                        if self.sel_text_view_layer:
-#                            self.pyslip.DeleteLayer(self.sel_text_view_layer)
-#                        self.sel_view_text = pp
-#                        self.sel_text_view_layer = \
-#                            self.pyslip.AddPointLayer((pp,), map_rel=True,
-#                                                      color='#80ffff',
-#                                                      radius=5, visible=True,
-#                                                      name='<sel_text>')
-#        return True
-
-        if event.evtype == pyslip.EventPointSelect:
-            if event.point:
-                (point, data) = event.point
-            if event.point is None or point == self.sel_text_view:
-                # select again, turn point off
-                self.sel_text_view = None
-                self.pyslip.DeleteLayer(self.sel_text_view_layer)
-                self.sel_text_view_layer = None
-            elif point:
-                if self.sel_text_view_layer:
-                    self.pyslip.DeleteLayer(self.sel_text_view_layer)
-                self.sel_text_view = point
-                self.sel_text_view_layer = \
-                    self.pyslip.AddPointLayer((point,), map_rel=True,
-                                              color='#80ffff',
-                                              radius=5, visible=True,
-                                              name='<sel_text_view_layer>')
-        elif event.evtype == pyslip.EventRightPointSelect: # right pt select
-            pass
-        if event.evtype == pyslip.EventBoxSelect: # left box select
-            # remove any previous selection
-            if self.sel_text_view_layer:
-                self.pyslip.DeleteLayer(self.sel_text_view_layer)
-                self.sel_text_view_layer = None
-
-            if event.point:
-                pts = [pt for (pt,d) in event.point]
-                self.sel_text_view_layer = \
-                    self.pyslip.AddPointLayer(pts, map_rel=True,
-                                              color='#00ffff',
-                                              radius=5, visible=True,
-                                              show_levels=[3,4],
-                                              name='<boxsel_text_view_layer>')
-                self.pyslip.PlaceLayerBelowLayer(self.sel_text_view_layer,
-                                                 self.text_view_layer)
-        else:   # right box select
-            pass
-
-        return True
-
-##### map-relative polygon layer
-
-    def polyOnOff(self, event):
-        """Handle OnOff event for map-relative polygon layer control."""
-
-        if event.state:
-            self.poly_layer = \
-                self.pyslip.AddPolygonLayer(PolyData, map_rel=True,
-                                            visible=True,
-                                            name='<poly_layer>')
-        else:
-            self.pyslip.DeleteLayer(self.poly_layer)
-            self.poly_layer = None
-            if self.sel_poly_layer:
-                self.pyslip.DeleteLayer(self.sel_poly_layer)
-                self.sel_poly_layer = None
-                self.sel_poly_point = None
-
-    def polyShowOnOff(self, event):
-        """Handle ShowOnOff event for polygon layer control."""
-
-        if event.state:
-            self.pyslip.ShowLayer(self.poly_layer)
-            if self.sel_poly_layer:
-                self.pyslip.ShowLayer(self.sel_poly_layer)
-        else:
-            self.pyslip.HideLayer(self.poly_layer)
-            if self.sel_poly_layer:
-                self.pyslip.HideLayer(self.sel_poly_layer)
-
-    def polySelectOnOff(self, event):
-        """Handle SelectOnOff event for polygon layer control."""
-
-        layer = self.poly_layer
-        if event.state:
-            self.add_select_handler(layer, self.polySelect)
-            self.pyslip.SetLayerSelectable(layer, True)
-        else:
-            self.del_select_handler(layer)
-            self.pyslip.SetLayerSelectable(layer, False)
-
-    def polySelect(self, event):
-        """Map-relative polygon select event from pyslip.
-
-        event  the pyslip event which has attributes:
-                   evtype    the event type
-                   layer_id  ID of the layer selected
-                   point     iterable of poly points, can be None
-                   mposn     map-relative position of mouse-click
-                   vposn     view-relative position of mouse-click
-        """
-
-        poly = event.point
-
-        if event.evtype == pyslip.EventPointSelect:
-            if poly:
-                if poly == self.sel_poly:
-                    # polygon selected again, turn selection off
-                    self.sel_poly = None
-                    self.pyslip.DeleteLayer(self.sel_poly_layer)
-                    self.sel_poly_layer = None
-                else:
-                    # new selection
-                    if self.sel_poly_layer:
-                        # deselect previously selected poly
-                        self.pyslip.DeleteLayer(self.sel_poly_layer)
-                    self.sel_poly = poly
-                    self.sel_poly_layer = \
-                        self.pyslip.AddPointLayer(poly, map_rel=True,
-                                                  color='#ff00ff',
-                                                  radius=9, visible=True,
-                                                  show_levels=[3,4],
-                                                  name='<sel_poly>')
-        else:   # box select, not yet implemented
-            pass
-
-        return True
-
-##### view-relative polygon layer
-
-    def polyViewOnOff(self, event):
-        """Handle OnOff event for map-relative polygon layer control."""
-
-        if event.state:
-            self.poly_view_layer = \
-                self.pyslip.AddPolygonLayer(PolyViewData, map_rel=False,
-                                            name='<poly_view_layer>',
-                                            placement='cn', visible=True,
-                                            fontsize=24, color='#0000ff')
-        else:
-            self.pyslip.DeleteLayer(self.poly_view_layer)
-            self.poly_view_layer = None
-            if self.sel_poly_view_layer:
-                self.pyslip.DeleteLayer(self.sel_poly_view_layer)
-                self.sel_poly_view_layer = None
-                self.sel_poly_view_point = None
-
-    def polyViewShowOnOff(self, event):
-        """Handle ShowOnOff event for polygon layer control."""
-
-        if event.state:
-            self.pyslip.ShowLayer(self.poly_view_layer)
-            if self.sel_poly_view_layer:
-                self.pyslip.ShowLayer(self.sel_poly_view_layer)
-        else:
-            self.pyslip.HideLayer(self.poly_view_layer)
-            if self.sel_poly_view_layer:
-                self.pyslip.HideLayer(self.sel_poly_view_layer)
-
-    def polyViewSelectOnOff(self, event):
-        """Handle SelectOnOff event for polygon layer control."""
-
-        layer = self.poly_view_layer
-        if event.state:
-            self.add_select_handler(layer, self.polyViewSelect)
-            self.pyslip.SetLayerSelectable(layer, True)
-        else:
-            self.del_select_handler(layer)
-            self.pyslip.SetLayerSelectable(layer, False)
-
-    def polyViewSelect(self, id, posn=None):
-        """View-relative polygon select event from pyslip."""
-
-        if posn:
-            for p in PolyData:
-                pp = (p[0], p[1])
-                if pp == posn:
-                    if pp == self.sel_view_poly:
-                        # select again, turn polygon off
-                        self.view_sel_poly = None
-                        self.pyslip.DeleteLayer(self.sel_poly_view_layer)
-                        self.sel_poly_view_layer = None
-                    else:
-                        if self.sel_poly_view_layer:
-                            self.pyslip.DeleteLayer(self.sel_poly_view_layer)
-                        self.view_sel_poly = pp
-                        self.sel_poly_view_layer = \
-                            self.pyslip.AddPointLayer((pp,), map_rel=True,
-                                                      color='#80ffff',
-                                                      radius=5, visible=True,
-                                                      name='<sel_polyv>')
         return True
 
     ######
@@ -1581,6 +1015,8 @@ class AppFrame(wx.Frame):
 
         # get width and height of the compass rose image
         cr_img = wx.Image(CompassRoseGraphic, wx.BITMAP_TYPE_ANY)
+        log('cr_img: %s' % str(cr_img))
+        log(str(dir(cr_img)))
         cr_bmap = cr_img.ConvertToBitmap()
         (CR_Width, CR_Height) = cr_bmap.GetSize()
 
@@ -1588,8 +1024,8 @@ class AppFrame(wx.Frame):
         self.pyslip.OnSize()
 
         # set initial view position
-        self.map_level.SetLabel('%d' % InitViewLevel)
-        wx.CallAfter(self.final_setup, InitViewLevel, InitViewPosition)
+        self.map_level.SetLabel('%d' % InitialViewLevel)
+        wx.CallAfter(self.final_setup, InitialViewLevel, InitiialViewPosition)
 
     def final_setup(self, level, position):
         """Perform final setup.
@@ -1656,6 +1092,15 @@ if __name__ == '__main__':
     import getopt
     import traceback
     import tkinter_error
+
+#vvvvvvvvvvvvvvvvvvvvv test code - can go away once __init__.py works
+    DefaultTilesets = 'tilesets'
+    CurrentPath = os.path.dirname(os.path.abspath(__file__))
+
+    sys.path.append(os.path.join(CurrentPath, DefaultTilesets))
+
+    log(str(sys.path))
+#^^^^^^^^^^^^^^^^^^^^^ test code - can go away once __init__.py works
 
     # our own handler for uncaught exceptions
     def excepthook(type, value, tb):

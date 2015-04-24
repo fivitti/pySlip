@@ -513,25 +513,34 @@ class AppFrame(wx.Frame):
 
         # convert values to sanity for layer attributes
         image = ShipImg
+
         placement = event.placement
         if placement == 'none':
             placement= ''
+
         x = event.x
         if not x:
             x = 0
+        x = int(x)
+
         y = event.y
         if not y:
             y = 0
-        x_offset = event.x_offset
-        if not x_offset:
-            x_offset = 0
-        y_offset = event.y_offset
-        if not y_offset:
-            y_offset = 0
+        y = int(y)
+
+        x_off = event.x_offset
+        if not x_off:
+            x_off = 0
+        x_off = int(x_off)
+
+        y_off = event.y_offset
+        if not y_off:
+            y_off = 0
+        y_off = int(y_off)
 
         image_data = [(x, y, image, {'placement': placement,
-                                     'x_offset': x_offset,
-                                     'y_offset': y_offset})]
+                                     'x_off': x_off,
+                                     'y_off': y_off})]
         self.image_layer = \
             self.pyslip.AddImageLayer(image_data, map_rel=True,
                                       visible=True,
@@ -655,22 +664,31 @@ class AppFrame(wx.Frame):
         placement = event.placement
         if placement == 'none':
             placement= ''
+
         x = event.x
         if not x:
             x = 0
+        x = int(x)
+
         y = event.y
         if not y:
             y = 0
-        x_offset = event.x_offset
-        if not x_offset:
-            x_offset = 0
-        y_offset = event.y_offset
-        if not y_offset:
-            y_offset = 0
+        y = int(y)
 
+        x_off = event.x_offset
+        if not x_off:
+            x_off = 0
+        x_off = int(x_off)
+
+        y_off = event.y_offset
+        if not y_off:
+            y_off = 0
+        y_off = int(y_off)
+
+        # create a new image layer
         image_data = [(x, y, image, {'placement': placement,
-                                     'x_offset': x_offset,
-                                     'y_offset': y_offset})]
+                                     'offset_x': x_off,
+                                     'offset_y': y_off})]
         self.image_view_layer = \
             self.pyslip.AddImageLayer(image_data, map_rel=False,
                                       visible=True,

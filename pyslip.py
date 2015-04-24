@@ -114,7 +114,7 @@ class _BufferedCanvas(wx.Panel):
 
     def __init__(self, parent, id=wx.ID_ANY, pos=wx.DefaultPosition,
                  size=wx.DefaultSize, style=wx.NO_FULL_REPAINT_ON_RESIZE):
-        """Initialize the canvas.
+        """Initialise the canvas.
 
         parent  reference to 'parent' widget
         id      the unique widget ID (NB: shadows builtin 'id')
@@ -623,7 +623,7 @@ class PySlip(_BufferedCanvas):
     TypeText = 3
 
     def __init__(self, parent, tile_src=None, start_level=None,
-                 min_level=None, max_level=None, **kwargs):
+                 min_level=None, max_level=None, tilesets=None, **kwargs):
         """Initialise a pySlip instance.
 
         parent       reference to parent object
@@ -631,6 +631,7 @@ class PySlip(_BufferedCanvas):
         start_level  initial tile level to start at
         min_level    the minimum tile level to use
         max_level    the maximum tile level to use
+        tilesets     optional list of user tileset directories
         **kwargs     keyword args for Panel
         """
 
@@ -640,6 +641,13 @@ class PySlip(_BufferedCanvas):
 
         # save tile source object
         self.tiles = tile_src
+
+        # append user tileset directories to sys.path
+        if tilesets:
+            for ts_path in tilesets:
+                ts_path_abs = os.path.abspath(ts_path)
+                log('Adding tileset directory: %s' % ts_path_abs)
+                sys.path.append(ts_path_abs)
 
         # set tile levels stuff - allowed levels, etc
         self.max_level = max_level if max_level else self.tiles.max_level

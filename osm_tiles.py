@@ -29,6 +29,11 @@ except ImportError:
         pass
 
 
+# attributes used for tileset introspection
+tileset_name = ''
+tileset_shortname = ''
+tileset_version = '1.0'
+
 # tiles stored at <basepath>/<level>/<x>/<y>.png
 TilePath = '%d/%d/%d.png'
 

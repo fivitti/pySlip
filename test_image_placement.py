@@ -521,12 +521,12 @@ class AppFrame(wx.Frame):
         x = event.x
         if not x:
             x = 0
-        x = int(x)
+        x = float(x)
 
         y = event.y
         if not y:
             y = 0
-        y = int(y)
+        y = float(y)
 
         x_off = event.x_offset
         if not x_off:
@@ -539,8 +539,8 @@ class AppFrame(wx.Frame):
         y_off = int(y_off)
 
         image_data = [(x, y, image, {'placement': placement,
-                                     'x_off': x_off,
-                                     'y_off': y_off})]
+                                     'offset_x': x_off,
+                                     'offset_y': y_off})]
         self.image_layer = \
             self.pyslip.AddImageLayer(image_data, map_rel=True,
                                       visible=True,
@@ -686,6 +686,7 @@ class AppFrame(wx.Frame):
         y_off = int(y_off)
 
         # create a new image layer
+        log('#####: x=%s, y=%s' % (str(x), str(y)))
         image_data = [(x, y, image, {'placement': placement,
                                      'offset_x': x_off,
                                      'offset_y': y_off})]

@@ -429,15 +429,15 @@ class PySlip(_BufferedCanvas):
     # dictionary for view-relative image placement
     # assumes variables x, y, w, h, dc_w, dc_h, x_off, y_off are set
     # perturbs x and y to top-left image corner for drawing
-    image_view_placement = {'cc': 'x=dc_w2-w2;     y=dc_h2-h2',
-                            'nw': 'x=x_off;        y=y_off',
-                            'cn': 'x=dc_w2-w2;     y=y_off',
-                            'ne': 'x=dc_w-w-x_off; y=y_off',
-                            'ce': 'x=dc_w-w-x_off; y=dc_h2-h2',
-                            'se': 'x=dc_w-w-x_off; y=dc_h-h-y_off',
-                            'cs': 'x=dc_w2-w2;     y=dc_h-h-y_off',
-                            'sw': 'x=x_off;        y=dc_h-h-y_off',
-                            'cw': 'x=x_off;        y=dc_h2-h2',
+    image_view_placement = {'cc': 'x=x+dc_w2-w2;     y=y+dc_h2-h2',
+                            'nw': 'x=x+x_off;        y=y+y_off',
+                            'cn': 'x=x+dc_w2-w2;     y=y+y_off',
+                            'ne': 'x=x+dc_w-w-x_off; y=y+y_off',
+                            'ce': 'x=x+dc_w-w-x_off; y=y+dc_h2-h2',
+                            'se': 'x=x+dc_w-w-x_off; y=y+dc_h-h-y_off',
+                            'cs': 'x=x+dc_w2-w2;     y=y+dc_h-h-y_off',
+                            'sw': 'x=x+x_off;        y=y+dc_h-h-y_off',
+                            'cw': 'x=x+x_off;        y=y+dc_h2-h2',
                             None: '',
                             False: '',
                             '': ''}
@@ -932,6 +932,9 @@ class PySlip(_BufferedCanvas):
                 (w, h) = bmap.GetSize()
                 w_cache = w
                 h_cache = h
+
+            log('AddImageLayer: draw data=%s' % str((float(lon), float(lat), bmap, w, h,                                                                     
+                                              placement.lower(), offset_x, offset_y, udata)))
 
             draw_data.append((float(lon), float(lat), bmap, w, h,
                               placement.lower(), offset_x, offset_y, udata))

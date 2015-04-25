@@ -38,7 +38,7 @@ DemoVersion = '1.0'
 
 # initial values
 InitialViewLevel = 4
-InitiialViewPosition = (151.209444, -33.859972) # Sydney, Australia
+InitiialViewPosition = (145.0, -20.0)
 ImitialGraphicDir = 'graphics'
 InitialGraphic = os.path.join(ImitialGraphicDir, 'compass_rose.png')
 
@@ -87,13 +87,21 @@ GlassyImg6 = 'graphics/glassy_button_6.png'
 SelGlassyImg6 = 'graphics/selected_glassy_button_6.png'
 
 # image used for shipwrecks
-CompassRoseGraphic = 'graphics/compass_rose.png'
+DefaultFilename = 'graphics/shipwreck.png'
+DefaultPlacement = 'cc'
+DefaultX = 145.0
+DefaultY = -20.0
+DefaultOffsetX = 0
+DefaultOffsetY = 0
 
-DefaultPlacement = 'ne'
-DefaultX = 0
-DefaultY = 0
-DefaultXOffset = 0
-DefaultYOffset = 0
+DefaultViewFilename = 'graphics/compass_rose.png'
+DefaultViewPlacement = 'ne'
+DefaultViewX = 0
+DefaultViewY = 0
+DefaultViewOffsetX = 0
+DefaultViewOffsetY = 0
+
+CompassRoseGraphic = 'graphics/compass_rose.png'
 
 ######
 # Various GUI layout constants
@@ -164,9 +172,8 @@ class LayerControlEvent(wx.PyCommandEvent):
 
 class LayerControl(wx.Panel):
 
-    def __init__(self, parent, title, filename='', placement='cc',
-                 x=0, y=0, x_offset=0, y_offset=0,
-                 **kwargs):
+    def __init__(self, parent, title, filename='', placement=DefaultPlacement,
+                 x=0, y=0, offset_x=0, offset_y=0, **kwargs):
         """Initialise a LayerControl instance.
 
         parent      reference to parent object
@@ -174,12 +181,13 @@ class LayerControl(wx.Panel):
         filename    filename of image to show
         placement   placement string for image
         x, y        X and Y coords
-        x_offset    X offset of image
-        y_offset    Y offset of image
+        offset_x    X offset of image
+        offset_y    Y offset of image
         **kwargs    keyword args for Panel
         """
 
         # create and initialise the base panel
+        log('__init__: kwargs=%s' % str(kwargs))
         wx.Panel.__init__(self, parent=parent, id=wx.ID_ANY, **kwargs)
         self.SetBackgroundColour(wx.WHITE)
 
@@ -187,44 +195,54 @@ class LayerControl(wx.Panel):
         self.v_placement = placement
         self.v_x = x
         self.v_y = y
-        self.v_x_offset = x_offset
-        self.v_y_offset = y_offset
+        self.v_offset_x = offset_x
+        self.v_offset_y = offset_y
 
         box = AppStaticBox(self, title)
         sbs = wx.StaticBoxSizer(box, orient=wx.VERTICAL)
         gbs = wx.GridBagSizer(vgap=2, hgap=2)
 
         label = wx.StaticText(self, wx.ID_ANY, 'filename: ')
-        gbs.Add(label, (0,0), border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.filename = ROTextCtrl(self, filename, size=FilenameBoxSize)
+        gbs.Add(label, (0,0), border=0,
+                flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
+        self.filename = ROTextCtrl(self, self.v_filename, size=FilenameBoxSize)
         gbs.Add(self.filename, (0,1), span=(1,3), border=0, flag=wx.EXPAND)
 
         label = wx.StaticText(self, wx.ID_ANY, 'placement: ')
-        gbs.Add(label, (1,0), border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
+        gbs.Add(label, (1,0), border=0,
+                flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
         choices = ['nw', 'cn', 'ne', 'ce', 'se', 'cs', 'sw', 'cw', 'cc', 'none']
         style=wx.CB_DROPDOWN|wx.CB_READONLY
-        self.placement = wx.ComboBox(self, value=DefaultPlacement, size=PlacementBoxSize, choices=choices, style=style)
+        self.placement = wx.ComboBox(self, value=self.v_placement,
+                                     size=PlacementBoxSize,
+                                     choices=choices, style=style)
         gbs.Add(self.placement, (1,1), border=0)
 
         label = wx.StaticText(self, wx.ID_ANY, 'x: ')
-        gbs.Add(label, (2,0), border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.x = wx.TextCtrl(self, value=str(DefaultX), size=OffsetBoxSize)
+        gbs.Add(label, (2,0), border=0,
+                flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
+        self.x = wx.TextCtrl(self, value=str(self.v_x), size=OffsetBoxSize)
         gbs.Add(self.x, (2,1), border=0, flag=wx.EXPAND)
 
         label = wx.StaticText(self, wx.ID_ANY, 'y: ')
-        gbs.Add(label, (2,2), border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.y = wx.TextCtrl(self, value=str(DefaultY), size=OffsetBoxSize)
+        gbs.Add(label, (2,2), border=0,
+                flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
+        self.y = wx.TextCtrl(self, value=str(self.v_y), size=OffsetBoxSize)
         gbs.Add(self.y, (2,3), border=0, flag=wx.EXPAND)
 
-        label = wx.StaticText(self, wx.ID_ANY, 'x_offset: ')
-        gbs.Add(label, (3,0), border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.x_offset = wx.TextCtrl(self, value=str(DefaultXOffset), size=OffsetBoxSize)
-        gbs.Add(self.x_offset, (3,1), border=0, flag=wx.EXPAND)
+        label = wx.StaticText(self, wx.ID_ANY, 'offset_x: ')
+        gbs.Add(label, (3,0), border=0,
+                flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
+        self.offset_x = wx.TextCtrl(self, value=str(self.v_offset_x),
+                                    size=OffsetBoxSize)
+        gbs.Add(self.offset_x, (3,1), border=0, flag=wx.EXPAND)
 
-        label = wx.StaticText(self, wx.ID_ANY, '  y_offset: ')
-        gbs.Add(label, (3,2), border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.y_offset = wx.TextCtrl(self, value=str(DefaultYOffset), size=OffsetBoxSize)
-        gbs.Add(self.y_offset, (3,3), border=0, flag=wx.EXPAND)
+        label = wx.StaticText(self, wx.ID_ANY, '  offset_y: ')
+        gbs.Add(label, (3,2), border=0,
+                flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
+        self.offset_y = wx.TextCtrl(self, value=str(self.v_offset_y),
+                                    size=OffsetBoxSize)
+        gbs.Add(self.offset_y, (3,3), border=0, flag=wx.EXPAND)
 
         delete_button = wx.Button(self, label='Remove')
         gbs.Add(delete_button, (4,2), border=5, flag=wx.EXPAND)
@@ -235,44 +253,8 @@ class LayerControl(wx.Panel):
         self.SetSizer(sbs)
         sbs.Fit(self)
 
-        # tie handlers to change events
-#        self.filename.Bind(wx.EVT_LEFT_UP, self.onFilenameChange)
-#        self.placement.Bind(wx.EVT_COMBOBOX, self.onPlacementChange)
-#        self.x.Bind(wx.EVT_TEXT, self.onPositionChange)
-#        self.y.Bind(wx.EVT_TEXT, self.onPositionChange)
-#        self.x_offset.Bind(wx.EVT_TEXT, self.onOffsetChange)
-#        self.y_offset.Bind(wx.EVT_TEXT, self.onOffsetChange)
-
         delete_button.Bind(wx.EVT_BUTTON, self.onDelete)
         update_button.Bind(wx.EVT_BUTTON, self.onUpdate)
-
-#    def onFilenameChange(self, event):
-#        """Image filename changed."""
-#        log('onFilenameChange')
-#        event = LayerControlEvent(myEVT_POSNCHANGE, self.GetId())
-#        self.GetEventHandler().ProcessEvent(event)
-#
-#    def onPlacementChange(self, event):
-#        log('onPlacementChange')
-#        event = LayerControlEvent(myEVT_POSNCHANGE, self.GetId())
-#        self.GetEventHandler().ProcessEvent(event)
-#
-#    def onPositionChange(self, event):
-#        log('onPositionChange')
-#        event = LayerControlEvent(myEVT_POSNCHANGE, self.GetId())
-#        self.GetEventHandler().ProcessEvent(event)
-#
-#    def onOffsetChange(self, event):
-#        log('onPositionChange')
-#        event = LayerControlEvent(myEVT_POSNCHANGE, self.GetId())
-#        self.GetEventHandler().ProcessEvent(event)
-
-#    def onChange(self, event):
-#        """Image position or picture changed."""
-#
-#        log('onChange')
-#        event = LayerControlEvent(myEVT_POSNCHANGE, self.GetId())
-#        self.GetEventHandler().ProcessEvent(event)
 
     def onDelete(self, event):
         """Remove image from map."""
@@ -291,8 +273,10 @@ class LayerControl(wx.Panel):
         event.placement = self.placement.GetValue()
         event.x = self.x.GetValue()
         event.y = self.y.GetValue()
-        event.x_offset = self.x_offset.GetValue()
-        event.y_offset = self.y_offset.GetValue()
+        event.offset_x = self.offset_x.GetValue()
+        event.offset_y = self.offset_y.GetValue()
+
+        log('onUpdate: event.x=%s, event.y=%s' % (str(event.x), str(event.y)))
 
         self.GetEventHandler().ProcessEvent(event)
 
@@ -479,8 +463,11 @@ class AppFrame(wx.Frame):
 
         # create widgets
         image_obj = LayerControl(parent, 'Image, map-relative',
-                                 filename='', placement='',
-                                 x=0, y=0, x_offset=0, y_offset=0)
+                                 filename=DefaultFilename,
+                                 placement=DefaultPlacement,
+                                 x=DefaultX, y=DefaultY,
+                                 offset_x=DefaultOffsetX,
+                                 offset_y=DefaultOffsetY)
 
         return image_obj
 
@@ -494,8 +481,11 @@ class AppFrame(wx.Frame):
 
         # create widgets
         image_obj = LayerControl(parent, 'Image, view-relative',
-                                 filename='', placement='',
-                                 x=0, y=0, x_offset=0, y_offset=0)
+                                 filename=DefaultViewFilename,
+                                 placement=DefaultViewPlacement,
+                                 x=DefaultViewX, y=DefaultViewY,
+                                 offset_x=DefaultViewOffsetX,
+                                 offset_y=DefaultViewOffsetY)
 
         return image_obj
 
@@ -521,25 +511,37 @@ class AppFrame(wx.Frame):
         x = event.x
         if not x:
             x = 0
-        x = float(x)
+        try:
+            x = float(x)
+        except ValueError:
+            x = 0.0
 
         y = event.y
         if not y:
             y = 0
-        y = float(y)
+        try:
+            y = float(y)
+        except ValueError:
+            y = 0.0
 
-        x_off = event.x_offset
-        if not x_off:
+        off_x = event.offset_x
+        if not off_x:
+            off_x = 0
+        try:
+            off_x = int(off_x)
+        except ValueError:
             x_off = 0
-        x_off = int(x_off)
 
-        y_off = event.y_offset
+        y_off = event.offset_y
         if not y_off:
             y_off = 0
-        y_off = int(y_off)
+        try:
+            y_off = int(y_off)
+        except ValueError:
+            y_off = 0
 
         image_data = [(x, y, image, {'placement': placement,
-                                     'offset_x': x_off,
+                                     'offset_x': off_x,
                                      'offset_y': y_off})]
         self.image_layer = \
             self.pyslip.AddImageLayer(image_data, map_rel=True,
@@ -553,114 +555,18 @@ class AppFrame(wx.Frame):
             self.pyslip.DeleteLayer(self.image_layer)
         self.image_layer = None
 
-    def imageOnOff(self, event):
-        """Handle OnOff event for map-relative image layer control."""
-
-        if event.state:
-            self.image_layer = \
-                self.pyslip.AddImageLayer(ImageData, map_rel=True,
-                                          visible=True,
-                                          name='<image_layer>')
-        else:
-            self.pyslip.DeleteLayer(self.image_layer)
-            self.image_layer = None
-            if self.sel_image_layer:
-                self.pyslip.DeleteLayer(self.sel_image_layer)
-                self.sel_image_layer = None
-                self.sel_image = None
-
-    def imageShowOnOff(self, event):
-        """Handle ShowOnOff event for image layer control."""
-
-        if event.state:
-            self.pyslip.ShowLayer(self.image_layer)
-            if self.sel_image_layer:
-                self.pyslip.ShowLayer(self.sel_image_layer)
-        else:
-            self.pyslip.HideLayer(self.image_layer)
-            if self.sel_image_layer:
-                self.pyslip.HideLayer(self.sel_image_layer)
-
-    def imageSelectOnOff(self, event):
-        """Handle SelectOnOff event for image layer control."""
-
-        layer = self.image_layer
-        if event.state:
-            self.add_select_handler(layer, self.imageSelect)
-            self.pyslip.SetLayerSelectable(layer, True)
-        else:
-            self.del_select_handler(layer)
-            self.pyslip.SetLayerSelectable(layer, False)
-
-    def imageSelect(self, event):
-        """Select event from pyslip."""
-
-        point = event.point
-
-        if event.evtype == pyslip.EventPointSelect:
-            if point == self.sel_image:
-                # select again, turn point off
-                self.sel_image = None
-                self.pyslip.DeleteLayer(self.sel_image_layer)
-                self.sel_image_layer = None
-            elif point:
-                if self.sel_image_layer:
-                    self.pyslip.DeleteLayer(self.sel_image_layer)
-                self.sel_image = point
-                self.sel_image_layer = \
-                    self.pyslip.AddPointLayer((point,), map_rel=True,
-                                              color='#0000ff',
-                                              radius=5, visible=True,
-                                              show_levels=[3,4],
-                                              name='<sel_pt_layer>')
-        elif event.evtype == pyslip.EventBoxSelect:
-            # remove any previous selection
-            if self.sel_image_layer:
-                self.pyslip.DeleteLayer(self.sel_image_layer)
-                self.sel_image_layer = None
-
-            if point:
-                self.sel_image_layer = \
-                    self.pyslip.AddPointLayer(point, map_rel=True,
-                                              color='#00ffff',
-                                              radius=5, visible=True,
-                                              show_levels=[3,4],
-                                              name='<boxsel_pt_layer>')
-                self.pyslip.PlaceLayerBelowLayer(self.sel_image_layer,
-                                                 self.image_layer)
-
-        return True
-
-    def imageBSelect(self, id, points=None):
-        """Select event from pyslip."""
-
-        # remove any previous selection
-        if self.sel_image_layer:
-            self.pyslip.DeleteLayer(self.sel_image_layer)
-            self.sel_image_layer = None
-
-        if points:
-            self.sel_image_layer = \
-                self.pyslip.AddPointLayer(points, map_rel=True,
-                                          color='#e0e0e0',
-                                          radius=13, visible=True,
-                                          show_levels=[3,4],
-                                          name='<boxsel_img_layer>')
-            self.pyslip.PlaceLayerBelowLayer(self.sel_image_layer,
-                                             self.image_layer)
-
-        return True
-
 ##### view-relative image layer
 
     def imageViewUpdate(self, event):
         """Display updated image."""
 
+        log('imageViewUpdate: event.x=%s, event.y=%s' % (str(event.x), str(event.y)))
+
         if self.image_view_layer:
             self.pyslip.DeleteLayer(self.image_view_layer)
 
         # convert values to sanity for layer attributes
-        image = CompassRoseGraphic
+        image = event.filename
         placement = event.placement
         if placement == 'none':
             placement= ''
@@ -675,21 +581,21 @@ class AppFrame(wx.Frame):
             y = 0
         y = int(y)
 
-        x_off = event.x_offset
-        if not x_off:
-            x_off = 0
-        x_off = int(x_off)
+        off_x = event.offset_x
+        if not off_x:
+            off_x = 0
+        off_x = int(off_x)
 
-        y_off = event.y_offset
+        y_off = event.offset_y
         if not y_off:
             y_off = 0
         y_off = int(y_off)
 
         # create a new image layer
-        log('#####: x=%s, y=%s' % (str(x), str(y)))
         image_data = [(x, y, image, {'placement': placement,
-                                     'offset_x': x_off,
+                                     'offset_x': off_x,
                                      'offset_y': y_off})]
+        log('#####" image_data=%s' % str(image_data))
         self.image_view_layer = \
             self.pyslip.AddImageLayer(image_data, map_rel=False,
                                       visible=True,
@@ -701,139 +607,6 @@ class AppFrame(wx.Frame):
         if self.image_view_layer:
             self.pyslip.DeleteLayer(self.image_view_layer)
         self.image_view_layer = None
-
-    def imageViewOnOff(self, event):
-        """Handle OnOff event for view-relative image layer control."""
-
-        if event.state:
-            self.image_view_layer = \
-                self.pyslip.AddImageLayer(ImageViewData, map_rel=False,
-                                          visible=True,
-                                          name='<image_view_layer>')
-        else:
-            self.pyslip.DeleteLayer(self.image_view_layer)
-            self.image_view_layer = None
-            if self.sel_image_view_layer:
-                self.pyslip.DeleteLayer(self.sel_image_view_layer)
-                self.sel_image_view_layer = None
-                self.sel_image_view_point = None
-
-    def imageViewShowOnOff(self, event):
-        """Handle ShowOnOff event for image layer control."""
-
-        if event.state:
-            self.pyslip.ShowLayer(self.image_view_layer)
-            if self.sel_image_view_layer:
-                self.pyslip.ShowLayer(self.sel_image_layer)
-        else:
-            self.pyslip.HideLayer(self.image_view_layer)
-            if self.sel_image_view_layer:
-                self.pyslip.HideLayer(self.sel_image_layer)
-
-    def imageViewSelectOnOff(self, event):
-        """Handle SelectOnOff event for image layer control."""
-
-        layer = self.image_view_layer
-        if event.state:
-            self.add_select_handler(layer, self.imageViewSelect)
-            self.pyslip.SetLayerSelectable(layer, True)
-        else:
-            self.del_select_handler(layer)
-            self.pyslip.SetLayerSelectable(layer, False)
-
-    def imageViewSelect(self, event):
-        """View-relative image select event from pyslip.
-
-        event  the wxpython event object
-
-        The 'event' object has attributes:
-        evtype    the pySlip event type
-        layer_id  'id' of the layer in which the image selected exists
-        mposn     the geo coords of the click
-        point     point datas is a list of: (pt, udata)
-                    pt is an (x,y) tuple of relative click posn within the image
-                    udata is userdata attached to the image (if any).
-        vposn     the view coords of the click
-
-        The code below doesn't assume a placement of the selected image, it
-        figures out the correct position of the 'highlight' layers.  This helps
-        with debugging, as we can move the compass rose anywhere we like.
-        """
-
-        log('imageViewSelect: event=%s' % str(event))
-
-        log('imageViewSelect: event.evtype=%s' % str(event.evtype))
-        log('imageViewSelect: event.layer_id=%s' % str(event.layer_id))
-        log('imageViewSelect: event.mposn=%s' % str(event.mposn))
-        log('imageViewSelect: event.point=%s' % str(event.point))
-        log('imageViewSelect: event.vposn=%s' % str(event.vposn))
-
-        # only one image selectable, remove old selection (if any)
-        if self.sel_image_view_layer:
-            # already selected, remove old selection
-            self.pyslip.DeleteLayer(self.sel_image_view_layer)
-            self.sel_image_view_layer = None
-            self.pyslip.DeleteLayer(self.sel_imagepoint_view_layer)
-            self.sel_imagepoint_view_layer = None
-
-        if event.point:
-            # unpack event data
-            (pp, udata) = event.point[0]
-            (sel_x, sel_y) = pp     # select relative point in image
-
-            # figure out compass rose attributes
-            attr_dict = ImageViewData[0][3]
-            img_placement = attr_dict['placement']
-
-            # add selection point
-            point_place_coords = {'ne': '(sel_x - CR_Width, sel_y)',
-                                  'ce': '(sel_x - CR_Width, sel_y - CR_Height/2.0)',
-                                  'se': '(sel_x - CR_Width, sel_y - CR_Height)',
-                                  'cs': '(sel_x - CR_Width/2.0, sel_y - CR_Height)',
-                                  'sw': '(sel_x, sel_y - CR_Height)',
-                                  'cw': '(sel_x, sel_y - CR_Height/2.0)',
-                                  'nw': '(sel_x, sel_y)',
-                                  'cn': '(sel_x - CR_Width/2.0, sel_y)',
-                                  'cc': '(sel_x - CR_Width/2.0, sel_y - CR_Height/2.0)',
-                                  '':   '(sel_x, sel_y)',
-                                  None: '(sel_x, sel_y)',
-                                 }
-
-            point = eval(point_place_coords[img_placement])
-            log('AddPointLayer((point,)=%s' % str(point))
-            self.sel_imagepoint_view_layer = \
-                self.pyslip.AddPointLayer((point,), map_rel=False,
-                                          color='green',
-                                          radius=5, visible=True,
-                                          placement=img_placement,
-                                          name='<sel_image_view_point>')
-
-            # add polygon outline around image
-            (x, y) = event.vposn
-            p_dict = {'placement': img_placement, 'width': 3, 'color': 'green', 'closed': True}
-            poly_place_coords = {'ne': '(((-CR_Width,0),(0,0),(0,CR_Height),(-CR_Width,CR_Height)),p_dict)',
-                                 'ce': '(((-CR_Width,-CR_Height/2.0),(0,-CR_Height/2.0),(0,CR_Height/2.0),(-CR_Width,CR_Height/2.0)),p_dict)',
-                                 'se': '(((-CR_Width,-CR_Height),(0,-CR_Height),(0,0),(-CR_Width,0)),p_dict)',
-                                 'cs': '(((-CR_Width/2.0,-CR_Height),(CR_Width/2.0,-CR_Height),(CR_Width/2.0,0),(-CR_Width/2.0,0)),p_dict)',
-                                 'sw': '(((0,-CR_Height),(CR_Width,-CR_Height),(CR_Width,0),(0,0)),p_dict)',
-                                 'cw': '(((0,-CR_Height/2.0),(CR_Width,-CR_Height/2.0),(CR_Width,CR_Height/2.0),(0,CR_Height/2.0)),p_dict)',
-                                 'nw': '(((0,0),(CR_Width,0),(CR_Width,CR_Height),(0,CR_Height)),p_dict)',
-                                 'cn': '(((-CR_Width/2.0,0),(CR_Width/2.0,0),(CR_Width/2.0,CR_Height),(-CR_Width/2.0,CR_Height)),p_dict)',
-                                 'cc': '(((-CR_Width/2.0,-CR_Height/2.0),(CR_Width/2.0,-CR_Height/2.0),(CR_Width/2.0,CR_Height/2.0),(-CR_Width/2.0,CR_Height/2.0)),p_dict)',
-                                 '':   '(((x, y),(x+CR_Width,y),(x+CR_Width,y+CR_Height),(x,y+CR_Height)),p_dict)',
-                                 None: '(((x, y),(x+CR_Width,y),(x+CR_Width,y+CR_Height),(x,y+CR_Height)),p_dict)',
-                                }
-            pdata = eval(poly_place_coords[img_placement])
-            log('pdata=%s' % str(pdata))
-            self.sel_image_view_layer = \
-                self.pyslip.AddPolygonLayer((pdata,), map_rel=False,
-#                                            placement=img_placement,
-#                                            color='green',
-#                                            width=5, visible=True,
-                                            name='<sel_image_view_outline>',
-                                           )
-
-        return True
 
     ######
     # Finish initialization of data, etc

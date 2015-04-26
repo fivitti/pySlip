@@ -5,7 +5,7 @@
 Program to test image map-relative and view-relative placement.
 Select which to show and experiment with placement parameters.
 
-Usage: test_image_placement.py [-h|--help] [(-t|--tiles) (GMT|OSM)]
+Usage: test_image_placement.py [-h|--help] [-d] [(-t|--tiles) (GMT|OSM)]
 """
 
 
@@ -38,9 +38,7 @@ DemoVersion = '1.0'
 
 # initial values
 InitialViewLevel = 4
-InitiialViewPosition = (145.0, -20.0)
-ImitialGraphicDir = 'graphics'
-InitialGraphic = os.path.join(ImitialGraphicDir, 'compass_rose.png')
+InitialViewPosition = (145.0, -20.0)
 
 # tiles info
 TileDirectory = 'tiles'
@@ -52,56 +50,21 @@ LonLatPrecision = 3
 # startup size of the application
 DefaultAppSize = (1000, 700)
 
-# how close click has to be before point is selected
-# the value is distance squared (degrees^2)
-PointSelectDelta = 0.025
-
-# unselected point colour (rgb) and size
-PointsColour = '#ff0000'
-PointsSize = 3
-
-# Selected point colour (rgb) and size
-SelectColour = '#0000ff'
-SelectSize = 5
-
-# Polygon point colour (rgba) and size
-PolygonColour = '#0000ff'
-PolygonSize = 4
-
-# Polygon2 point colour (rgba) and size
-Polygon2Colour = '#000000'
-Polygon2Size = 4
-
-# image used for shipwrecks, glassy buttons, etc
-ShipImg = 'graphics/shipwreck.png'
-
-GlassyImg2 = 'graphics/glassy_button_2.png'
-SelGlassyImg2 = 'graphics/selected_glassy_button_2.png'
-GlassyImg3 = 'graphics/glassy_button_3.png'
-SelGlassyImg3 = 'graphics/selected_glassy_button_3.png'
-GlassyImg4 = 'graphics/glassy_button_4.png'
-SelGlassyImg4 = 'graphics/selected_glassy_button_4.png'
-GlassyImg5 = 'graphics/glassy_button_5.png'
-SelGlassyImg5 = 'graphics/selected_glassy_button_5.png'
-GlassyImg6 = 'graphics/glassy_button_6.png'
-SelGlassyImg6 = 'graphics/selected_glassy_button_6.png'
-
-# image used for shipwrecks
+# initial values in map-relative LayerControl
 DefaultFilename = 'graphics/shipwreck.png'
-DefaultPlacement = 'cc'
+DefaultPlacement = 'ne'
 DefaultX = 145.0
 DefaultY = -20.0
 DefaultOffsetX = 0
 DefaultOffsetY = 0
 
+# initial values in view-relative LayerControl
 DefaultViewFilename = 'graphics/compass_rose.png'
 DefaultViewPlacement = 'ne'
 DefaultViewX = 0
 DefaultViewY = 0
 DefaultViewOffsetX = 0
 DefaultViewOffsetY = 0
-
-CompassRoseGraphic = 'graphics/compass_rose.png'
 
 ######
 # Various GUI layout constants
@@ -144,8 +107,6 @@ class ROTextCtrl(wx.TextCtrl):
 class AppStaticBox(wx.StaticBox):
 
     def __init__(self, parent, label, *args, **kwargs):
-#        if label:
-#            label = '  ' + label + '  '
         if 'style' not in kwargs:
             kwargs['style'] = wx.NO_BORDER
         wx.StaticBox.__init__(self, parent, wx.ID_ANY, label, *args, **kwargs)
@@ -156,11 +117,9 @@ class AppStaticBox(wx.StaticBox):
 # This is used to control each type of layer, whether map- or view-relative.
 ###############################################################################
 
-myEVT_POSNCHANGE = wx.NewEventType()
 myEVT_DELETE = wx.NewEventType()
 myEVT_UPDATE = wx.NewEventType()
 
-EVT_POSNCHANGE = wx.PyEventBinder(myEVT_POSNCHANGE, 1)
 EVT_DELETE = wx.PyEventBinder(myEVT_DELETE, 1)
 EVT_UPDATE = wx.PyEventBinder(myEVT_UPDATE, 1)
 
@@ -187,7 +146,6 @@ class LayerControl(wx.Panel):
         """
 
         # create and initialise the base panel
-        log('__init__: kwargs=%s' % str(kwargs))
         wx.Panel.__init__(self, parent=parent, id=wx.ID_ANY, **kwargs)
         self.SetBackgroundColour(wx.WHITE)
 
@@ -253,19 +211,38 @@ class LayerControl(wx.Panel):
         self.SetSizer(sbs)
         sbs.Fit(self)
 
+        self.filename.Bind(wx.EVT_LEFT_UP, self.onFilename)
         delete_button.Bind(wx.EVT_BUTTON, self.onDelete)
         update_button.Bind(wx.EVT_BUTTON, self.onUpdate)
 
+    def onFilename(self, event):
+        """Change image filename."""
+
+        log('onFilename')
+
+        wildcard = ("PNG files (*.png)|*.png|"
+                    "JPG files (*.jpg)|*.jpg|"
+                    "All files (*.*)|*.*")
+
+        filepath = None
+
+        dialog = wx.FileDialog(None, "Choose an image file",
+                               os.getcwd(), "", wildcard, wx.OPEN)
+        if dialog.ShowModal() == wx.ID_OK:
+            filepath = dialog.GetPath() 
+        dialog.Destroy()
+
+        if filepath:
+            self.filename.SetValue(filepath)
+
     def onDelete(self, event):
         """Remove image from map."""
-        log('onDelete')
+
         event = LayerControlEvent(myEVT_DELETE, self.GetId())
         self.GetEventHandler().ProcessEvent(event)
 
     def onUpdate(self, event):
         """Update image on map."""
-
-        log('onUpdate')
 
         event = LayerControlEvent(myEVT_UPDATE, self.GetId())
 
@@ -276,13 +253,11 @@ class LayerControl(wx.Panel):
         event.offset_x = self.offset_x.GetValue()
         event.offset_y = self.offset_y.GetValue()
 
-        log('onUpdate: event.x=%s, event.y=%s' % (str(event.x), str(event.y)))
-
         self.GetEventHandler().ProcessEvent(event)
 
-###############################################################################
+################################################################################
 # The main application frame
-###############################################################################
+################################################################################
 
 class AppFrame(wx.Frame):
     def __init__(self, tile_dir=TileDirectory, levels=None):
@@ -299,22 +274,22 @@ class AppFrame(wx.Frame):
         # build the GUI
         self.make_gui(self.panel)
 
-        # do initialisation stuff - all the application stuff
-        self.init()
+        # set initial view position
+        self.map_level.SetLabel('%d' % InitialViewLevel)
+        wx.CallAfter(self.final_setup, InitialViewLevel, InitialViewPosition)
+
+        # force pyslip initialisation
+        self.pyslip.OnSize()
 
         # finally, set up application window position
         self.Centre()
-
-        # create select event dispatch directory
-        self.demo_select_dispatch = {}
 
         # initialise state variables
         self.image_layer = None
         self.image_view_layer = None
 
-        # finally, bind events to handlers
-        self.pyslip.Bind(pyslip.EVT_PYSLIP_POSITION,
-                         self.handle_position_event)
+        # finally, bind pySlip events to handlers
+        self.pyslip.Bind(pyslip.EVT_PYSLIP_POSITION, self.handle_position_event)
         self.pyslip.Bind(pyslip.EVT_PYSLIP_LEVEL, self.handle_level_change)
 
 #####
@@ -350,7 +325,7 @@ class AppFrame(wx.Frame):
         """
 
         # create gui objects
-        sb = AppStaticBox(parent, '', style=wx.NO_BORDER)
+        sb = AppStaticBox(parent, '')
         self.pyslip = pyslip.PySlip(parent, tile_src=self.tile_source,
                                     min_level=MinTileLevel,
                                     tilesets=['./tilesets'])
@@ -502,7 +477,7 @@ class AppFrame(wx.Frame):
             self.pyslip.DeleteLayer(self.image_layer)
 
         # convert values to sanity for layer attributes
-        image = ShipImg
+        image = event.filename
 
         placement = event.placement
         if placement == 'none':
@@ -549,7 +524,7 @@ class AppFrame(wx.Frame):
                                       name='<image_layer>')
 
     def imageDelete(self, event):
-        log('imageDelete')
+        """Delete the image map-relative layer."""
 
         if self.image_layer:
             self.pyslip.DeleteLayer(self.image_layer)
@@ -559,8 +534,6 @@ class AppFrame(wx.Frame):
 
     def imageViewUpdate(self, event):
         """Display updated image."""
-
-        log('imageViewUpdate: event.x=%s, event.y=%s' % (str(event.x), str(event.y)))
 
         if self.image_view_layer:
             self.pyslip.DeleteLayer(self.image_view_layer)
@@ -595,229 +568,17 @@ class AppFrame(wx.Frame):
         image_data = [(x, y, image, {'placement': placement,
                                      'offset_x': off_x,
                                      'offset_y': y_off})]
-        log('#####" image_data=%s' % str(image_data))
         self.image_view_layer = \
             self.pyslip.AddImageLayer(image_data, map_rel=False,
                                       visible=True,
                                       name='<image_layer>')
 
     def imageViewDelete(self, event):
-        log('imageViewDelete')
+        """Delete the image view-relative layer."""
 
         if self.image_view_layer:
             self.pyslip.DeleteLayer(self.image_view_layer)
         self.image_view_layer = None
-
-    ######
-    # Finish initialization of data, etc
-    ######
-
-    def init(self):
-        global PointData, PointDataColour
-        global PointViewData, PointViewDataColour
-        global ImageData
-        global ImageViewData
-        global TextData # , TextDataColour
-        global TextViewData
-        global PolyData
-        global PolyViewData
-        global CR_Width, CR_Height
-
-        # create PointData
-        PointData = []
-        count = 0
-        for lon in range(-70, 290+1, 5):
-            for lat in range(-65, 65+1, 5):
-                PointData.append((lon, lat, {'data': count}))
-                count += 1
-        PointDataColour = '#ff000080'	# semi-transparent
-
-        # create PointViewData - a point-rendition of 'PYSLIP'
-        PointViewData = [(-66,-14),(-66,-13),(-66,-12),(-66,-11),(-66,-10),
-                         (-66,-9),(-66,-8),(-66,-7),(-66,-6),(-66,-5),(-66,-4),
-                         (-66,-3),(-65,-7),(-64,-7),(-63,-7),(-62,-7),(-61,-8),
-                         (-60,-9),(-60,-10),(-60,-11),(-60,-12),(-61,-13),
-                         (-62,-14),(-63,-14),(-64,-14),(65,-14),            # P
-                         (-59,-14),(-58,-13),(-57,-12),(-56,-11),(-55,-10),
-                         (-53,-10),(-52,-11),(-51,-12),(-50,-13),(-49,-14),
-                         (-54,-9),(-54,-8),(-54,-7),(-54,-6),(-54,-5),
-                         (-54,-4),(-54,-3),                                 # Y
-                         (-41,-13),(-42,-14),(-43,-14),(-44,-14),(-45,-14),
-                         (-46,-14),(-47,-13),(-48,-12),(-48,-11),(-47,-10),
-                         (-46,-9),(-45,-9),(-44,-9),(-43,-9),(-42,-8),
-                         (-41,-7),(-41,-6),(-41,-5),(-42,-4),(-43,-3),
-                         (-44,-3),(-45,-3),(-46,-3),(-47,-3),(-48,-4),      # S
-                         (-39,-14),(-39,-13),(-39,-12),(-39,-11),(-39,-10),
-                         (-39,-9),(-39,-8),(-39,-7),(-39,-6),(-39,-5),
-                         (-39,-4),(-39,-3),(-38,-3),(-37,-3),(-36,-3),
-                         (-35,-3),(-34,-3),(-33,-3),(-32,-3),               # L
-                         (-29,-14),(-29,-13),(-29,-12),
-                         (-29,-11),(-29,-10),(-29,-9),(-29,-8),(-29,-7),
-                         (-29,-6),(-29,-5),(-29,-4),(-29,-3),               # I
-                         (-26,-14),(-26,-13),(-26,-12),(-26,-11),(-26,-10),
-                         (-26,-9),(-26,-8),(-26,-7),(-26,-6),(-26,-5),(-26,-4),
-                         (-26,-3),(-25,-7),(-24,-7),(-23,-7),(-22,-7),(-21,-8),
-                         (-20,-9),(-20,-10),(-20,-11),(-20,-12),(-21,-13),
-                         (-22,-14),(-23,-14),(-24,-14),(25,-14)]            # P
-        PointViewDataColour = '#00ff0020'	# very transparent
-
-        # create image data
-        ImageData = [# Agnes Napier - 1855
-                     (160.0, -30.0, ShipImg, {'placement': 'cc'}),
-                     # Venus - 1826
-                     (145.0, -11.0, ShipImg, {'placement': 'ne'}),
-                     # Wolverine - 1879
-                     (156.0, -23.0, ShipImg, {'placement': 'nw'}),
-                     # Thomas Day - 1884
-                     (150.0, -15.0, ShipImg, {'placement': 'sw'}),
-                     # Sybil - 1902
-                     (165.0, -19.0, ShipImg, {'placement': 'se'}),
-                     # Prince of Denmark - 1863
-                     (158.55, -19.98, ShipImg),
-                     # Moltke - 1911
-                     (146.867525, -19.152185, ShipImg)
-                    ]
-        ImageData2 = []
-        ImageData3 = []
-        ImageData4 = []
-        ImageData5 = []
-        ImageData6 = []
-        self.map_level_2_img = {0: ImageData2,
-                                1: ImageData3,
-                                2: ImageData4,
-                                3: ImageData5,
-                                4: ImageData6}
-        self.map_level_2_selimg = {0: SelGlassyImg2,
-                                   1: SelGlassyImg3,
-                                   2: SelGlassyImg4,
-                                   3: SelGlassyImg5,
-                                   4: SelGlassyImg6}
-        self.current_layer_img_layer = None
-        for x in range(80):
-            for y in range(40):
-                ImageData.append((-30+x*2, y*2-30, GlassyImg4))
-
-        ImageViewData = [(0, 0, CompassRoseGraphic, {'placement': 'cc',
-                                                     'data': 'compass rose'})]
-
-        text_placement = {'placement': 'se'}
-        transparent_placement = {'placement': 'se', 'colour': '#00000040'}
-        capital = {'placement': 'se', 'fontsize': 14, 'color': 'red',
-                   'textcolour': 'red'}
-        TextData = [(151.20, -33.85, 'Sydney', text_placement),
-                    (144.95, -37.84, 'Melbourne', {'placement': 'ce'}),
-                    (153.08, -27.48, 'Brisbane', text_placement),
-                    (115.86, -31.96, 'Perth', transparent_placement),
-                    (138.30, -35.52, 'Adelaide', text_placement),
-                    (130.98, -12.61, 'Darwin', text_placement),
-                    (147.31, -42.96, 'Hobart', text_placement),
-                    (174.75, -36.80, 'Auckland', text_placement),
-                    (174.75, -41.29, 'Wellington', capital),
-                    (172.61, -43.51, 'Christchurch', text_placement),
-                    (168.74, -45.01, 'Queenstown', text_placement),
-                    (147.30, -09.41, 'Port Moresby', capital),
-                    (106.822922, -6.185451, 'Jakarta', capital),
-                    (110.364444, -7.801389, 'Yogyakarta', text_placement),
-                    (120.966667, 14.563333, 'Manila', capital),
-                    (271.74, +40.11, 'Champaign', text_placement),
-                    (160.0, -30.0, 'Agnes Napier - 1855',
-                        {'placement': 'cw', 'offset_x': 20, 'color': 'green'}),
-                    (145.0, -11.0, 'Venus - 1826',
-                        {'placement': 'sw', 'color': 'green'}),
-                    (156.0, -23.0, 'Wolverine - 1879',
-                        {'placement': 'ce', 'color': 'green'}),
-                    (150.0, -15.0, 'Thomas Day - 1884',
-                        {'color': 'green'}),
-                    (165.0, -19.0, 'Sybil - 1902',
-                        {'placement': 'cw', 'color': 'green'}),
-                    (158.55, -19.98, 'Prince of Denmark - 1863',
-                        {'placement': 'nw', 'offset_x': 20, 'color': 'green'}),
-                    (146.867525, -19.152182, 'Moltke - 1911',
-                        {'placement': 'ce', 'offset_x': 20, 'color': 'green'})
-                   ]
-        if sys.platform != 'win32':
-            TextData.extend([
-                    (106.36, +10.36, 'Mỹ Tho', {'placement': 'ne'}),
-                    (105.85, +21.033333, 'Hà Nội', capital),
-                    (106.681944, 10.769444, 'Thành phố Hồ Chí Minh',
-                        {'placement': 'sw'}),
-                    (132.47, +34.44, '広島市 (Hiroshima City)',
-                        text_placement),
-                    (114.158889, +22.278333, '香港 (Hong Kong)',
-                        {'placement': 'nw'}),
-                    ( 96.16, +16.80, 'ရန်ကုန် (Yangon)', capital),
-                    (104.93, +11.54, ' ភ្នំពេញ (Phnom Penh)',
-                        {'placement': 'ce', 'fontsize': 12, 'color': 'red'}),
-                    (100.49, +13.75, 'กรุงเทพมหานคร (Bangkok)', capital),
-                    ( 77.56, +34.09, 'གླེ་(Leh)', text_placement),
-                    (84.991275, 24.695102, 'बोधगया (Bodh Gaya)', text_placement)])
-#        TextDataColour = '#ffffff40'
-
-        TextViewData = [(0, 7, '%s %s' % (DemoName, DemoVersion))]
-
-        PolyData = [(((150,10),(160,20),(170,10),(165,0),(155,0)),
-                      {'width': 3, 'color': 'blue', 'closed': True}),
-                    (((165,-35),(175,-35),(175,-45),(165,-45)),
-                      {'width': 10, 'color': '#00ff00c0', 'filled': True,
-                       'fillcolor': '#ffff0040'}),
-                    (((190,-30),(220,-50),(220,-30),(190,-50)),
-                      {'width': 3, 'color': 'green', 'filled': True,
-                       'fillcolor': 'yellow'}),
-                    (((190,+50),(220,+65),(220,+50),(190,+65)),
-                      {'width': 10, 'color': '#00000040'})
-                   ]
-
-        PolyViewData = [(((0,0),(230,0),(230,40),(-230,40),(-230,0)),
-                        {'width': 3, 'color': '#00ff00ff', 'closed': True,
-                         'placement': 'cn', 'offset_y': 1})]
-
-        # define layer ID variables & sub-checkbox state variables
-        self.point_layer = None
-        self.sel_point_layer = None
-        self.sel_point = None
-
-        self.point_view_layer = None
-        self.sel_point_view_layer = None
-        self.sel_point_view = None
-
-        self.image_layer = None
-        self.sel_image_layer = None
-        self.sel_image = None
-
-        self.image_view_layer = None
-        self.sel_image_view_layer = None
-        self.sel_image_view = None
-        self.sel_imagepoint_view_layer = None
-
-        self.text_layer = None
-        self.sel_text_layer = None
-        self.sel_text = None
-
-        self.text_view_layer = None
-        self.sel_text_view_layer = None
-        self.sel_view_text = None
-
-        self.poly_layer = None
-        self.sel_poly_layer = None
-        self.sel_poly = None
-
-        self.poly_view_layer = None
-        self.sel_poly_view_layer = None
-        self.sel_poly = None
-
-        # get width and height of the compass rose image
-        cr_img = wx.Image(CompassRoseGraphic, wx.BITMAP_TYPE_ANY)
-        log('cr_img: %s' % str(cr_img))
-        log(str(dir(cr_img)))
-        cr_bmap = cr_img.ConvertToBitmap()
-        (CR_Width, CR_Height) = cr_bmap.GetSize()
-
-        # force pyslip initialisation
-        self.pyslip.OnSize()
-
-        # set initial view position
-        self.map_level.SetLabel('%d' % InitialViewLevel)
-        wx.CallAfter(self.final_setup, InitialViewLevel, InitiialViewPosition)
 
     def final_setup(self, level, position):
         """Perform final setup.
@@ -835,18 +596,6 @@ class AppFrame(wx.Frame):
     # Exception handlers
     ######
 
-    def handle_select_event(self, event):
-        """Handle a pySlip point/box SELECT event."""
-
-        layer_id = event.layer_id
-
-        self.demo_select_dispatch.get(layer_id, self.null_handler)(event)
-
-    def null_handler(self, event):
-        """Routine to handle unexpected events."""
-
-        print('ERROR: null_handler!?')
-
     def handle_position_event(self, event):
         """Handle a pySlip POSITION event."""
 
@@ -862,20 +611,6 @@ class AppFrame(wx.Frame):
         """Handle a pySlip LEVEL event."""
 
         self.map_level.SetLabel('%d' % event.level)
-
-    ######
-    # Handle adding/removing select handler functions.
-    ######
-
-    def add_select_handler(self, id, handler):
-        """Add handler for select in layer 'id'."""
-
-        self.demo_select_dispatch[id] = handler
-
-    def del_select_handler(self, id):
-        """Remove handler for select in layer 'id'."""
-
-        del self.demo_select_dispatch[id]
 
 ###############################################################################
 
@@ -911,16 +646,19 @@ if __name__ == '__main__':
     argv = sys.argv[1:]
 
     try:
-        (opts, args) = getopt.getopt(argv, 'ht:', ['help', 'tiles='])
+        (opts, args) = getopt.getopt(argv, 'dht:', ['debug', 'help', 'tiles='])
     except getopt.error:
         usage()
         sys.exit(1)
 
     tile_source = 'GMT'
+    debug = False
     for (opt, param) in opts:
         if opt in ['-h', '--help']:
             usage()
             sys.exit(0)
+        elif opt in ['-d', '--debug']:
+            debug = True
         elif opt in ('-t', '--tiles'):
             tile_source = param
     tile_source = tile_source.lower()
@@ -942,8 +680,9 @@ if __name__ == '__main__':
     app_frame = AppFrame(tile_dir=tile_dir) #, levels=[0,1,2,3,4])
     app_frame.Show()
 
-##    import wx.lib.inspection
-##    wx.lib.inspection.InspectionTool().Show()
+    if debug:
+        import wx.lib.inspection
+        wx.lib.inspection.InspectionTool().Show()
 
     app.MainLoop()
 

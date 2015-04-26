@@ -49,10 +49,13 @@ __version__ = '3.0'
 __all__ = ['PySlip']
 
 # type of SELECT events
-EventPointSelect = 0
-EventBoxSelect = 1
-EventRightPointSelect = 2
-EventRightBoxSelect = 3
+#EventPointSelect = 0
+#EventBoxSelect = 1
+#EventRightPointSelect = 2
+#EventRightBoxSelect = 3
+
+(EventPointSelect, EventBoxSelect,
+ EventRightPointSelect, EventRightBoxSelect) = range(4)
 
 
 ######

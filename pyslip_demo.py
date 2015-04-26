@@ -1480,7 +1480,7 @@ class AppFrame(wx.Frame):
             for y in range(40):
                 ImageData.append((-30+x*2, y*2-30, GlassyImg4))
 
-        ImageViewData = [(0, 0, CompassRoseGraphic, {'placement': 'cc',
+        ImageViewData = [(0, 0, CompassRoseGraphic, {'placement': 'ne',
                                                      'data': 'compass rose'})]
 
         text_placement = {'placement': 'se'}

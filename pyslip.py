@@ -377,15 +377,15 @@ class PySlip(_BufferedCanvas):
     # dictionary for map-relative point placement
     # assumes variables x, y, dc_w, dc_h, x_off, y_off are set
     # perturbs x and y to point centre for drawing
-    point_map_placement = {'cc': 'x=x+dc_w2;      y=y+dc_h2',
-                           'nw': 'x=x+x_off;      y=y+y_off',
-                           'cn': 'x=x+dc_w2;      y=y+y_off',
-                           'ne': 'x=x+dc_w-x_off; y=y+y_off',
-                           'ce': 'x=x+dc_w-x_off; y=y+dc_h2',
-                           'se': 'x=x+dc_w-x_off; y=y+dc_h-y_off',
-                           'cs': 'x=x+dc_w2;      y=y+dc_h-y_off',
-                           'sw': 'x=x+x_off;      y=y+dc_h-y_off',
-                           'cw': 'x=x+x_off;      y=y+dc_h2',
+    point_map_placement = {'cc': 'x+=dc_w2;      y+=dc_h2',
+                           'nw': 'x+=x_off;      y+=y_off',
+                           'cn': 'x+=dc_w2;      y+=y_off',
+                           'ne': 'x+=dc_w-x_off; y+=y_off',
+                           'ce': 'x+=dc_w-x_off; y+=dc_h2',
+                           'se': 'x+=dc_w-x_off; y+=dc_h-y_off',
+                           'cs': 'x+=dc_w2;      y+=dc_h-y_off',
+                           'sw': 'x+=x_off;      y+=dc_h-y_off',
+                           'cw': 'x+=x_off;      y+=dc_h2',
                            None: '',
                            False: '',
                            '':   ''}
@@ -394,15 +394,15 @@ class PySlip(_BufferedCanvas):
     # dictionary for view-relative point placement
     # assumes variables x, y, dc_w, dc_h, x_off, y_off are set
     # perturbs x and y to point centre for drawing
-    point_view_placement = {'cc': 'x=x+dc_w2;      y=y+dc_h2',
-                            'nw': 'x=x+x_off;      y=y+y_off',
-                            'cn': 'x=x+dc_w2;      y=y+y_off',
-                            'ne': 'x=x+dc_w-x_off; y=y+y_off',
-                            'ce': 'x=x+dc_w-x_off; y=y+dc_h2',
-                            'se': 'x=x+dc_w-x_off; y=y+dc_h-y_off',
-                            'cs': 'x=x+dc_w2;      y=y+dc_h-y_off',
-                            'sw': 'x=x+x_off;      y=y+dc_h-y_off',
-                            'cw': 'x=x+x_off;      y=y+dc_h2',
+    point_view_placement = {'cc': 'x+=dc_w2;      y+=dc_h2',
+                            'nw': 'x+=x_off;      y+=y_off',
+                            'cn': 'x+=dc_w2;      y+=y_off',
+                            'ne': 'x+=dc_w-x_off; y+=y_off',
+                            'ce': 'x+=dc_w-x_off; y+=dc_h2',
+                            'se': 'x+=dc_w-x_off; y+=dc_h-y_off',
+                            'cs': 'x+=dc_w2;      y+=dc_h-y_off',
+                            'sw': 'x+=x_off;      y+=dc_h-y_off',
+                            'cw': 'x+=x_off;      y+=dc_h2',
                             None: '',
                             False: '',
                             '':   ''}
@@ -412,15 +412,15 @@ class PySlip(_BufferedCanvas):
     # assumes variables x, y, w, h, w2, h2, x_off & y_off are set
     # perturbs x and y to top-left image corner for placing
     # all values are view pixel coordinates
-    image_map_placement = {'cc': 'x=x-w2+x_off;  y=y-h2+y_off',
-                           'nw': 'x=x+x_off;     y=y+y_off',
-                           'cn': 'x=x-w2+x_off;  y=y+y_off',
-                           'ne': 'x=x-w+x_off;   y=y+y_off',
-                           'ce': 'x=x-w+x_off;   y=y-h2+y_off',
-                           'se': 'x=x-w+x_off;   y=y-h+y_off',
-                           'cs': 'x=x-w2+x_off;  y=y-h+y_off',
-                           'sw': 'x=x+x_off;     y=y-h+y_off',
-                           'cw': 'x=x+x_off;     y=y-h2+y_off',
+    image_map_placement = {'cc': 'x+=x_off-w2;  y+=y_off-h2',
+                           'nw': 'x+=x_off;     y+=y_off',
+                           'cn': 'x+=x_off-w2;  y+=y_off',
+                           'ne': 'x+=x_off-w;   y+=y_off',
+                           'ce': 'x+=x_off-w;   y+=y_off-h2',
+                           'se': 'x+=x_off-w;   y+=y_off-h',
+                           'cs': 'x+=x_off-w2;  y+=y_off-h',
+                           'sw': 'x+=x_off;     y+=y_off-h',
+                           'cw': 'x+=x_off;     y+=y_off-h2',
                            None: '',
                            False: '',
                            '': ''}
@@ -429,15 +429,15 @@ class PySlip(_BufferedCanvas):
     # dictionary for view-relative image placement
     # assumes variables x, y, w, h, dc_w, dc_h, x_off, y_off are set
     # perturbs x and y to top-left image corner for drawing
-    image_view_placement = {'cc': 'x=x+dc_w2-w2;     y=y+dc_h2-h2',
-                            'nw': 'x=x+x_off;        y=y+y_off',
-                            'cn': 'x=x+dc_w2-w2;     y=y+y_off',
-                            'ne': 'x=x+dc_w-w-x_off; y=y+y_off',
-                            'ce': 'x=x+dc_w-w-x_off; y=y+dc_h2-h2',
-                            'se': 'x=x+dc_w-w-x_off; y=y+dc_h-h-y_off',
-                            'cs': 'x=x+dc_w2-w2;     y=y+dc_h-h-y_off',
-                            'sw': 'x=x+x_off;        y=y+dc_h-h-y_off',
-                            'cw': 'x=x+x_off;        y=y+dc_h2-h2',
+    image_view_placement = {'cc': 'x+=dc_w2-w2;     y+=dc_h2-h2',
+                            'nw': 'x+=x_off;        y+=y_off',
+                            'cn': 'x+=dc_w2-w2;     y+=y_off',
+                            'ne': 'x+=dc_w-w-x_off; y+=y_off',
+                            'ce': 'x+=dc_w-w-x_off; y+=dc_h2-h2',
+                            'se': 'x+=dc_w-w-x_off; y+=dc_h-h-y_off',
+                            'cs': 'x+=dc_w2-w2;     y+=dc_h-h-y_off',
+                            'sw': 'x+=x_off;        y+=dc_h-h-y_off',
+                            'cw': 'x+=x_off;        y+=dc_h2-h2',
                             None: '',
                             False: '',
                             '': ''}
@@ -447,15 +447,15 @@ class PySlip(_BufferedCanvas):
     # assumes variables x, y, w, h, dc_w, dc_h, x_off, y_off are set
     # w and h are text width and height
     # perturbs x and y to correct values for the placement
-    text_map_placement = {'cc': 'x=x-w2;      y=y-h2',
-                          'nw': 'x=x+x_off;   y=y+y_off',
-                          'cn': 'x=x-w2;      y=y+y_off',
-                          'ne': 'x=x-w-x_off; y=y+y_off',
-                          'ce': 'x=x-w-x_off; y=y-h2',
-                          'se': 'x=x-w-x_off; y=y-h-y_off',
-                          'cs': 'x=x-w2;      y=y-h-y_off',
-                          'sw': 'x=x+x_off;   y=y-h-y_off',
-                          'cw': 'x=x+x_off;   y=y-h2',
+    text_map_placement = {'cc': 'x+=-w2;      y+=-h2',
+                          'nw': 'x+=x_off;    y+=y_off',
+                          'cn': 'x+=-w2;      y+=y_off',
+                          'ne': 'x+=-w-x_off; y+=y_off',
+                          'ce': 'x+=-w-x_off; y+=-h2',
+                          'se': 'x+=-w-x_off; y+=-h-y_off',
+                          'cs': 'x+=-w2;      y+=-h-y_off',
+                          'sw': 'x+=x_off;    y+=-h-y_off',
+                          'cw': 'x+=x_off;    y+=-h2',
                           None: '',
                           False: '',
                           '': ''}
@@ -465,15 +465,15 @@ class PySlip(_BufferedCanvas):
     # assumes variables x, y, w, h, dc_w, dc_h, x_off, y_off are set
     # w and h are text width and height
     # perturbs x and y to correct values for the placement
-    text_view_placement = {'cc': 'x=x+dc_w2-w2; y=y+dc_h2-h2',
-                           'nw': 'x=x;          y=y',
-                           'cn': 'x=x+dc_w2-w2; y=y',
-                           'ne': 'x=x+dc_w-w;   y=y',
-                           'ce': 'x=x+dc_w-w;   y=y+dc_h2-h2',
-                           'se': 'x=x+dc_w-w;   y=y+dc_h-h',
-                           'cs': 'x=x+dc_w2-w2; y=y+dc_h-h',
-                           'sw': 'x=x;          y=y+dc_h-h',
-                           'cw': 'x=x;          y=y+dc_h2-h2',
+    text_view_placement = {'cc': 'x=dc_w2-w2; y+=dc_h2-h2',
+                           'nw': '',
+                           'cn': 'x=dc_w2-w2',
+                           'ne': 'x=dc_w-w',
+                           'ce': 'x=dc_w-w;   y+=dc_h2-h2',
+                           'se': 'x=dc_w-w;   y+=dc_h-h',
+                           'cs': 'x=dc_w2-w2; y+=dc_h-h',
+                           'sw': 'pass;       y+=dc_h-h',
+                           'cw': 'pass;       y+=dc_h2-h2',
                            None: '',
                            False: '',
                            '': ''}
@@ -482,15 +482,15 @@ class PySlip(_BufferedCanvas):
     # view-relative polygon placement dictionary
     # assumes variables x, y, dc_w, dc_h, x_off, y_off are set
     # perturbs x and y to correct values for the placement
-    poly_view_placement = {'cc': 'x=x+dc_w2;      y=y+dc_h2',
-                           'nw': 'x=x+x_off;      y=y+y_off',
-                           'cn': 'x=x+dc_w2;      y=y+y_off',
-                           'ne': 'x=x+dc_w-x_off; y=y+y_off',
-                           'ce': 'x=x+dc_w-x_off; y=y+dc_h2-y_off',
-                           'se': 'x=x+dc_w-x_off; y=y+dc_h-y_off',
-                           'cs': 'x=x+dc_w2;      y=y+dc_h-y_off',
-                           'sw': 'x=x+x_off;      y=y+dc_h-y_off',
-                           'cw': 'x=x+x_off;      y=y+dc_h2',
+    poly_view_placement = {'cc': 'x+=dc_w2;      y+=dc_h2',
+                           'nw': 'x+=x_off;      y+=y_off',
+                           'cn': 'x+=dc_w2;      y+=y_off',
+                           'ne': 'x+=dc_w-x_off; y+=y_off',
+                           'ce': 'x+=dc_w-x_off; y+=dc_h2-y_off',
+                           'se': 'x+=dc_w-x_off; y+=dc_h-y_off',
+                           'cs': 'x+=dc_w2;      y+=dc_h-y_off',
+                           'sw': 'x+=x_off;      y+=dc_h-y_off',
+                           'cw': 'x+=x_off;      y+=dc_h2',
                             None: '',
                             False: '',
                            '': ''}
@@ -499,15 +499,15 @@ class PySlip(_BufferedCanvas):
     # dictionary for view-relative point placement
     # assumes variables x, y, dc_w, dc_h, x_off, y_off are set
     # perturbs x and y to point centre for drawing
-    point_view_placement = {'cc': 'x=x+dc_w2;      y=y+dc_h2',
-                            'nw': 'x=x+x_off;      y=y+y_off',
-                            'cn': 'x=x+dc_w2;      y=y+y_off',
-                            'ne': 'x=x+dc_w-x_off; y=y+y_off',
-                            'ce': 'x=x+dc_w-x_off; y=y+dc_h2',
-                            'se': 'x=x+dc_w-x_off; y=y+dc_h-y_off',
-                            'cs': 'x=x+dc_w2;      y=y+dc_h-y_off',
-                            'sw': 'x=x+x_off;      y=y+dc_h-y_off',
-                            'cw': 'x=x+x_off;      y=y+dc_h2',
+    point_view_placement = {'cc': 'x+=dc_w2;      y+=dc_h2',
+                            'nw': 'x+=x_off;      y+=y_off',
+                            'cn': 'x+=dc_w2;      y+=y_off',
+                            'ne': 'x+=dc_w-x_off; y+=y_off',
+                            'ce': 'x+=dc_w-x_off; y+=dc_h2',
+                            'se': 'x+=dc_w-x_off; y+=dc_h-y_off',
+                            'cs': 'x+=dc_w2;      y+=dc_h-y_off',
+                            'sw': 'x+=x_off;      y+=dc_h-y_off',
+                            'cw': 'x+=x_off;      y+=dc_h2',
                             None: '',
                             False: '',
                             '': ''}
@@ -515,21 +515,23 @@ class PySlip(_BufferedCanvas):
 
     # now pre-compile all the dictionary placement strings
     for p_dict in placements:
+        log('p_dict=%s' % str(p_dict))
         for key in p_dict:
+            log('compile: key=%s, %s' % (key, p_dict[key]))
             p_dict[key] = compile(p_dict[key], 'string', 'exec')
     del placements
 
     # how a single point in an image is perturbed
     # this is used by ViewExtent()
-    point_view_perturb = {'cc': 'x=x+dc_w2-w2;      y=y+dc_h2-h2',
-                          'nw': 'x=x+x_off;         y=y+y_off',
-                          'cn': 'x=x+dc_w2-w2;      y=y+y_off',
-                          'ne': 'x=x+dc_w-x_off-w;  y=y+y_off',
-                          'ce': 'x=x+dc_w-x_off-w;  y=y+dc_h2-h2',
-                          'se': 'x=x+dc_w-x_off-w;  y=y+dc_h-y_off-h',
-                          'cs': 'x=x+dc_w2-w2;      y=y+dc_h-y_off-h',
-                          'sw': 'x=x+x_off;         y=y+dc_h-y_off-h',
-                          'cw': 'x=x+x_off;         y=y+dc_h2-h2',
+    point_view_perturb = {'cc': 'x+=dc_w2-w2;      y+=dc_h2-h2',
+                          'nw': 'x+=x_off;         y+=y_off',
+                          'cn': 'x+=dc_w2-w2;      y+=y_off',
+                          'ne': 'x+=dc_w-x_off-w;  y+=y_off',
+                          'ce': 'x+=dc_w-x_off-w;  y+=dc_h2-h2',
+                          'se': 'x+=dc_w-x_off-w;  y+=dc_h-y_off-h',
+                          'cs': 'x+=dc_w2-w2;      y+=dc_h-y_off-h',
+                          'sw': 'x+=x_off;         y+=dc_h-y_off-h',
+                          'cw': 'x+=x_off;         y+=dc_h2-h2',
                           None: '',
                           False: '',
                           '':   '',

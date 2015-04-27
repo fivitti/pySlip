@@ -304,10 +304,41 @@ class LayerControl(wx.Panel):
         update_button.Bind(wx.EVT_BUTTON, self.onUpdate)
 
     def onTextColour(self, event):
-        log('onTextColour')
+        """Change text colour."""
+
+        colour = self.textcolour.GetBackgroundColour()
+        wxcolour = wx.ColourData()
+        wxcolour.SetColour(colour)
+
+        dialog = wx.ColourDialog(self, data=wxcolour)
+        dialog.GetColourData().SetChooseFull(True)
+        new_colour = None
+        if dialog.ShowModal() == wx.ID_OK:
+            data = dialog.GetColourData()
+            new_colour = data.GetColour().Get()
+        dialog.Destroy()
+
+        if new_colour:
+            self.textcolour.SetBackgroundColour(new_colour)
 
     def onPointColour(self, event):
-        log('onPointColour')
+        """Change text colour."""
+
+        colour = self.pointcolour.GetBackgroundColour()
+        wxcolour = wx.ColourData()
+        wxcolour.SetColour(colour)
+
+        dialog = wx.ColourDialog(self, data=wxcolour)
+        dialog.GetColourData().SetChooseFull(True)
+        new_colour = None
+        if dialog.ShowModal() == wx.ID_OK:
+            data = dialog.GetColourData()
+            new_colour = data.GetColour().Get()
+        dialog.Destroy()
+
+        if new_colour:
+            self.pointcolour.SetBackgroundColour(new_colour)
+
 
     def onDelete(self, event):
         """Remove text from map."""
@@ -730,7 +761,7 @@ if __name__ == '__main__':
     import traceback
     import tkinter_error
 
-    def prepare_font_faces():
+    def prepare_font_choices():
         """Get list of all font faces available."""
 
         global FontChoices
@@ -799,10 +830,9 @@ if __name__ == '__main__':
     # start wxPython app
     app = wx.App()
 
-    prepare_font_faces()
-    log('FontChoices=%s' % str(FontChoices))
+    prepare_font_choices()    # fills global 'FontChoices'
 
-    app_frame = AppFrame(tile_dir=tile_dir) #, levels=[0,1,2,3,4])
+    app_frame = AppFrame(tile_dir=tile_dir)
     app_frame.Show()
 
     if debug:

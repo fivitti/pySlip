@@ -51,7 +51,7 @@ LonLatPrecision = 3
 DefaultAppSize = (1000, 700)
 
 # general text defaults
-DefaultFont = None
+DefaultFont = 'Arial'
 DefaultFontSize = 14
 DefaultTextColour = 'black'
 DefaultPointRadius = 3
@@ -90,10 +90,8 @@ PlacementBoxSize = (60, 25)
 OffsetBoxSize = (60, 25)
 FontBoxSize = (160, 25)
 FontsizeBoxSize = (60, 25)
-TextColourSize = (40, 25)
-PointColourSize = (40, 25)
 PointRadiusBoxSize = (60, 25)
-FontChoices = ['a', 'b', 'c']
+FontChoices = None
 FontsizeChoices = ['8', '10', '12', '14', '16', '18', '20']
 PointRadiusChoices = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
 
@@ -161,10 +159,10 @@ class LayerControl(wx.Panel):
         textcolour   colour of text
         pointradius  radius of text point (not drawn if 0)
         pointcolour  colour of text point
-        placement    placement string for image
+        placement    placement string for text
         x, y         X and Y coords
-        offset_x     X offset of image
-        offset_y     Y offset of image
+        offset_x     X offset of text
+        offset_y     Y offset of text
         **kwargs     keyword args for Panel
         """
 
@@ -204,10 +202,7 @@ class LayerControl(wx.Panel):
         gbs.Add(label, (row,0), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
         style=wx.CB_DROPDOWN|wx.CB_READONLY
-        #self.font = wx.ComboBox(self, value=self.v_font,
-        print('FontBoxSize=%s' % str(FontBoxSize))
-        self.font = wx.ComboBox(self, value='a',
-                                #size=FontBoxSize,
+        self.font = wx.ComboBox(self, value=self.v_font,
                                 choices=FontChoices, style=style)
         gbs.Add(self.font, (row,1), span=(1,3), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.EXPAND))
@@ -218,18 +213,17 @@ class LayerControl(wx.Panel):
         gbs.Add(label, (row,0), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
         style=wx.CB_DROPDOWN|wx.CB_READONLY
-        print('FontsizeBoxSize=%s' % str(FontsizeBoxSize))
         self.fontsize = wx.ComboBox(self, value=self.v_fontsize,
-                                    #size=FontsizeBoxSize,
+                                    size=FontsizeBoxSize,
                                     choices=FontsizeChoices, style=style)
         gbs.Add(self.fontsize, (row,1), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.EXPAND))
         label = wx.StaticText(self, wx.ID_ANY, 'text colour: ')
         gbs.Add(label, (row,2), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.textcolour = wx.Button(self, size=TextColourSize, label='')
+        self.textcolour = wx.Button(self, label='')
         self.textcolour.SetBackgroundColour(self.v_textcolour)
-        gbs.Add(self.textcolour, (row,3), border=0)
+        gbs.Add(self.textcolour, (row,3), border=0, flag=wx.EXPAND)
 
         # row 3
         row += 1
@@ -237,18 +231,18 @@ class LayerControl(wx.Panel):
         gbs.Add(label, (row,0), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
         style=wx.CB_DROPDOWN|wx.CB_READONLY
-        print('PointRadiusBoxSize=%s' % str(PointRadiusBoxSize))
         self.pointradius = wx.ComboBox(self, value=self.v_pointradius,
-                                       #size=PointRadiusBoxSize,
+                                       size=PointRadiusBoxSize,
                                        choices=PointRadiusChoices, style=style)
         gbs.Add(self.pointradius, (row,1),
                 border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.EXPAND))
         label = wx.StaticText(self, wx.ID_ANY, 'point colour: ')
         gbs.Add(label, (row,2), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.pointcolour = wx.Button(self, size=PointColourSize, label='')
+        #self.pointcolour = wx.Button(self, size=PointColourSize, label='')
+        self.pointcolour = wx.Button(self, label='')
         self.pointcolour.SetBackgroundColour(self.v_pointcolour)
-        gbs.Add(self.pointcolour, (row,3), border=0)
+        gbs.Add(self.pointcolour, (row,3), border=0, flag=wx.EXPAND)
 
         # row 4
         row += 1
@@ -257,7 +251,6 @@ class LayerControl(wx.Panel):
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
         choices = ['nw', 'cn', 'ne', 'ce', 'se', 'cs', 'sw', 'cw', 'cc', 'none']
         style=wx.CB_DROPDOWN|wx.CB_READONLY
-        print('PlacementBoxSize=%s' % str(PlacementBoxSize))
         self.placement = wx.ComboBox(self, value=self.v_placement,
                                      #size=PlacementBoxSize,
                                      choices=choices, style=style)
@@ -317,17 +310,22 @@ class LayerControl(wx.Panel):
         log('onPointColour')
 
     def onDelete(self, event):
-        """Remove image from map."""
+        """Remove text from map."""
 
         event = LayerControlEvent(myEVT_DELETE, self.GetId())
         self.GetEventHandler().ProcessEvent(event)
 
     def onUpdate(self, event):
-        """Update image on map."""
+        """Update text on map."""
 
         event = LayerControlEvent(myEVT_UPDATE, self.GetId())
 
         event.text = self.text.GetValue()
+        event.font = self.font.GetValue()
+        event.fontsize = int(self.fontsize.GetValue())
+        event.textcolour = self.textcolour.GetBackgroundColour()
+        event.pointradius = int(self.pointradius.GetValue())
+        event.pointcolour = self.pointcolour.GetBackgroundColour()
         event.placement = self.placement.GetValue()
         event.x = self.x.GetValue()
         event.y = self.y.GetValue()
@@ -366,7 +364,7 @@ class AppFrame(wx.Frame):
         self.Centre()
 
         # initialise state variables
-        self.image_layer = None
+        self.text_layer = None
         self.text_view_layer = None
 
         # finally, bind pySlip events to handlers
@@ -442,20 +440,20 @@ class AppFrame(wx.Frame):
         # vertical spacer
         controls.AddSpacer(VSpacerSize)
 
-        # controls for map-relative image layer
-        self.image = self.make_gui_image(parent)
-        controls.Add(self.image, proportion=0, flag=wx.EXPAND|wx.ALL)
-        self.image.Bind(EVT_DELETE, self.imageDelete)
-        self.image.Bind(EVT_UPDATE, self.imageUpdate)
+        # controls for map-relative text layer
+        self.text = self.make_gui_text(parent)
+        controls.Add(self.text, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.text.Bind(EVT_DELETE, self.textDelete)
+        self.text.Bind(EVT_UPDATE, self.textUpdate)
 
         # vertical spacer
         controls.AddSpacer(VSpacerSize)
 
-        # controls for image-relative image layer
-        self.image_view = self.make_gui_image_view(parent)
-        controls.Add(self.image_view, proportion=0, flag=wx.EXPAND|wx.ALL)
-        self.image_view.Bind(EVT_DELETE, self.imageViewDelete)
-        self.image_view.Bind(EVT_UPDATE, self.imageViewUpdate)
+        # controls for view-relative text layer
+        self.text_view = self.make_gui_text_view(parent)
+        controls.Add(self.text_view, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.text_view.Bind(EVT_DELETE, self.textViewDelete)
+        self.text_view.Bind(EVT_UPDATE, self.textViewUpdate)
 
         # vertical spacer
         controls.AddSpacer(VSpacerSize)
@@ -509,8 +507,8 @@ class AppFrame(wx.Frame):
 
         return box
 
-    def make_gui_image(self, parent):
-        """Build the image part of the controls part of GUI.
+    def make_gui_text(self, parent):
+        """Build the text part of the controls part of GUI.
 
         parent  reference to parent
 
@@ -518,22 +516,22 @@ class AppFrame(wx.Frame):
         """
 
         # create widgets
-        image_obj = LayerControl(parent, 'Test, map-relative',
-                                 text=DefaultText,
-                                 font=DefaultFont,
-                                 fontsize = DefaultFontSize,
-                                 textcolour=DefaultTextColour,
-                                 pointradius=DefaultPointRadius,
-                                 pointcolour=DefaultPointColour,
-                                 placement=DefaultPlacement,
-                                 x=DefaultX, y=DefaultY,
-                                 offset_x=DefaultOffsetX,
-                                 offset_y=DefaultOffsetY)
+        text_obj = LayerControl(parent, 'Text, map-relative',
+                                text=DefaultText,
+                                font=DefaultFont,
+                                fontsize = DefaultFontSize,
+                                textcolour=DefaultTextColour,
+                                pointradius=DefaultPointRadius,
+                                pointcolour=DefaultPointColour,
+                                placement=DefaultPlacement,
+                                x=DefaultX, y=DefaultY,
+                                offset_x=DefaultOffsetX,
+                                offset_y=DefaultOffsetY)
 
-        return image_obj
+        return text_obj
 
-    def make_gui_image_view(self, parent):
-        """Build the view-relative image part of the controls part of GUI.
+    def make_gui_text_view(self, parent):
+        """Build the view-relative text part of the controls part of GUI.
 
         parent  reference to parent
 
@@ -541,10 +539,10 @@ class AppFrame(wx.Frame):
         """
 
         # create widgets
-        image_obj = LayerControl(parent, 'Image, view-relative',
+        text_obj = LayerControl(parent, 'Text, view-relative',
                                  text=DefaultText,
                                  font=DefaultFont,
-                                 fontsize = DefaultFontSize,
+                                 fontsize=DefaultFontSize,
                                  textcolour=DefaultTextColour,
                                  pointradius=DefaultPointRadius,
                                  pointcolour=DefaultPointColour,
@@ -553,22 +551,27 @@ class AppFrame(wx.Frame):
                                  offset_x=DefaultViewOffsetX,
                                  offset_y=DefaultViewOffsetY)
 
-        return image_obj
+        return text_obj
 
     ######
     # event handlers
     ######
 
-##### map-relative image layer
+##### map-relative text layer
 
-    def imageUpdate(self, event):
-        """Display updated image."""
+    def textUpdate(self, event):
+        """Display updated text."""
 
-        if self.image_layer:
-            self.pyslip.DeleteLayer(self.image_layer)
+        if self.text_layer:
+            self.pyslip.DeleteLayer(self.text_layer)
 
         # convert values to sanity for layer attributes
-        image = event.text
+        text = event.text
+        font = event.font
+        fontsize = event.fontsize
+        textcolour = event.textcolour
+        pointradius = event.pointradius
+        pointcolour = event.pointcolour
 
         placement = event.placement
         if placement == 'none':
@@ -606,31 +609,42 @@ class AppFrame(wx.Frame):
         except ValueError:
             y_off = 0
 
-        image_data = [(x, y, image, {'placement': placement,
-                                     'offset_x': off_x,
-                                     'offset_y': y_off})]
-        self.image_layer = \
-            self.pyslip.AddImageLayer(image_data, map_rel=True,
-                                      visible=True,
-                                      name='<image_layer>')
+        text_data = [(x, y, text, {'placement': placement,
+                                   'radius': pointradius,
+                                   'fontname': font,
+                                   'fontsize': fontsize,
+                                   'colour': pointcolour,
+                                   'textcolour': textcolour,
+                                   'offset_x': off_x,
+                                   'offset_y': y_off})]
+        self.text_layer = \
+            self.pyslip.AddTextLayer(text_data, map_rel=True,
+                                     visible=True,
+                                     name='<text_layer>')
 
-    def imageDelete(self, event):
-        """Delete the image map-relative layer."""
+    def textDelete(self, event):
+        """Delete the text map-relative layer."""
 
-        if self.image_layer:
-            self.pyslip.DeleteLayer(self.image_layer)
-        self.image_layer = None
+        if self.text_layer:
+            self.pyslip.DeleteLayer(self.text_layer)
+        self.text_layer = None
 
-##### view-relative image layer
+##### view-relative text layer
 
-    def imageViewUpdate(self, event):
-        """Display updated image."""
+    def textViewUpdate(self, event):
+        """Display updated text."""
 
         if self.text_view_layer:
             self.pyslip.DeleteLayer(self.text_view_layer)
 
         # convert values to sanity for layer attributes
         text = event.text
+        font = event.font
+        fontsize = event.fontsize
+        textcolour = event.textcolour
+        pointradius = event.pointradius
+        pointcolour = event.pointcolour
+
         placement = event.placement
         if placement == 'none':
             placement= ''
@@ -657,6 +671,11 @@ class AppFrame(wx.Frame):
 
         # create a new text layer
         text_data = [(x, y, text, {'placement': placement,
+                                   'radius': pointradius,
+                                   'fontname': font,
+                                   'fontsize': fontsize,
+                                   'colour': pointcolour,
+                                   'textcolour': textcolour,
                                    'offset_x': off_x,
                                    'offset_y': y_off})]
         self.text_view_layer = \
@@ -664,8 +683,8 @@ class AppFrame(wx.Frame):
                                      visible=True,
                                      name='<text_layer>')
 
-    def imageViewDelete(self, event):
-        """Delete the image view-relative layer."""
+    def textViewDelete(self, event):
+        """Delete the text view-relative layer."""
 
         if self.text_view_layer:
             self.pyslip.DeleteLayer(self.text_view_layer)
@@ -712,22 +731,24 @@ if __name__ == '__main__':
     import tkinter_error
 
     def prepare_font_faces():
+        """Get list of all font faces available."""
+
+        global FontChoices
+
         e = wx.FontEnumerator()
         e.EnumerateFacenames()
         elist= e.GetFacenames()
         elist.sort()
 
-        print str(elist)
-                                          
-
+        FontChoices = [x for x in elist if x[0] != '.']
 
 #vvvvvvvvvvvvvvvvvvvvv test code - can go away once __init__.py works
-    DefaultTilesets = 'tilesets'
-    CurrentPath = os.path.dirname(os.path.abspath(__file__))
-
-    sys.path.append(os.path.join(CurrentPath, DefaultTilesets))
-
-    log(str(sys.path))
+#    DefaultTilesets = 'tilesets'
+#    CurrentPath = os.path.dirname(os.path.abspath(__file__))
+#
+#    sys.path.append(os.path.join(CurrentPath, DefaultTilesets))
+#
+#    log(str(sys.path))
 #^^^^^^^^^^^^^^^^^^^^^ test code - can go away once __init__.py works
 
     # our own handler for uncaught exceptions
@@ -775,13 +796,14 @@ if __name__ == '__main__':
         usage('Bad tile source: %s' % tile_source)
         sys.exit(3)
 
-
     # start wxPython app
     app = wx.App()
+
+    prepare_font_faces()
+    log('FontChoices=%s' % str(FontChoices))
+
     app_frame = AppFrame(tile_dir=tile_dir) #, levels=[0,1,2,3,4])
     app_frame.Show()
-
-#    prepare_font_faces()
 
     if debug:
         import wx.lib.inspection

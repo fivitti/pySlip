@@ -361,19 +361,21 @@ class TileWorker(threading.Thread):
         while True:
             (level, x, y) = self.requests.get()
 
+            image = self.error_tile_image
             try:
                 tile_url = self.server + self.tilepath % (level, x, y)
                 f = urllib2.urlopen(urllib2.Request(tile_url))
                 if f.info().getheader('Content-Type') == 'image/jpeg':
                     image = wx.ImageFromStream(f, wx.BITMAP_TYPE_JPEG)
-                else:
-                    # tile not available!
-                    image = self.error_tile_image
-                wx.CallAfter(self.callafter, level, x, y, image)
-            except urllib2.HTTPError, e:
-                log('ERROR getting tile %d,%d,%d from %s\n%s'
+            except urllib2.HTTPError as e:
+                log('HTTPError exception getting tile %d,%d,%d from %s\n%s'
                     % (level, x, y, tile_url, str(e)))
+            except Exception as e:
+                # some sort of generic exception
+                log("'%s' exception getting tile %d,%d,%d from %s\n%s"
+                    % (e.__class__.__name__level, x, y, tile_url, str(e)))
 
+            wx.CallAfter(self.callafter, level, x, y, image)
             self.requests.task_done()
 
 ################################################################################
@@ -602,7 +604,7 @@ class OSMTiles(tiles.Tiles):
         bitmap = image.ConvertToBitmap()
 
 #        image.SaveFile('osm_%d_%d_%d.jpg' % (level, x, y), wx.BITMAP_TYPE_JPEG)
-        
+
         self._cache_tile(image, bitmap, level, x, y)
 
         # remove the request from the queued requests

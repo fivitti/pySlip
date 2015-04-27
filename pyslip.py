@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -463,15 +462,15 @@ class PySlip(_BufferedCanvas):
     # assumes variables x, y, w, h, dc_w, dc_h, x_off, y_off are set
     # w and h are text width and height
     # perturbs x and y to correct values for the placement
-    text_view_placement = {'cc': 'x=dc_w2-w2; y+=dc_h2-h2',
-                           'nw': '',
-                           'cn': 'x=dc_w2-w2',
-                           'ne': 'x=dc_w-w',
-                           'ce': 'x=dc_w-w;   y+=dc_h2-h2',
-                           'se': 'x=dc_w-w;   y+=dc_h-h',
-                           'cs': 'x=dc_w2-w2; y+=dc_h-h',
-                           'sw': 'pass;       y+=dc_h-h',
-                           'cw': 'pass;       y+=dc_h2-h2',
+    text_view_placement = {'cc': 'x+=dc_w2-w2;      y+=dc_h2-h2',
+                           'nw': 'x+=x_off;         y+=y_off',
+                           'cn': 'x+=dc_w2-w2;      y+=y_off',
+                           'ne': 'x+=dc_w-w-x_off;  y+=y_off',
+                           'ce': 'x+=dc_w-w-x_off;  y+=dc_h2-h2',
+                           'se': 'x+=dc_w-w-x_off;  y+=dc_h-h-y_off',
+                           'cs': 'x+=dc_w2-w2;      y+=dc_h-h-y_off',
+                           'sw': 'x+=x_off;         y+=dc_h-h-y_off',
+                           'cw': 'x+=x_off;         y+=dc_h2-h2',
                            None: '',
                            False: '',
                            '': ''}
@@ -513,9 +512,7 @@ class PySlip(_BufferedCanvas):
 
     # now pre-compile all the dictionary placement strings
     for p_dict in placements:
-        log('p_dict=%s' % str(p_dict))
         for key in p_dict:
-            log('compile: key=%s, %s' % (key, p_dict[key]))
             p_dict[key] = compile(p_dict[key], 'string', 'exec')
     del placements
 
@@ -646,7 +643,6 @@ class PySlip(_BufferedCanvas):
         if tilesets:
             for ts_path in tilesets:
                 ts_path_abs = os.path.abspath(ts_path)
-                log('Adding tileset directory: %s' % ts_path_abs)
                 sys.path.append(ts_path_abs)
 
         # set tile levels stuff - allowed levels, etc
@@ -846,7 +842,7 @@ class PySlip(_BufferedCanvas):
                 msg = ("Points placement valus is invalid, got '%s'"
                        % str(placement))
                 raise Exception(msg)
-            
+
             # append another point to draw data list
             draw_data.append((float(x), float(y), placement.lower(),
                               radius, colour, offset_x, offset_y, udata))
@@ -933,7 +929,7 @@ class PySlip(_BufferedCanvas):
                 w_cache = w
                 h_cache = h
 
-            log('AddImageLayer: draw data=%s' % str((float(lon), float(lat), bmap, w, h,                                                                     
+            log('AddImageLayer: draw data=%s' % str((float(lon), float(lat), bmap, w, h,
                                               placement.lower(), offset_x, offset_y, udata)))
 
             draw_data.append((float(lon), float(lat), bmap, w, h,
@@ -1429,12 +1425,12 @@ class PySlip(_BufferedCanvas):
                 dc.SetFont(font)
 
                 # draw hotpoint - do placement with x & y zero
-                (save_x, save_y) = (x, y)
+                (save_x, save_y) = (x, y)       # save Y & Y
                 (w, h, w2, h2, x, y) = (0, 0, 0, 0, 0, 0)
                 exec self.text_view_placement[place]
                 if radius:
                     dc.DrawCircle(x, y, radius)
-                (x, y) = (save_x, save_y)
+                (x, y) = (save_x, save_y)       # restore X & Y
 
                 # place the text relative to hotpoint
                 (w, h, _, _) = dc.GetFullTextExtent(tdata)  # size of text

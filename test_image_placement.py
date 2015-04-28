@@ -229,7 +229,7 @@ class LayerControl(wx.Panel):
         dialog = wx.FileDialog(None, "Choose an image file",
                                os.getcwd(), "", wildcard, wx.OPEN)
         if dialog.ShowModal() == wx.ID_OK:
-            filepath = dialog.GetPath() 
+            filepath = dialog.GetPath()
         dialog.Destroy()
 
         if filepath:
@@ -568,6 +568,9 @@ class AppFrame(wx.Frame):
         image_data = [(x, y, image, {'placement': placement,
                                      'offset_x': off_x,
                                      'offset_y': y_off})]
+        image_data.append((x,y,'graphics/arrow_rightup.png',{'placement': placement,
+                                                             'offset_x': 0,
+                                                             'offset_y': 0}))
         self.image_view_layer = \
             self.pyslip.AddImageLayer(image_data, map_rel=False,
                                       visible=True,

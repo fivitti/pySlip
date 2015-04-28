@@ -1415,6 +1415,8 @@ class PySlip(_BufferedCanvas):
                 # for each text element, get unpacked data
                 (x, y, tdata, place, radius, colour, textcolour,
                      fontname, fontsize, x_off, y_off, data) = t
+                log('DrawText: x=%s, y=%s, x_off=%s, y_off=%s'
+                    % (str(x), str(y), str(x_off), str(y_off)))
 
                 # set font characteristics
                 dc.SetPen(wx.Pen(colour))
@@ -1424,13 +1426,15 @@ class PySlip(_BufferedCanvas):
                                False, fontname)
                 dc.SetFont(font)
 
-                # draw hotpoint - do placement with x & y zero
-                (save_x, save_y) = (x, y)       # save Y & Y
-                (w, h, w2, h2, x, y) = (0, 0, 0, 0, 0, 0)
-                exec self.text_view_placement[place]
+                # draw hotpoint - do placement with offsets zero
                 if radius:
+                    (save_x_off, save_y_off) = (x_off, y_off)   # save offsets
+                    (save_x, save_y) = (x, y)                   # and X, Y
+                    (w, h, w2, h2, x_off, y_off) = (0, 0, 0, 0, 0, 0)
+                    exec self.text_view_placement[place]
                     dc.DrawCircle(x, y, radius)
-                (x, y) = (save_x, save_y)       # restore X & Y
+                    (x, y) = (save_x, save_y)                   # restore X, Y
+                    (x_off, y_off) = (save_x_off, save_y_off)   # and offsets
 
                 # place the text relative to hotpoint
                 (w, h, _, _) = dc.GetFullTextExtent(tdata)  # size of text

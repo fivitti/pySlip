@@ -374,15 +374,15 @@ class PySlip(_BufferedCanvas):
     # dictionary for map-relative point placement
     # assumes variables x, y, dc_w, dc_h, x_off, y_off are set
     # perturbs x and y to point centre for drawing
-    point_map_placement = {'cc': 'x+=dc_w2;      y+=dc_h2',
-                           'nw': 'x+=x_off;      y+=y_off',
-                           'cn': 'x+=dc_w2;      y+=y_off',
-                           'ne': 'x+=dc_w-x_off; y+=y_off',
-                           'ce': 'x+=dc_w-x_off; y+=dc_h2',
-                           'se': 'x+=dc_w-x_off; y+=dc_h-y_off',
-                           'cs': 'x+=dc_w2;      y+=dc_h-y_off',
-                           'sw': 'x+=x_off;      y+=dc_h-y_off',
-                           'cw': 'x+=x_off;      y+=dc_h2',
+    point_map_placement = {'cc': '',
+                           'nw': 'x+=x_off;   y+=y_off',
+                           'cn': 'pass;       y+=y_off',
+                           'ne': 'x-=x_off;   y+=y_off',
+                           'ce': 'x-=x_off',
+                           'se': 'x-=x_off;   y-=y_off',
+                           'cs': 'pass;       y-=y_off',
+                           'sw': 'x+=x_off;   y-=y_off',
+                           'cw': 'x+=x_off;',
                            None: '',
                            False: '',
                            '':   ''}
@@ -929,9 +929,6 @@ class PySlip(_BufferedCanvas):
                 w_cache = w
                 h_cache = h
 
-            log('AddImageLayer: draw data=%s' % str((float(lon), float(lat), bmap, w, h,
-                                              placement.lower(), offset_x, offset_y, udata)))
-
             draw_data.append((float(lon), float(lat), bmap, w, h,
                               placement.lower(), offset_x, offset_y, udata))
 
@@ -1056,8 +1053,6 @@ class PySlip(_BufferedCanvas):
                          data        polygon user data object
         """
 
-        log('AddPolygonLayer: data=%s' % str(data))
-
         # merge global and layer defaults
         if map_rel:
             default_placement = kwargs.get('placement',
@@ -1091,7 +1086,6 @@ class PySlip(_BufferedCanvas):
         # create draw_data iterable
         draw_data = []
         for d in data:
-            log('d=%s' % str(d))
             if len(d) == 2:
                 (p, attributes) = d
             elif len(d) == 1:
@@ -1301,15 +1295,12 @@ class PySlip(_BufferedCanvas):
             for (lon, lat, place,
                  radius, colour, x_off, y_off, udata) in data:
                 pt = self.ConvertGeo2ViewMasked(lon, lat)
-                if pt:
+                if pt and radius:
                     dc.SetPen(wx.Pen(colour))
                     dc.SetBrush(wx.Brush(colour))
                     (x, y) = pt
-                    log('DrawPointLayer: x=%s, y=%s, .point_map_placement[%s]=%s'
-                        % (str(x), str(y), str(place), str(self.point_map_placement[place])))
                     exec self.point_map_placement[place]
-                    if radius:
-                        dc.DrawCircle(x + x_off, y + y_off, radius)
+                    dc.DrawCircle(x, y, radius)
         else:   # view
             (dc_w, dc_h) = dc.GetSize()
             dc_w2 = dc_w / 2
@@ -1317,10 +1308,10 @@ class PySlip(_BufferedCanvas):
             dc_h -= 1
             dc_w -= 1
             for (x, y, place, radius, colour, x_off, y_off, udata) in data:
-                dc.SetPen(wx.Pen(colour))
-                dc.SetBrush(wx.Brush(colour))
-                exec self.point_view_placement[place]
                 if radius:
+                    dc.SetPen(wx.Pen(colour))
+                    dc.SetBrush(wx.Brush(colour))
+                    exec self.point_view_placement[place]
                     dc.DrawCircle(x, y, radius)
 
     def DrawImageLayer(self, dc, images, map_rel):
@@ -1415,8 +1406,6 @@ class PySlip(_BufferedCanvas):
                 # for each text element, get unpacked data
                 (x, y, tdata, place, radius, colour, textcolour,
                      fontname, fontsize, x_off, y_off, data) = t
-                log('DrawText: x=%s, y=%s, x_off=%s, y_off=%s'
-                    % (str(x), str(y), str(x_off), str(y_off)))
 
                 # set font characteristics
                 dc.SetPen(wx.Pen(colour))
@@ -1720,8 +1709,6 @@ class PySlip(_BufferedCanvas):
                 ll_corner_vy = self.sbox_1_y
                 tr_corner_vx = self.sbox_1_x + self.sbox_w
                 tr_corner_vy = self.sbox_1_y + self.sbox_h
-                log('OnLeftUp: ll_corner_vx=%d, ll_corner_vy=%d, tr_corner_vx=%d, tr_corner_vy=%d'
-                    % (ll_corner_vx, ll_corner_vy, tr_corner_vx, tr_corner_vy))
 
                 # selection box corners in tile coords
                 ll_corner_tx = float(ll_corner_vx+self.view_offset_x) / self.tile_size_x
@@ -1740,12 +1727,10 @@ class PySlip(_BufferedCanvas):
                     # if layer visible and selectable
                     if l.selectable and l.visible:
                         if l.map_rel:
-                            log('OnLeftUp: map-rel box select')
                             # map-relative, get all points selected (if any)
                             p_data = self.layerBSelHandler[l.type]\
                                         (l, ll_corner_g, tr_corner_g)
                         else:
-                            log('OnLeftUp: view-rel box select')
                             # view-relative
                             p_data = self.layerBSelHandler[l.type]\
                                         (l,
@@ -2205,9 +2190,6 @@ class PySlip(_BufferedCanvas):
         of points inside the selection box.
         """
 
-        log('GetBoxSelPointsInLayer: layer=%s, p1=%s, p2=%s'
-            % (str(layer), str(p1), str(p2)))
-
 # TODO: speed this up?  Do we need to??
         # get canonical box limits
         (p1x, p1y) = p1
@@ -2275,16 +2257,11 @@ class PySlip(_BufferedCanvas):
             else:
                 # view_relative, ptx, pty, x, y are view coords
                 e = self.ViewExtent(x, y, placement, w, h, offset_x, offset_y)
-                log('GetImagesInLayer: ViewExtent returned: %s' % str(e))
-                log('ptx=%d, pty=%d' % pt)
                 (lv, rv, tv, bv) = e
-                log('comparing: %s <= %d <= %s and %s <= %d <= %s'
-                    % (str(lv), ptx, str(rv), str(tv), pty, str(bv)))
                 if lv <= ptx <= rv and tv <= pty <= bv:
                     sel_click = (ptx - lv, pty - tv)
                     result.append((sel_click, udata))
 
-        log('GetImagesInLayer: returns: %s' % str(result))
         return result
 
     def GetBoxSelImagesInLayer(self, layer, p1, p2):
@@ -2562,10 +2539,6 @@ class PySlip(_BufferedCanvas):
         off the map, return a negative width/height area at a map corner so we
         can never select anything in the area.
         """
-#FIXME
-
-        log('GeoExtent: lon=%s, lat=%s, placement=%s, w=%s, h=%s, x_off=%s, y_off=%s'
-            % (str(lon), str(lat), str(placement), str(w), str(h), str(x_off), str(y_off)))
 
         # first, figure out placement from (lon, lat)
         (tx, ty) = self.tiles.Geo2Tile(lon, lat)
@@ -2596,10 +2569,6 @@ class PySlip(_BufferedCanvas):
         If area is 'off view' limit extent to view boundary.  If area is totally
         off the view, return a zero width/height area at a view corner.
         """
-#FIXME
-
-        log('ViewExtent: x=%s, y=%s, placement=%s, w=%s, h=%s, x_off=%s, y_off=%s'
-            % (str(x), str(y), str(placement), str(w), str(h), str(x_off), str(y_off)))
 
         # prepare the half values, etc
         dc_w = float(self.view_width)
@@ -2608,18 +2577,14 @@ class PySlip(_BufferedCanvas):
         dc_h2 = dc_h/2.0
         w2 = w/2.0
         h2 = h/2.0
-        log('dc_w=%d, dc_w2=%s, dc_h=%d, dc_h2=%s' % (dc_w, str(dc_w2), dc_h, str(dc_h2)))
-        log('w=%s, h=%s, w2=%s, h2=%s' % (str(w), str(h), str(w2), str(h2)))
 
         # top left corner
         exec self.point_view_perturb[placement]
         (left, top) = (x, y)
-        log('left=%s, top=%s' % (str(left), str(top)))
 
         # bottom right corner
         right = left + w
         bottom = top + h
-        log('right=%s, bottom=%s' % (str(right), str(bottom)))
 
         return (left, right, top, bottom)
 

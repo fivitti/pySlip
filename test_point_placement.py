@@ -542,25 +542,24 @@ class AppFrame(wx.Frame):
         try:
             off_x = int(off_x)
         except ValueError:
-            x_off = 0
+            off_x = 0
 
-        y_off = event.offset_y
-        if not y_off:
-            y_off = 0
+        off_y = event.offset_y
+        if not off_y:
+            off_y = 0
         try:
-            y_off = int(y_off)
+            off_y = int(off_y)
         except ValueError:
-            y_off = 0
+            off_y = 0
 
         point_data = [(x, y, {'placement': placement,
                               'radius': pointradius,
                               'colour': pointcolour,
                               'offset_x': off_x,
-                              'offset_y': y_off})]
-        self.point_layer = \
-            self.pyslip.AddPointLayer(point_data, map_rel=True,
-                                      visible=True,
-                                      name='<point_layer>')
+                              'offset_y': off_y})]
+        self.point_layer = self.pyslip.AddPointLayer(point_data, map_rel=True,
+                                                     visible=True,
+                                                     name='<point_layer>')
 
     def pointDelete(self, event):
         """Delete the point map-relative layer."""
@@ -600,21 +599,21 @@ class AppFrame(wx.Frame):
             off_x = 0
         off_x = int(off_x)
 
-        y_off = event.offset_y
-        if not y_off:
-            y_off = 0
-        y_off = int(y_off)
+        off_y = event.offset_y
+        if not off_y:
+            off_y = 0
+        off_y = int(off_y)
 
         # create a new point layer
         point_data = [(x, y, {'placement': placement,
                               'radius': pointradius,
                               'colour': pointcolour,
                               'offset_x': off_x,
-                              'offset_y': y_off})]
-        self.point_view_layer = \
-            self.pyslip.AddPointLayer(point_data, map_rel=False,
-                                     visible=True,
-                                     name='<point_layer>')
+                              'offset_y': off_y})]
+        self.point_view_layer = self.pyslip.AddPointLayer(point_data,
+                                                          map_rel=False,
+                                                          visible=True,
+                                                          name='<point_layer>')
 
     def pointViewDelete(self, event):
         """Delete the point view-relative layer."""
@@ -645,8 +644,8 @@ class AppFrame(wx.Frame):
         posn_str = ''
         if event.position:
             (lon, lat) = event.position
-            posn_str = ('%.*f / %.*f'
-                        % (LonLatPrecision, lon, LonLatPrecision, lat))
+            posn_str = ('%.*f / %.*f' % (LonLatPrecision, lon,
+                                         LonLatPrecision, lat))
 
         self.mouse_position.SetValue(posn_str)
 

@@ -571,16 +571,16 @@ class AppFrame(wx.Frame):
 
         # create widgets
         text_obj = LayerControl(parent, 'Text, view-relative',
-                                 text=DefaultText,
-                                 font=DefaultFont,
-                                 fontsize=DefaultFontSize,
-                                 textcolour=DefaultTextColour,
-                                 pointradius=DefaultPointRadius,
-                                 pointcolour=DefaultPointColour,
-                                 placement=DefaultViewPlacement,
-                                 x=DefaultViewX, y=DefaultViewY,
-                                 offset_x=DefaultViewOffsetX,
-                                 offset_y=DefaultViewOffsetY)
+                                text=DefaultText,
+                                font=DefaultFont,
+                                fontsize=DefaultFontSize,
+                                textcolour=DefaultTextColour,
+                                pointradius=DefaultPointRadius,
+                                pointcolour=DefaultPointColour,
+                                placement=DefaultViewPlacement,
+                                x=DefaultViewX, y=DefaultViewY,
+                                offset_x=DefaultViewOffsetX,
+                                offset_y=DefaultViewOffsetY)
 
         return text_obj
 
@@ -632,13 +632,13 @@ class AppFrame(wx.Frame):
         except ValueError:
             x_off = 0
 
-        y_off = event.offset_y
-        if not y_off:
-            y_off = 0
+        off_y = event.offset_y
+        if not off_y:
+            off_y = 0
         try:
-            y_off = int(y_off)
+            off_y = int(off_y)
         except ValueError:
-            y_off = 0
+            off_y = 0
 
         text_data = [(x, y, text, {'placement': placement,
                                    'radius': pointradius,
@@ -647,11 +647,10 @@ class AppFrame(wx.Frame):
                                    'colour': pointcolour,
                                    'textcolour': textcolour,
                                    'offset_x': off_x,
-                                   'offset_y': y_off})]
-        self.text_layer = \
-            self.pyslip.AddTextLayer(text_data, map_rel=True,
-                                     visible=True,
-                                     name='<text_layer>')
+                                   'offset_y': off_y})]
+        self.text_layer = self.pyslip.AddTextLayer(text_data, map_rel=True,
+                                                   visible=True,
+                                                   name='<text_layer>')
 
     def textDelete(self, event):
         """Delete the text map-relative layer."""
@@ -695,10 +694,10 @@ class AppFrame(wx.Frame):
             off_x = 0
         off_x = int(off_x)
 
-        y_off = event.offset_y
-        if not y_off:
-            y_off = 0
-        y_off = int(y_off)
+        off_y = event.offset_y
+        if not off_y:
+            off_y = 0
+        off_y = int(off_y)
 
         # create a new text layer
         text_data = [(x, y, text, {'placement': placement,
@@ -708,11 +707,11 @@ class AppFrame(wx.Frame):
                                    'colour': pointcolour,
                                    'textcolour': textcolour,
                                    'offset_x': off_x,
-                                   'offset_y': y_off})]
-        self.text_view_layer = \
-            self.pyslip.AddTextLayer(text_data, map_rel=False,
-                                     visible=True,
-                                     name='<text_layer>')
+                                   'offset_y': off_y})]
+        self.text_view_layer = self.pyslip.AddTextLayer(text_data,
+                                                        map_rel=False,
+                                                        visible=True,
+                                                        name='<text_layer>')
 
     def textViewDelete(self, event):
         """Delete the text view-relative layer."""

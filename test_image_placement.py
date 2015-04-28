@@ -505,23 +505,22 @@ class AppFrame(wx.Frame):
         try:
             off_x = int(off_x)
         except ValueError:
-            x_off = 0
+            off_x = 0
 
-        y_off = event.offset_y
-        if not y_off:
-            y_off = 0
+        off_y = event.offset_y
+        if not off_y:
+            off_y = 0
         try:
-            y_off = int(y_off)
+            off_y = int(off_y)
         except ValueError:
-            y_off = 0
+            off_y = 0
 
         image_data = [(x, y, image, {'placement': placement,
                                      'offset_x': off_x,
-                                     'offset_y': y_off})]
-        self.image_layer = \
-            self.pyslip.AddImageLayer(image_data, map_rel=True,
-                                      visible=True,
-                                      name='<image_layer>')
+                                     'offset_y': off_y})]
+        self.image_layer = self.pyslip.AddImageLayer(image_data, map_rel=True,
+                                                     visible=True,
+                                                     name='<image_layer>')
 
     def imageDelete(self, event):
         """Delete the image map-relative layer."""
@@ -559,22 +558,19 @@ class AppFrame(wx.Frame):
             off_x = 0
         off_x = int(off_x)
 
-        y_off = event.offset_y
-        if not y_off:
-            y_off = 0
-        y_off = int(y_off)
+        off_y = event.offset_y
+        if not off_y:
+            off_y = 0
+        off_y = int(off_y)
 
         # create a new image layer
         image_data = [(x, y, image, {'placement': placement,
                                      'offset_x': off_x,
-                                     'offset_y': y_off})]
-        image_data.append((x,y,'graphics/arrow_rightup.png',{'placement': placement,
-                                                             'offset_x': 0,
-                                                             'offset_y': 0}))
-        self.image_view_layer = \
-            self.pyslip.AddImageLayer(image_data, map_rel=False,
-                                      visible=True,
-                                      name='<image_layer>')
+                                     'offset_y': off_y})]
+        self.image_view_layer = self.pyslip.AddImageLayer(image_data,
+                                                          map_rel=False,
+                                                          visible=True,
+                                                          name='<image_layer>')
 
     def imageViewDelete(self, event):
         """Delete the image view-relative layer."""
@@ -605,8 +601,8 @@ class AppFrame(wx.Frame):
         posn_str = ''
         if event.position:
             (lon, lat) = event.position
-            posn_str = ('%.*f / %.*f'
-                        % (LonLatPrecision, lon, LonLatPrecision, lat))
+            posn_str = ('%.*f / %.*f' % (LonLatPrecision, lon,
+                                         LonLatPrecision, lat))
 
         self.mouse_position.SetValue(posn_str)
 

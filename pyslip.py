@@ -2245,7 +2245,7 @@ class PySlip(_BufferedCanvas):
         (ptx, pty) = pt
         result = []
 
-        # .data is (x, y, bmap, w, h, placement, offset_x, offset_y, udata)
+        # .data: [(x, y, bmap, w, h, placement, offset_x, offset_y, udata),...]
         for p in layer.data:
             (x, y, _, w, h, placement, offset_x, offset_y, udata) = p
             if layer.map_rel:
@@ -2540,14 +2540,16 @@ class PySlip(_BufferedCanvas):
         can never select anything in the area.
         """
 
+# FIXME
+
         # first, figure out placement from (lon, lat)
-        (tx, ty) = self.tiles.Geo2Tile(lon, lat)
+        (x, y) = self.tiles.Geo2Tile(lon, lat)
         w2 = w/2.0
         h2 = h/2.0
-        #exec self.
+        exec self.point_map_placement[placement]
 
-        bx = tx + w/self.tile_size_x
-        by = ty + h/self.tile_size_y
+        bx = x + w/self.tile_size_x
+        by = y + h/self.tile_size_y
 
         return None
 

@@ -372,7 +372,7 @@ class PySlip(_BufferedCanvas):
                         'se', 'cs', 'sw', 'cw', None, False, '']
 
     # dictionary for map-relative point placement
-    # assumes variables x, y, dc_w, dc_h, x_off, y_off are set
+    # assumes variables x, y, x_off, y_off are set
     # perturbs x and y to point centre for drawing
     point_map_placement = {'cc': '',
                            'nw': 'x+=x_off;   y+=y_off',
@@ -476,6 +476,23 @@ class PySlip(_BufferedCanvas):
                            '': ''}
     placements.append(text_view_placement)
 
+    # dictionary for map-relative polygon placement
+    # assumes variables x, y, x_off and y_off are set
+    # perturbs x and y to point centre for drawing
+    poly_map_placement = {'cc': '',
+                          'nw': 'x+=x_off;  y+=y_off',
+                          'cn': 'pass;      y+=y_off',
+                          'ne': 'x-=x_off;  y+=y_off',
+                          'ce': 'x-=x_off',
+                          'se': 'x-=x_off;  y-=y_off',
+                          'cs': 'pass;      y-=y_off',
+                          'sw': 'x+=x_off;  y-=y_off',
+                          'cw': 'x+=x_off',
+                          None: '',
+                          False: '',
+                          '': ''}
+    placements.append(poly_map_placement)
+
     # view-relative polygon placement dictionary
     # assumes variables x, y, dc_w, dc_h, x_off, y_off are set
     # perturbs x and y to correct values for the placement
@@ -483,7 +500,7 @@ class PySlip(_BufferedCanvas):
                            'nw': 'x+=x_off;      y+=y_off',
                            'cn': 'x+=dc_w2;      y+=y_off',
                            'ne': 'x+=dc_w-x_off; y+=y_off',
-                           'ce': 'x+=dc_w-x_off; y+=dc_h2-y_off',
+                           'ce': 'x+=dc_w-x_off; y+=dc_h2',
                            'se': 'x+=dc_w-x_off; y+=dc_h-y_off',
                            'cs': 'x+=dc_w2;      y+=dc_h-y_off',
                            'sw': 'x+=x_off;      y+=dc_h-y_off',
@@ -492,23 +509,6 @@ class PySlip(_BufferedCanvas):
                             False: '',
                            '': ''}
     placements.append(poly_view_placement)
-
-    # dictionary for view-relative point placement
-    # assumes variables x, y, dc_w, dc_h, x_off, y_off are set
-    # perturbs x and y to point centre for drawing
-    point_view_placement = {'cc': 'x+=dc_w2;      y+=dc_h2',
-                            'nw': 'x+=x_off;      y+=y_off',
-                            'cn': 'x+=dc_w2;      y+=y_off',
-                            'ne': 'x+=dc_w-x_off; y+=y_off',
-                            'ce': 'x+=dc_w-x_off; y+=dc_h2',
-                            'se': 'x+=dc_w-x_off; y+=dc_h-y_off',
-                            'cs': 'x+=dc_w2;      y+=dc_h-y_off',
-                            'sw': 'x+=x_off;      y+=dc_h-y_off',
-                            'cw': 'x+=x_off;      y+=dc_h2',
-                            None: '',
-                            False: '',
-                            '': ''}
-    placements.append(point_view_placement)
 
     # now pre-compile all the dictionary placement strings
     for p_dict in placements:
@@ -1452,13 +1452,14 @@ class PySlip(_BufferedCanvas):
             for (p, place, width, colour, closed,
                  filled, fillcolour, x_off, y_off, udata) in data:
                 # gather all polygon points as view coords
-                p_lonlat = []
+                pp = []
                 for lonlat in p:
                     (lon, lat) = lonlat
-                    (x, y) = self.tiles.Geo2Tile(lon, lat)
-                    v_x = x*self.tiles.tile_size_x - self.view_offset_x + x_off
-                    v_y = y*self.tiles.tile_size_y - self.view_offset_y + y_off
-                    p_lonlat.append((v_x, v_y))
+                    (tx, ty) = self.tiles.Geo2Tile(lon, lat)
+                    x = tx*self.tiles.tile_size_x - self.view_offset_x
+                    y = ty*self.tiles.tile_size_y - self.view_offset_y
+                    exec self.poly_map_placement[place]
+                    pp.append((x, y))
 
                 dc.SetPen(wx.Pen(colour, width=width))
 
@@ -1468,9 +1469,9 @@ class PySlip(_BufferedCanvas):
                     dc.SetBrush(wx.TRANSPARENT_BRUSH)
 
                 if closed:
-                    dc.DrawPolygon(p_lonlat)
+                    dc.DrawPolygon(pp)
                 else:
-                    dc.DrawLines(p_lonlat)
+                    dc.DrawLines(pp)
         else:   # view
             (dc_w, dc_h) = dc.GetSize()
             dc_w2 = dc_w / 2

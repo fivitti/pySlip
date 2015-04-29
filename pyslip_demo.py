@@ -638,15 +638,8 @@ class AppFrame(wx.Frame):
                                           offset_x=0, offset_y=0, visible=True,
                                           show_levels=MRPointShowLevels,
                                           name='<pt_layer>')
-            self.xyzzy = \
-                self.pyslip.AddPointLayer(PointData, map_rel=True,
-                                          color='green', radius=2,
-                                          offset_x=10, offset_y=0, visible=True,
-                                          show_levels=MRPointShowLevels,
-                                          name='<pt_layer2>')
         else:
             self.pyslip.DeleteLayer(self.point_layer)
-            self.pyslip.DeleteLayer(self.xyzzy)
             self.point_layer = None
             if self.sel_point_layer:
                 self.pyslip.DeleteLayer(self.sel_point_layer)
@@ -658,12 +651,10 @@ class AppFrame(wx.Frame):
 
         if event.state:
             self.pyslip.ShowLayer(self.point_layer)
-            self.pyslip.ShowLayer(self.xyzzy)
             if self.sel_point_layer:
                 self.pyslip.ShowLayer(self.sel_point_layer)
         else:
             self.pyslip.HideLayer(self.point_layer)
-            self.pyslip.HideLayer(self.xyzzy)
             if self.sel_point_layer:
                 self.pyslip.HideLayer(self.sel_point_layer)
 

@@ -91,10 +91,6 @@ VSpacerSize = (1,1)         # vertical in control pane
 # border width when packing GUI elements
 PackBorder = 0
 
-# various GUI element sizes
-OffsetBoxSize = (60, 25)
-PolyWidthBoxSize = (60, 25)
-
 
 ###############################################################################
 # Override the wx.TextCtrl class to add read-only style and background colour
@@ -201,7 +197,6 @@ class LayerControl(wx.Panel):
         choices = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
         style=wx.CB_DROPDOWN|wx.CB_READONLY
         self.width = wx.ComboBox(self, value=self.v_width,
-                                 size=PolyWidthBoxSize,
                                  choices=choices, style=style)
         gbs.Add(self.width, (row,3),
                 border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.EXPAND))
@@ -243,23 +238,21 @@ class LayerControl(wx.Panel):
         label = wx.StaticText(self, wx.ID_ANY, 'offset_x: ')
         gbs.Add(label, (row,0), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.offset_x = wx.TextCtrl(self, value=str(self.v_offset_x),
-                                    size=OffsetBoxSize)
+        self.offset_x = wx.TextCtrl(self, value=str(self.v_offset_x))
         gbs.Add(self.offset_x, (row,1), border=0, flag=wx.EXPAND)
 
         label = wx.StaticText(self, wx.ID_ANY, '  offset_y: ')
         gbs.Add(label, (row,2), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.offset_y = wx.TextCtrl(self, value=str(self.v_offset_y),
-                                    size=OffsetBoxSize)
+        self.offset_y = wx.TextCtrl(self, value=str(self.v_offset_y))
         gbs.Add(self.offset_y, (row,3), border=0, flag=wx.EXPAND)
 
         # row 4
         row += 1
         delete_button = wx.Button(self, label='Remove')
-        gbs.Add(delete_button, (row,2), border=5, flag=wx.EXPAND)
+        gbs.Add(delete_button, (row,1), border=10, flag=wx.EXPAND)
         update_button = wx.Button(self, label='Update')
-        gbs.Add(update_button, (row,3), border=5, flag=wx.EXPAND)
+        gbs.Add(update_button, (row,3), border=10, flag=wx.EXPAND)
 
         sbs.Add(gbs)
         self.SetSizer(sbs)

@@ -85,12 +85,6 @@ VSpacerSize = (1,1)         # vertical in control pane
 PackBorder = 0
 
 # various GUI element sizes
-TextBoxSize = (160, 25)
-PlacementBoxSize = (60, 25)
-OffsetBoxSize = (60, 25)
-FontBoxSize = (160, 25)
-FontsizeBoxSize = (60, 25)
-PointRadiusBoxSize = (60, 25)
 FontChoices = None
 FontsizeChoices = ['8', '10', '12', '14', '16', '18', '20']
 PointRadiusChoices = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
@@ -193,7 +187,7 @@ class LayerControl(wx.Panel):
         label = wx.StaticText(self, wx.ID_ANY, 'text: ')
         gbs.Add(label, (row,0), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.text = wx.TextCtrl(self, value=self.v_text, size=TextBoxSize)
+        self.text = wx.TextCtrl(self, value=self.v_text)
         gbs.Add(self.text, (row,1), span=(1,3), border=0, flag=wx.EXPAND)
 
         # row 1
@@ -214,7 +208,6 @@ class LayerControl(wx.Panel):
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
         style=wx.CB_DROPDOWN|wx.CB_READONLY
         self.fontsize = wx.ComboBox(self, value=self.v_fontsize,
-                                    size=FontsizeBoxSize,
                                     choices=FontsizeChoices, style=style)
         gbs.Add(self.fontsize, (row,1), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.EXPAND))
@@ -232,14 +225,12 @@ class LayerControl(wx.Panel):
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
         style=wx.CB_DROPDOWN|wx.CB_READONLY
         self.pointradius = wx.ComboBox(self, value=self.v_pointradius,
-                                       size=PointRadiusBoxSize,
                                        choices=PointRadiusChoices, style=style)
         gbs.Add(self.pointradius, (row,1),
                 border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.EXPAND))
         label = wx.StaticText(self, wx.ID_ANY, 'point colour: ')
         gbs.Add(label, (row,2), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        #self.pointcolour = wx.Button(self, size=PointColourSize, label='')
         self.pointcolour = wx.Button(self, label='')
         self.pointcolour.SetBackgroundColour(self.v_pointcolour)
         gbs.Add(self.pointcolour, (row,3), border=0, flag=wx.EXPAND)
@@ -252,7 +243,6 @@ class LayerControl(wx.Panel):
         choices = ['nw', 'cn', 'ne', 'ce', 'se', 'cs', 'sw', 'cw', 'cc', 'none']
         style=wx.CB_DROPDOWN|wx.CB_READONLY
         self.placement = wx.ComboBox(self, value=self.v_placement,
-                                     #size=PlacementBoxSize,
                                      choices=choices, style=style)
         gbs.Add(self.placement, (row,1), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.EXPAND))
@@ -262,13 +252,13 @@ class LayerControl(wx.Panel):
         label = wx.StaticText(self, wx.ID_ANY, 'x: ')
         gbs.Add(label, (row,0), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.x = wx.TextCtrl(self, value=str(self.v_x), size=OffsetBoxSize)
+        self.x = wx.TextCtrl(self, value=str(self.v_x))
         gbs.Add(self.x, (row,1), border=0, flag=wx.EXPAND)
 
         label = wx.StaticText(self, wx.ID_ANY, 'y: ')
         gbs.Add(label, (row,2), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.y = wx.TextCtrl(self, value=str(self.v_y), size=OffsetBoxSize)
+        self.y = wx.TextCtrl(self, value=str(self.v_y))
         gbs.Add(self.y, (row,3), border=0, flag=wx.EXPAND)
 
         # row 6
@@ -276,23 +266,21 @@ class LayerControl(wx.Panel):
         label = wx.StaticText(self, wx.ID_ANY, 'offset_x: ')
         gbs.Add(label, (row,0), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.offset_x = wx.TextCtrl(self, value=str(self.v_offset_x),
-                                    size=OffsetBoxSize)
+        self.offset_x = wx.TextCtrl(self, value=str(self.v_offset_x))
         gbs.Add(self.offset_x, (row,1), border=0, flag=wx.EXPAND)
 
         label = wx.StaticText(self, wx.ID_ANY, '  offset_y: ')
         gbs.Add(label, (row,2), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.offset_y = wx.TextCtrl(self, value=str(self.v_offset_y),
-                                    size=OffsetBoxSize)
+        self.offset_y = wx.TextCtrl(self, value=str(self.v_offset_y))
         gbs.Add(self.offset_y, (row,3), border=0, flag=wx.EXPAND)
 
         # row 7
         row += 1
         delete_button = wx.Button(self, label='Remove')
-        gbs.Add(delete_button, (row,2), border=5, flag=wx.EXPAND)
+        gbs.Add(delete_button, (row,1), border=10, flag=wx.EXPAND)
         update_button = wx.Button(self, label='Update')
-        gbs.Add(update_button, (row,3), border=5, flag=wx.EXPAND)
+        gbs.Add(update_button, (row,3), border=10, flag=wx.EXPAND)
 
         sbs.Add(gbs)
         self.SetSizer(sbs)

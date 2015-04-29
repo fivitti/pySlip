@@ -77,11 +77,6 @@ VSpacerSize = (1,1)         # vertical in control pane
 # border width when packing GUI elements
 PackBorder = 0
 
-# various GUI element sizes
-FilenameBoxSize = (160, 25)
-PlacementBoxSize = (60, 25)
-OffsetBoxSize = (60, 25)
-
 
 ###############################################################################
 # Override the wx.TextCtrl class to add read-only style and background colour
@@ -160,52 +155,59 @@ class LayerControl(wx.Panel):
         sbs = wx.StaticBoxSizer(box, orient=wx.VERTICAL)
         gbs = wx.GridBagSizer(vgap=2, hgap=2)
 
+        # row 0
+        row = 0
         label = wx.StaticText(self, wx.ID_ANY, 'filename: ')
-        gbs.Add(label, (0,0), border=0,
+        gbs.Add(label, (row,0), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.filename = ROTextCtrl(self, self.v_filename, size=FilenameBoxSize)
-        gbs.Add(self.filename, (0,1), span=(1,3), border=0, flag=wx.EXPAND)
+        self.filename = ROTextCtrl(self, self.v_filename)
+        gbs.Add(self.filename, (row,1), span=(1,3), border=0, flag=wx.EXPAND)
 
+        # row 1
+        row += 1
         label = wx.StaticText(self, wx.ID_ANY, 'placement: ')
-        gbs.Add(label, (1,0), border=0,
+        gbs.Add(label, (row,0), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
         choices = ['nw', 'cn', 'ne', 'ce', 'se', 'cs', 'sw', 'cw', 'cc', 'none']
         style=wx.CB_DROPDOWN|wx.CB_READONLY
         self.placement = wx.ComboBox(self, value=self.v_placement,
-                                     size=PlacementBoxSize,
                                      choices=choices, style=style)
-        gbs.Add(self.placement, (1,1), border=0)
+        gbs.Add(self.placement, (row,1), border=0)
 
+        # row 2
+        row += 1
         label = wx.StaticText(self, wx.ID_ANY, 'x: ')
-        gbs.Add(label, (2,0), border=0,
+        gbs.Add(label, (row,0), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.x = wx.TextCtrl(self, value=str(self.v_x), size=OffsetBoxSize)
-        gbs.Add(self.x, (2,1), border=0, flag=wx.EXPAND)
+        self.x = wx.TextCtrl(self, value=str(self.v_x))
+        gbs.Add(self.x, (row,1), border=0, flag=wx.EXPAND)
 
         label = wx.StaticText(self, wx.ID_ANY, 'y: ')
-        gbs.Add(label, (2,2), border=0,
+        gbs.Add(label, (row,2), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.y = wx.TextCtrl(self, value=str(self.v_y), size=OffsetBoxSize)
-        gbs.Add(self.y, (2,3), border=0, flag=wx.EXPAND)
+        self.y = wx.TextCtrl(self, value=str(self.v_y))
+        gbs.Add(self.y, (row,3), border=0, flag=wx.EXPAND)
 
+        # row 3
+        row += 1
         label = wx.StaticText(self, wx.ID_ANY, 'offset_x: ')
-        gbs.Add(label, (3,0), border=0,
+        gbs.Add(label, (row,0), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.offset_x = wx.TextCtrl(self, value=str(self.v_offset_x),
-                                    size=OffsetBoxSize)
-        gbs.Add(self.offset_x, (3,1), border=0, flag=wx.EXPAND)
+        self.offset_x = wx.TextCtrl(self, value=str(self.v_offset_x))
+        gbs.Add(self.offset_x, (row,1), border=0, flag=wx.EXPAND)
 
         label = wx.StaticText(self, wx.ID_ANY, '  offset_y: ')
-        gbs.Add(label, (3,2), border=0,
+        gbs.Add(label, (row,2), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.offset_y = wx.TextCtrl(self, value=str(self.v_offset_y),
-                                    size=OffsetBoxSize)
-        gbs.Add(self.offset_y, (3,3), border=0, flag=wx.EXPAND)
+        self.offset_y = wx.TextCtrl(self, value=str(self.v_offset_y))
+        gbs.Add(self.offset_y, (row,3), border=0, flag=wx.EXPAND)
 
+        # row 4
+        row += 1
         delete_button = wx.Button(self, label='Remove')
-        gbs.Add(delete_button, (4,2), border=5, flag=wx.EXPAND)
+        gbs.Add(delete_button, (row,1), border=10, flag=wx.EXPAND)
         update_button = wx.Button(self, label='Update')
-        gbs.Add(update_button, (4,3), border=5, flag=wx.EXPAND)
+        gbs.Add(update_button, (row,3), border=10, flag=wx.EXPAND)
 
         sbs.Add(gbs)
         self.SetSizer(sbs)

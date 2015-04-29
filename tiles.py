@@ -5,7 +5,7 @@
 A _base_ Tiles object for pySlip tiles.
 
 All tile sources should inherit from this base class.
-See, for example, pyslip_demo.py and pyslip_demo_net.py.
+For example, see gmt_local_tiles.py and osm_tiles.py.
 """
 
 import os

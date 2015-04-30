@@ -1674,14 +1674,17 @@ if __name__ == '__main__':
     argv = sys.argv[1:]
 
     try:
-        (opts, args) = getopt.getopt(argv, 'ht:', ['help', 'tiles='])
+        (opts, args) = getopt.getopt(argv, 'dht:', ['debug', 'help', 'tiles='])
     except getopt.error:
         usage()
         sys.exit(1)
 
     tile_source = 'GMT'
+    debug = False
     for (opt, param) in opts:
-        if opt in ['-h', '--help']:
+        if opt in ['-d', '--debug']:
+            debug = True
+        elif opt in ['-h', '--help']:
             usage()
             sys.exit(0)
         elif opt in ('-t', '--tiles'):
@@ -1705,8 +1708,9 @@ if __name__ == '__main__':
     app_frame = AppFrame(tile_dir=tile_dir) #, levels=[0,1,2,3,4])
     app_frame.Show()
 
-##    import wx.lib.inspection
-##    wx.lib.inspection.InspectionTool().Show()
+    if debug:
+        import wx.lib.inspection
+        wx.lib.inspection.InspectionTool().Show()
 
     app.MainLoop()
 

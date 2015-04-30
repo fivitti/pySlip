@@ -118,6 +118,19 @@ class GMTTiles(tiles.Tiles):
         # setup the tile cache (note, no callback set since net unused)
         self.cache = GMTCache(tiles_dir=self.tiles_dir, max_lru=DefaultMaxLRU)
 
+    def SetAvailableCallback(self, callback):
+        """Set the "tile now available" callback routine.
+
+        callback  function with signature callback(level, x, y, image, bitmap)
+
+        where 'level' is the level of the tile, 'x' and 'y' are
+        the coordinates of the tile and 'image' and 'bitmap' are tile data.
+
+        For GMT tiles we do nothing as they are all local.
+        """
+
+        pass
+
     def UseLevel(self, level):
         """Prepare to serve tiles from the required level.
 
@@ -160,6 +173,44 @@ class GMTTiles(tiles.Tiles):
             info = None
 
         return info
+
+    def GetTile(self, x, y):
+        """Get bitmap for tile at level,x,y.
+
+        x      X coord of tile required (integer, tile coordinates)
+        y      Y coord of tile required (integer, tile coordinates)
+
+        Return tile from the local cache, return None if not found.
+        """
+
+#        # the tile 'key'
+#        tile_key = (x, y)
+#
+#        try:
+#            # if tile in cache, return it from there
+#            bitmap = self.cache[level][tile_key]
+#            self.lru[level].remove((x, y))      # remove, add at recent end
+#            self.lru[level].insert(0, tile_key)
+#        except KeyError:
+#            # tile *not* in memory cache look in disk cache
+#            tile_dir = os.path.join(self.cache_dir, '%d' % level)
+#            tile_path = os.path.join(tile_dir, self.TilePath % (x, y))
+#            if not os.path.exists(tile_path):
+#                # tile not there, return None
+#                bitmap = None
+#        else:
+#            # we have the tile file - read into memory, cache & return
+#            image = wx.Image(tile_path, wx.BITMAP_TYPE_ANY)
+#            bitmap = image.ConvertToBitmap()
+#            self.cache[level][tile_key] = bitmap
+#            self.lru[level].insert(0, tile_key)
+#
+#        # newly cached tile, check if we must drop old cached tiles
+#        self._trim_cache(level)
+#
+#        return bitmap
+
+        return self.cache[(self.level, x, y)]
 
     def Geo2Tile(self, xgeo, ygeo):
         """Convert geo to tile fractional coordinates for level in use.

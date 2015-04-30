@@ -24,15 +24,15 @@ except ImportError:
         pass
 
 
-# attributes used for tileset introspection                                                                                         
-tileset_name = ''                                                                                                                   
-tileset_shortname = ''                                                                                                              
-tileset_version = '1.0'                                                                                                             
-                                                                                                                                    
-                                                                                                                                    ######
+# attributes used for tileset introspection
+tileset_name = ''
+tileset_shortname = ''
+tileset_version = '1.0'
+
+
+######
 # Override the pyCacheBack object to handle GMT tile retrieval
 ######
-
 
 class GMTCache(pycacheback.pyCacheBack):
 

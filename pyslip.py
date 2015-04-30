@@ -571,7 +571,7 @@ class PySlip(_BufferedCanvas):
 
     # default text attributes - map relative
     DefaultTextPlacement = ''
-    DefaultTextRadius = 2
+    DefaultTextRadius = 0
     DefaultTextColour = wx.BLACK
     DefaultTextTextColour = wx.BLACK
     DefaultTextOffsetX = 5
@@ -591,7 +591,7 @@ class PySlip(_BufferedCanvas):
     DefaultTextViewFontSize = 9
     DefaultTextViewData = None
 
-    # default polygon attributes
+    # default polygon attributes - map view
     DefaultPolyPlacement = ''
     DefaultPolyWidth = 1
     DefaultPolyColour = wx.RED
@@ -602,7 +602,7 @@ class PySlip(_BufferedCanvas):
     DefaultPolyOffsetY = 0
     DefaultPolyData = None
 
-    # default polygon attributes
+    # default polygon attributes - view relative
     DefaultPolyViewPlacement = ''
     DefaultPolyViewWidth = 1
     DefaultPolyViewColour = wx.RED
@@ -614,10 +614,12 @@ class PySlip(_BufferedCanvas):
     DefaultPolyViewData = None
 
     # layer type values - could use Enum, but this is simpler
+    #(TypePoint, TypeImage, TypePoly, TypeText) = range(4)
     TypePoint = 0
     TypeImage = 1
     TypePoly = 2
     TypeText = 3
+
 
     def __init__(self, parent, tile_src=None, start_level=None,
                  min_level=None, max_level=None, tilesets=None, **kwargs):
@@ -743,10 +745,15 @@ class PySlip(_BufferedCanvas):
         # eventually calls ResizeCallback()
         self.OnSize()
 
-    def OnTileAvailable(self, level, x, y, img, pic):
+    def OnTileAvailable(self, level, x, y, img, bmp):
         """Callback routine: tile level/x/y is available.
 
-        Just redraw the entire canvas.
+        level  the map zoom level the image is for
+        x, y   tile coordinates of new tile
+        img    tile image
+        bmp    tile bitmap
+
+        We don't use any of the above - just redraw the entire canvas.
         """
 
         self.Update()

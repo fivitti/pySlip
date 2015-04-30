@@ -404,23 +404,27 @@ class TileWorker(threading.Thread):
 
     def run(self):
         while True:
+            # get zoom level and tile coordinates to retrieve
             (level, x, y) = self.requests.get()
 
             image = self.error_tile_image
+            error = False       # True if we get an error
             try:
                 tile_url = self.server + self.tilepath % (level, x, y)
                 f = urllib2.urlopen(urllib2.Request(tile_url))
                 if f.info().getheader('Content-Type') == 'image/jpeg':
                     image = wx.ImageFromStream(f, wx.BITMAP_TYPE_JPEG)
             except urllib2.HTTPError as e:
+                error = True
                 log('HTTPError exception getting tile %d,%d,%d from %s\n%s'
                     % (level, x, y, tile_url, str(e)))
             except Exception as e:
                 # some sort of generic exception
+                error = True
                 log("'%s' exception getting tile %d,%d,%d from %s\n%s"
                     % (e.__class__.__name__level, x, y, tile_url, str(e)))
 
-            wx.CallAfter(self.callafter, level, x, y, image)
+            wx.CallAfter(self.callafter, level, x, y, image, error)
             self.requests.task_done()
 
 ################################################################################
@@ -486,7 +490,7 @@ class OSMTiles(tiles.Tiles):
         self.max_level = max(self.levels)
 
         # save the CallAfter() function
-        self.callback = callback
+        self.available_callback = callback
 
         # tiles extent for OSM tile data (left, right, top, bottom)
         self.extent = (-180.0, 180.0, -85.0511, 85.0511)
@@ -559,6 +563,17 @@ class OSMTiles(tiles.Tiles):
                                     self.error_tile_image)
                 self.workers.append(worker)
                 worker.start()
+
+    def SetAvailableCallback(self, callback):
+        """Set the "tile now available" callback routine.
+
+        callback  function with signature callback(level, x, y)
+
+        where 'level' is the level of the tile and 'x' and 'y' are
+        the coordinates of the tile that is now available.
+        """
+
+        self.available_callback = callback
 
     def UseLevel(self, level):
         """Prepare to serve tiles from the required level.
@@ -636,21 +651,22 @@ class OSMTiles(tiles.Tiles):
             self.request_queue.put(tile_key)
             self.queued_requests[tile_key] = True
 
-    def _tile_available(self, level, x, y, image):
+    def _tile_available(self, level, x, y, image, error):
         """A tile is available.
 
         level  level for the tile
         x      x coordinate of tile
         y      y coordinate of tile
         image  tile image data
+        error  True if image is 'error' image
         """
 
         # convert image to bitmap, save in cache
         bitmap = image.ConvertToBitmap()
 
-#        image.SaveFile('osm_%d_%d_%d.jpg' % (level, x, y), wx.BITMAP_TYPE_JPEG)
-
-        self._cache_tile(image, bitmap, level, x, y)
+        # don't cche error images, maybe we can get it again later
+        if not error:
+            self._cache_tile(image, bitmap, level, x, y)
 
         # remove the request from the queued requests
         # note that it may not be there - a level change can flush the dict

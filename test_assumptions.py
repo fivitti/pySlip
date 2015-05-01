@@ -15,6 +15,80 @@ import unittest
 
 class TestAssumptions(unittest.TestCase):
 
+    def test_copy_list(self):
+        """Check 'l_poly = list(poly)' gets us a new list.
+
+        At a few places in pySlip we need a copy of a list, not the original.
+        We do this by:
+            l_poly = list(poly)
+            new_poly = l_poly[:]
+        Is the final ...[:] required?
+        """
+
+        # try to make copy without [:]
+        old_list = [1, 2, 3, 4]
+        old_list_id = id(old_list)
+        new_list = list(old_list)
+        new_list_id = id(new_list)
+
+        # make sure we DO have a copy
+        msg = ("'new_list = list(old_list)' DOESN'T give us a copy?\n"
+                   "id(old_list)=%d, id(new_list)=%d"
+               % (old_list_id, new_list_id))
+        self.assertTrue(old_list_id != new_list_id, msg)
+
+    def test_copy(self):
+        """Test 'new_list = old_list[:]' does give us a copy.
+
+        At a few places in pySlip we need a copy of a list, not the original.
+        We do this by:
+            new_poly = l_poly[:]
+        """
+
+        # try to make a copy with [:]
+        old_list = [1, 2, 3, 4]
+        old_list_id = id(old_list)
+        new_list = old_list[:]
+        new_list_id = id(new_list)
+
+        msg = ("'new_list = old_list[:]' DOESN'T give us a copy?\n"
+                   "id(old_list)=%d, id(new_list)=%d"
+               % (old_list_id, new_list_id))
+        self.assertTrue(old_list_id != new_list_id, msg)
+
+    def test_copy2(self):
+        """Check 'list(poly)' is faster than 'poly[:]'.
+
+        At a few places in pySlip we need a copy of a list and we do:
+            new_poly = list(poly)
+        Is this faster than:
+            new_poly = poly[:]
+        """
+
+        loops = 10000000
+
+        # create the old list
+        old_list = [1, 2, 3, 4, 5, 6]
+
+        # time list() approach
+        start = time.time()
+        for _ in xrange(loops):
+            new_list = list(old_list)
+        list_delta = time.time() - start
+
+        # time copy approach
+        start = time.time()
+        for _ in xrange(loops):
+            new_list = old_list[:]
+        copy_delta = time.time() - start
+
+        msg = ("'list(old_list)' is SLOWER than 'old_list[:]'?\n"
+                "list(old_list)=%.2f, old_list[:]=%.2f "
+                "([:] is about %d times faster)"
+               % (list_delta, copy_delta,
+                   int((list_delta*1.5/copy_delta))))
+        self.assertTrue(list_delta < copy_delta, msg)
+
     def test_dispatch_faster(self):
         """Test that dispatch is faster than inline if/elif/else.
 

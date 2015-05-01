@@ -571,13 +571,13 @@ class PySlip(_BufferedCanvas):
 
     # default text attributes - map relative
     DefaultTextPlacement = ''
-    DefaultTextRadius = 0
+    DefaultTextRadius = 2
     DefaultTextColour = wx.BLACK
     DefaultTextTextColour = wx.BLACK
     DefaultTextOffsetX = 5
     DefaultTextOffsetY = 1
     DefaultTextFontname = 'Arial'
-    DefaultTextFontSize = 9
+    DefaultTextFontSize = 10
     DefaultTextData = None
 
     # default text attributes - view relative
@@ -588,7 +588,7 @@ class PySlip(_BufferedCanvas):
     DefaultTextViewOffsetX = 0
     DefaultTextViewOffsetY = 0
     DefaultTextViewFontname = 'Arial'
-    DefaultTextViewFontSize = 9
+    DefaultTextViewFontSize = 10
     DefaultTextViewData = None
 
     # default polygon attributes - map view

@@ -15,6 +15,120 @@ import unittest
 
 class TestAssumptions(unittest.TestCase):
 
+    def test_dispatch_faster(self):
+        """Test that dispatch is faster than inline if/elif/else.
+
+        In pySlip we do all placement via an 'exec' instead of if/else code.
+        The assumption is that this is FASTER.
+
+        That is, this:
+            dispatch = {0: 'x += 2',
+                        1: 'x -= 1',
+                        2: 'x = 4'}
+            exec dispatch[i]
+        is faster than:
+            if i == 0:
+                x += 2
+            elif i == 1:
+                x -= 1
+            else:
+                x = 4
+        """
+
+        import random
+
+        loops = 1000000
+
+        dispatch = {0: 'x += 2',
+                    1: 'x -= 1',
+                    2: 'x = 4'}
+        for key in dispatch:
+            dispatch[key] = compile(dispatch[key], 'string', 'exec')
+
+        start = time.time()
+        for _ in xrange(loops):
+            x = 5
+            i = 1
+            exec dispatch[i]
+        dispatch_delta = time.time() - start
+
+        start = time.time()
+        for _ in xrange(loops):
+            x = 5
+            i = 1
+            if i == 0:
+                x += 2
+            elif i == 1:
+                x -= 1
+            else:
+                x = 4
+        elif_delta = time.time() - start
+
+        msg = ("INLINE: if/else is faster than 'exec dispatch[i]'?\n"
+                   "dispatch=%.2fs, elif=%.2fs (elif >= %d times faster)"
+               % (dispatch_delta, elif_delta, int(dispatch_delta/elif_delta)))
+        self.assertTrue(dispatch_delta < elif_delta, msg)
+
+    def test_dispatch_faster2(self):
+        """Test that dispatch is faster than function if/elif/else.
+
+        In pySlip we do all placement via an 'exec' instead of if/else code.
+        The assumption is that this is FASTER.
+
+        That is, this:
+            dispatch = {0: 'x += 2',
+                        1: 'x -= 1',
+                        2: 'x = 4'}
+            exec dispatch[i]
+        is faster than:
+            def doit(i):
+                if i == 0:
+                    x += 2
+                elif i == 1:
+                    x -= 1
+                else:
+                    x = 4
+            doit(i)
+        """
+
+        import random
+
+        loops = 1000000
+
+        dispatch = {0: 'x += 2',
+                    1: 'x -= 1',
+                    2: 'x = 4'}
+        for key in dispatch:
+            dispatch[key] = compile(dispatch[key], 'string', 'exec')
+
+        start = time.time()
+        for _ in xrange(loops):
+            x = 5
+            i = 1
+            exec dispatch[i]
+        dispatch_delta = time.time() - start
+
+        def doit(i, x):
+            if i == 0:
+                x += 2
+            elif i == 1:
+                x -= 1
+            else:
+                x = 4
+            return x
+
+        start = time.time()
+        for _ in xrange(loops):
+            x = 5
+            i = 1
+            x = doit(i, x)
+        elif_delta = time.time() - start
+
+        msg = ("FUNCTION: if/else is faster than 'exec dispatch[i]'?\n"
+                   "dispatch=%.2fs, elif=%.2fs (elif >= %d times faster)"
+               % (dispatch_delta, elif_delta, int(dispatch_delta/elif_delta)))
+        self.assertTrue(dispatch_delta < elif_delta, msg)
+
     def test_copy_faster(self):
         """Test that a[:] copy is slower than copy.copy(a)."""
 

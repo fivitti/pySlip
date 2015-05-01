@@ -82,12 +82,12 @@ class TestAssumptions(unittest.TestCase):
             new_list = old_list[:]
         copy_delta = time.time() - start
 
-        msg = ("'list(old_list)' is SLOWER than 'old_list[:]'?\n"
-                "list(old_list)=%.2f, old_list[:]=%.2f "
-                "([:] is about %d times faster)"
+        msg = ("'old_list[:]' is SLOWER than 'list(old_list)'?\n"
+                "old_list[:]=%.1f, list(old_list)=%.1f "
+                "(list() is %.2f times faster)"
                % (list_delta, copy_delta,
-                   int((list_delta*1.5/copy_delta))))
-        self.assertTrue(list_delta < copy_delta, msg)
+                   (copy_delta/list_delta)))
+        self.assertTrue(list_delta > copy_delta, msg)
 
     def test_dispatch_faster(self):
         """Test that dispatch is faster than inline if/elif/else.
@@ -139,8 +139,8 @@ class TestAssumptions(unittest.TestCase):
         elif_delta = time.time() - start
 
         msg = ("INLINE: if/else is faster than 'exec dispatch[i]'?\n"
-                   "dispatch=%.2fs, elif=%.2fs (elif >= %d times faster)"
-               % (dispatch_delta, elif_delta, int(dispatch_delta/elif_delta)))
+                   "dispatch=%.2fs, elif=%.2fs (elif is %.1f times faster)"
+               % (dispatch_delta, elif_delta, dispatch_delta/elif_delta))
         self.assertTrue(dispatch_delta < elif_delta, msg)
 
     def test_dispatch_faster2(self):
@@ -199,8 +199,8 @@ class TestAssumptions(unittest.TestCase):
         elif_delta = time.time() - start
 
         msg = ("FUNCTION: if/else is faster than 'exec dispatch[i]'?\n"
-                   "dispatch=%.2fs, elif=%.2fs (elif >= %d times faster)"
-               % (dispatch_delta, elif_delta, int(dispatch_delta/elif_delta)))
+                   "dispatch=%.2fs, elif=%.2fs (elif is %.1f times faster)"
+               % (dispatch_delta, elif_delta, dispatch_delta/elif_delta))
         self.assertTrue(dispatch_delta < elif_delta, msg)
 
     def test_copy_faster(self):

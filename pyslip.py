@@ -71,11 +71,10 @@ def point_inside_polygon(x, y, poly):
     Even with the extra code, it runs in 2/3 the time.
     """
 
-# TODO: check requirement for "new_poly = l_poly[:]"
-
     # we want a *copy* of original iterable plus extra wraparound point
-    l_poly = list(poly)
-    new_poly = l_poly[:]        # in case we had a list initially (NEEDED?)
+#FASTER
+#    l_poly = list(poly)
+    l_poly = poly[:]
     new_poly.append(l_poly[0])  # ensure poly wraps around
 
     inside = False
@@ -1122,7 +1121,11 @@ class PySlip(_BufferedCanvas):
 
             # if polygon is to be filled, ensure closed
             if close:
-                p = list(p)     # must get a *copy*
+#FASTER
+#                p = list(p)     # must get a *copy*
+#                p.append(p[0])
+                new_p = p[:]
+                p = new_p
                 p.append(p[0])
 
             draw_data.append((p, placement.lower(), width, colour, close,
@@ -2320,11 +2323,11 @@ class PySlip(_BufferedCanvas):
             (poly, placement, _, _, _, _, _, offset_x, offset_y, udata) = p
             if layer.map_rel:
                 # map-relative, all points are geo coordinates
-                if point_in_map_poly(ptx, pty, placement, offset_x, offset_y):
+                if point_in_poly_map(ptx, pty, placement, offset_x, offset_y):
                     result.append((pt, udata))
             else:
                 # view-relative, all points are view pixels
-                if point_in_view_poly(ptx, pty, placement, offset_x, offset_y):
+                if point_in_poly_view(ptx, pty, placement, offset_x, offset_y):
                     result.append((pt, udata))
 
         return result

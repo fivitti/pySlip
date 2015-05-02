@@ -1286,12 +1286,14 @@ class AppFrame(wx.Frame):
         event  the pyslip event which has attributes:
                    evtype    the event type
                    layer_id  ID of the layer selected
-                   point     iterable of poly points, can be None
+                   poly      iterable of poly points: ((x,y), data), can be None
                    mposn     map-relative position of mouse-click
                    vposn     view-relative position of mouse-click
         """
 
-        poly = event.point
+        poly = event.poly
+
+        log('polySelect: event.poly=%s' % str(event.poly))
 
         if event.evtype == pyslip.EventPointSelect:
             if poly:
@@ -1313,7 +1315,7 @@ class AppFrame(wx.Frame):
                                                   show_levels=[3,4],
                                                   name='<sel_poly>')
         else:   # box select, not yet implemented
-            pass
+            raise Exception('Not yet implemented')
 
         return True
 
@@ -1529,16 +1531,16 @@ class AppFrame(wx.Frame):
 
         TextViewData = [(0, 7, '%s %s' % (DemoName, DemoVersion))]
 
-        PolyData = [(((150,10),(160,20),(170,10),(165,0),(155,0)),
-                      {'width': 3, 'color': 'blue', 'closed': True}),
-                    (((165,-35),(175,-35),(175,-45),(165,-45)),
+        PolyData = [#(((150.0,10.0),(160.0,20.0),(170.0,10.0),(165.0,0.0),(155.0,0.0)),
+                    #  {'width': 3, 'color': 'blue', 'closed': True}),
+                    (((165.0,-35.0),(175.0,-35.0),(175.0,-45.0),(165.0,-45.0)),
                       {'width': 10, 'color': '#00ff00c0', 'filled': True,
                        'fillcolor': '#ffff0040'}),
-                    (((190,-30),(220,-50),(220,-30),(190,-50)),
-                      {'width': 3, 'color': 'green', 'filled': True,
-                       'fillcolor': 'yellow'}),
-                    (((190,+50),(220,+65),(220,+50),(190,+65)),
-                      {'width': 10, 'color': '#00000040'})
+                    #(((190.0,-30.0),(220.0,-50.0),(220.0,-30.0),(190.0,-50.0)),
+                    #  {'width': 3, 'color': 'green', 'filled': True,
+                    #   'fillcolor': 'yellow'}),
+                    #(((190.0,+50.0),(220.0,+65.0),(220.0,+50.0),(190.0,+65.0)),
+                    #  {'width': 10, 'color': '#00000040'})
                    ]
 
         PolyViewData = [(((0,0),(230,0),(230,40),(-230,40),(-230,0)),
@@ -1611,6 +1613,9 @@ class AppFrame(wx.Frame):
         """Handle a pySlip point/box SELECT event."""
 
         layer_id = event.layer_id
+
+        log('handle_select_event: layer_id=%d, self.demo_select_dispatch=%s'
+                % (layer_id, str(self.demo_select_dispatch)))
 
         self.demo_select_dispatch.get(layer_id, self.null_handler)(event)
 

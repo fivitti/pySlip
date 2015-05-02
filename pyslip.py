@@ -75,13 +75,13 @@ def point_inside_polygon(x, y, poly):
 #FASTER
 #    l_poly = list(poly)
     l_poly = poly[:]
-    new_poly.append(l_poly[0])  # ensure poly wraps around
+    l_poly.append(l_poly[0])  # ensure poly wraps around
 
     inside = False
 
-    (p1x, p1y) = new_poly[0]
+    (p1x, p1y) = l_poly[0]
 
-    for (p2x, p2y) in new_poly:
+    for (p2x, p2y) in l_poly:
         if y > min(p1y, p2y):
             if y <= max(p1y, p2y):
                 if x <= max(p1x, p2x):
@@ -822,6 +822,8 @@ class PySlip(_BufferedCanvas):
         # create draw data iterable for draw method
         draw_data = []              # list to hold draw data
 
+        log('AddPointLayer: points=%s' % str(points))
+
         for pt in points:
             if len(pt) == 3:
                 (x, y, attributes) = pt
@@ -850,6 +852,7 @@ class PySlip(_BufferedCanvas):
                 raise Exception(msg)
 
             # append another point to draw data list
+            log('????: x=%s, y=%s' % (str(x), str(y)))
             draw_data.append((float(x), float(y), placement.lower(),
                               radius, colour, offset_x, offset_y, udata))
 
@@ -1122,11 +1125,11 @@ class PySlip(_BufferedCanvas):
             # if polygon is to be filled, ensure closed
             if close:
 #FASTER
-#                p = list(p)     # must get a *copy*
-#                p.append(p[0])
-                new_p = p[:]
-                p = new_p
+                p = list(p)     # must get a *copy*
                 p.append(p[0])
+#                new_p = p[:]
+#                p = new_p
+#                p.append(p[0])
 
             draw_data.append((p, placement.lower(), width, colour, close,
                               filled, fillcolour, offset_x, offset_y, udata))
@@ -1697,6 +1700,8 @@ class PySlip(_BufferedCanvas):
         a drag we don't do a lot.  If a selection we process that.
         """
 
+        log('OnLeftUp --------------------------------------')
+
         # turn off any dragging
         self.last_drag_x = self.last_drag_y = None
 
@@ -1714,6 +1719,7 @@ class PySlip(_BufferedCanvas):
         # if any layers interested, inform of possible select
         if not self.was_dragging:
             if self.is_box_select:
+                log('box select')
                 # possible box selection
                 # get selection box in view coordinates
                 ll_corner_vx = self.sbox_1_x
@@ -1753,6 +1759,7 @@ class PySlip(_BufferedCanvas):
                         delayed_paint = True
                 self.is_box_select = False
             else:
+                log('point select')
                 # possible point selection, get click point in view coords
                 clickpt_v = event.GetPositionTuple()
                 (clickpt_vx, clickpt_vy) = clickpt_v
@@ -2315,6 +2322,8 @@ class PySlip(_BufferedCanvas):
         More than one polygon may be selected in a single click.
         """
 
+        log('GetNearestPolygonInLayer: pt=%s' % str(pt))
+
         (ptx, pty) = pt
         result = []
 
@@ -2322,12 +2331,15 @@ class PySlip(_BufferedCanvas):
         for p in layer.data:
             (poly, placement, _, _, _, _, _, offset_x, offset_y, udata) = p
             if layer.map_rel:
+                log('GetNearestPolygonInLayer: map-rel layer')
                 # map-relative, all points are geo coordinates
-                if point_in_poly_map(ptx, pty, placement, offset_x, offset_y):
+                if self.point_in_poly_map(poly, ptx, pty,
+                                          placement, offset_x, offset_y):
                     result.append((pt, udata))
             else:
                 # view-relative, all points are view pixels
-                if point_in_poly_view(ptx, pty, placement, offset_x, offset_y):
+                if self.point_in_poly_view(poly, ptx, pty,
+                                           placement, offset_x, offset_y):
                     result.append((pt, udata))
 
         return result
@@ -2478,6 +2490,8 @@ class PySlip(_BufferedCanvas):
         event.point = point
         event.mposn = mposn
         event.vposn = vposn
+        log('RaiseSelectEvent: evtype=%s, layer_id=%d, point=%s, mposn=%s, vposn=%s'
+                % (str(evtype), layer.id, str(point), str(mposn), str(vposn)))
         self.GetEventHandler().ProcessEvent(event)
 
     def SetLevelChangeEvent(self, event):
@@ -2530,6 +2544,74 @@ class PySlip(_BufferedCanvas):
     ######
     # Various pySlip utility routines
     ######
+
+    def point_in_poly_map(self, poly, ptx, pty, placement, offset_x, offset_y):
+        """Decide if a point is inside a map-relative polygon.
+
+        poly       an iterable of (x,y) where x,y are in geo coordinates
+        ptx        point X coordinate (geo)
+        pty        point Y coordinate (geo)
+        placement  a placement string
+        offset_x   X offset in pixels
+        offset_y   Y offset in pixels
+
+        The (ptx, pty) point, while in geo coordinates, must be a click point
+        within the view.
+
+        Returns True if point is inside the polygon.
+        """
+
+        log('point_in_poly_map: ptx=%s, pty=%s' % (str(ptx), str(pty)))
+
+        return point_inside_polygon(ptx, pty, poly)
+
+#        # convert polygon and placement into list of (x,y) tuples
+#        view_poly = []
+#        for (gx, gy) in poly:
+#            log('BEFORE: gx=%s, gy=%s' % (str(gx), str(gy)))
+#            (tx, ty) =  self.tiles.Geo2Tile(gx, gy)             # tx=10.2, ty=6.1
+#            log('DURING: tx=%s, ty=%s' % (str(tx), str(ty)))
+#            x = tx*self.tiles.tile_size_x - self.view_offset_x
+#            y = ty*self.tiles.tile_size_y - self.view_offset_y
+#            log('DURING: x=%s, y=%s, .view_offset_x=%d, .view_offset_y=%d'
+#                % (str(x), str(y), self.view_offset_x, self.view_offset_y))
+#            exec self.point_map_placement[placement]
+#            log('AFTER: x=%s, y=%s, placement=%s' % (str(x), str(y), str(placement)))
+#            view_poly.append((x, y))
+
+        # decide if (ptx,pty) is inside polygon
+        result = point_inside_polygon(ptx, pty, view_poly)
+        log('RETURN: %s' % str(result))
+        return result
+
+    def point_in_poly_view(self, poly, ptx, pty, placement, offset_x, offset_y):
+        """Decide if a point is inside a view-relative polygon.
+
+        poly       an iterable of (x,y) where x,y are in view (pixel) coordinates
+        ptx        point X coordinate (view)
+        pty        point Y coordinate (view)
+        placement  a placement string
+        offset_x   X offset in pixels
+        offset_y   Y offset in pixels
+
+        Returns True if point is inside the polygon.
+        """
+
+        # convert polygon and placement into list of (x,y) tuples
+        view_poly = []
+        for (gx, gy) in poly:
+            log('BEFORE: gx=%s, gy=%s' % (str(gx), str(gy)))
+            (tx, ty) =  self.tiles.Geo2Tile(gx, gy)
+            log('DURING: tx=%s, ty=%s' % (str(tx), str(ty)))
+            x = tx - self.view_offset_x
+            y = ty - self.view_offset_y
+            log('DURING: x=%s, y=%s' % (str(x), str(y)))
+            exec self.point_map_placement[placement]
+            log('AFTER: x=%s, y=%s' % (str(x), str(y)))
+            view_poly.append((x, y))
+
+        # decide if (ptx,pty) is inside polygon
+        return point_inside_polygon(ptx, pty, view_poly)
 
     def GeoExtent(self, lon, lat, placement, w, h, x_off, y_off):
         """Get geo extent of area.

@@ -227,13 +227,20 @@ class GMTTiles(tiles.Tiles):
 
         # get extent information
         (min_xgeo, max_xgeo, min_ygeo, max_ygeo) = self.extent
+        log('Geo2Tile: min_xgeo=%s, max_xgeo=%s, min_ygeo=%s, max_ygeo=%s'
+            % (str(min_xgeo), str(max_xgeo), str(min_ygeo), str(max_ygeo)))
 
         # get 'geo-like' coords with origin at top-left
         x = xgeo - min_xgeo
         y = max_ygeo - ygeo
+        log('Geo2Tile: x=%s, y=%s' % (str(x), str(y)))
 
         tdeg_x = self.tile_size_x / self.ppd_x
         tdeg_y = self.tile_size_y / self.ppd_y
+
+        log('tdeg_x=%s, tdeg_y=%s, ppd_x=%s, ppd_y=%s'
+            % (str(tdeg_x), str(tdeg_y), str(self.ppd_x), str(self.ppd_y)))
+        log('Geo2Tile: returning (%s,%s)' % (str(x/tdeg_x), str(y/tdeg_y)))
 
         return (x/tdeg_x, y/tdeg_y)
 

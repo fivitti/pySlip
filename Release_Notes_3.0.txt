@@ -1,0 +1,11 @@
+Release 3.0 of pySlip has some changes that adversely affect
+existing users:
+
+1. The pySlip() constructor has had its signature change.  This is to handle
+   different tile sources.
+
+2. A new pySlip event is added: EVT_PYSLIP_BOXSELECT.  This was done to
+   handle problems raised by box selection of polygons.  The EVT_PYSLIP_SELECT
+   event now handles only single selection of objects in one layer.
+
+See the API documentation for the details.

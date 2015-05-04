@@ -674,19 +674,29 @@ class AppFrame(wx.Frame):
 
         event  the event that contains these attributes:
                    layer_id  ID of the layer the select is for
-                   sel_type  type of select event
-                   point     selected point(s) geo coords+data
-                                 ((x,y), data)
+                   mposn     list of selected point(s) geo coords+data
+                                 ([(x,y)], data)
                              (if None then no point(s) selected)
 
         The point select is designed to be click for on,
         then click again for off.
         """
 
-        if event.evtype == pyslip.EventPointSelect:
+        log('pointSelect: event.mposn=%s, event.point=%s'
+                % (str(event.mposn), str(event.point)))
+
+        if event.type == pyslip.EventSelect:
+            point = None        # assume nothing selected
             if event.point:
-                (point, data) = event.point
-            if event.point is None or point == self.sel_point:
+                # something WAS selected
+                point = event.mposn
+#                (point_list, data) = event.mposn
+#                # point_list: [ ( [ (x1,y1) ], 'point 1') ]
+#                log('pointSelect: point_list=%s' % str(point_list))
+#                point = point_list[0]       # only one point possible
+                point = event.point[0][0][0]
+            log('point=%s' % str(point))
+            if event.mposn is None or point == self.sel_point:
                 # select again, turn point off
                 self.sel_point = None
                 self.pyslip.DeleteLayer(self.sel_point_layer)
@@ -696,12 +706,12 @@ class AppFrame(wx.Frame):
                     self.pyslip.DeleteLayer(self.sel_point_layer)
                 self.sel_point = point
                 self.sel_point_layer = \
-                    self.pyslip.AddPointLayer((point,), map_rel=True,
+                    self.pyslip.AddPointLayer([point], map_rel=True,
                                               color='#0000ff',
                                               radius=5, visible=True,
                                               show_levels=MRPointShowLevels,
                                               name='<sel_pt_layer>')
-        if event.evtype == pyslip.EventBoxSelect: # left box select
+        if event.type == pyslip.EventBoxSelect: # left box select
             # remove any previous selection
             if self.sel_point_layer:
                 self.pyslip.DeleteLayer(self.sel_point_layer)
@@ -768,7 +778,6 @@ class AppFrame(wx.Frame):
 
         event  the event that contains these attributes:
                    layer_id  ID of the layer the select is for
-                   sel_type  type of select event
                    point     selected point(s) geo coordinates
                              (if None then no point(s) was selected)
 
@@ -776,7 +785,7 @@ class AppFrame(wx.Frame):
         then click again for off.
         """
 
-        if event.evtype == pyslip.EventPointSelect:
+        if event.type == pyslip.EventSelect:
             if event.point:
                 (point, data) = event.point
             if event.point is None or point == self.sel_point_view:
@@ -793,7 +802,7 @@ class AppFrame(wx.Frame):
                                               color='#0000ff',
                                               radius=3, visible=True,
                                               name='<sel_pt_view_layer>')
-        elif event.evtype == pyslip.EventBoxSelect:
+        elif event.type == pyslip.EventBoxSelect:
             # remove any previous selection
             if self.sel_point_view_layer:
                 self.pyslip.DeleteLayer(self.sel_point_view_layer)
@@ -1627,9 +1636,12 @@ class AppFrame(wx.Frame):
     def handle_position_event(self, event):
         """Handle a pySlip POSITION event."""
 
+        log('handle_position_event: event.mposn=%s, event.vposn=%s'
+                % (str(event.mposn), str(event.vposn)))
+
         posn_str = ''
-        if event.position:
-            (lon, lat) = event.position
+        if event.mposn:
+            (lon, lat) = event.mposn
             posn_str = ('%.*f / %.*f'
                         % (LonLatPrecision, lon, LonLatPrecision, lat))
 

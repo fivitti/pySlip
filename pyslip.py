@@ -48,8 +48,8 @@ __version__ = '3.0'
 __all__ = ['PySlip']
 
 # type of SELECT events
-(EventPointSelect, EventBoxSelect,
- EventRightPointSelect, EventRightBoxSelect) = range(4)
+(EventLevel, EventPosition, EventSelect, EventBoxSelect,
+    EventPolySelect, EventPolyBoxSelect, EventRightSelect) = range(7)
 
 
 ######
@@ -325,14 +325,6 @@ class Resource(object):
 # define the events that are raised by the pySlip widget
 ###############################################################################
 
-# point/box select
-_myEVT_PYSLIP_SELECT = wx.NewEventType()
-EVT_PYSLIP_SELECT = wx.PyEventBinder(_myEVT_PYSLIP_SELECT, 1)
-
-# point RIGHT select
-_myEVT_PYSLIP_RIGHTSELECT = wx.NewEventType()
-EVT_PYSLIP_RIGHTSELECT = wx.PyEventBinder(_myEVT_PYSLIP_RIGHTSELECT, 1)
-
 # level change
 _myEVT_PYSLIP_LEVEL = wx.NewEventType()
 EVT_PYSLIP_LEVEL = wx.PyEventBinder(_myEVT_PYSLIP_LEVEL, 1)
@@ -340,6 +332,26 @@ EVT_PYSLIP_LEVEL = wx.PyEventBinder(_myEVT_PYSLIP_LEVEL, 1)
 # mouse geo position change
 _myEVT_PYSLIP_POSITION = wx.NewEventType()
 EVT_PYSLIP_POSITION = wx.PyEventBinder(_myEVT_PYSLIP_POSITION, 1)
+
+# point select
+_myEVT_PYSLIP_SELECT = wx.NewEventType()
+EVT_PYSLIP_SELECT = wx.PyEventBinder(_myEVT_PYSLIP_SELECT, 1)
+
+# point box-select
+_myEVT_PYSLIP_BOXSELECT = wx.NewEventType()
+EVT_PYSLIP_BOXSELECT = wx.PyEventBinder(_myEVT_PYSLIP_BOXSELECT, 1)
+
+# polygon select
+_myEVT_PYSLIP_POLYSELECT = wx.NewEventType()
+EVT_PYSLIP_POLYSELECT = wx.PyEventBinder(_myEVT_PYSLIP_POLYSELECT, 1)
+
+# polygon box-select
+_myEVT_PYSLIP_POLYBOXSELECT = wx.NewEventType()
+EVT_PYSLIP_POLYBOXSELECT = wx.PyEventBinder(_myEVT_PYSLIP_POLYBOXSELECT, 1)
+
+# point RIGHT select
+_myEVT_PYSLIP_RIGHTSELECT = wx.NewEventType()
+EVT_PYSLIP_RIGHTSELECT = wx.PyEventBinder(_myEVT_PYSLIP_RIGHTSELECT, 1)
 
 
 class _PySlipEvent(wx.PyCommandEvent):
@@ -765,7 +777,7 @@ class PySlip(_BufferedCanvas):
     def OnLeaveWindow(self, event):
         """Event handler when mouse leaves widget."""
 
-        self.RaiseMousePositionEvent(None)
+        self.RaiseEventPosition(None, None)
 
     ######
     # "add a layer" routines
@@ -825,6 +837,7 @@ class PySlip(_BufferedCanvas):
         log('AddPointLayer: points=%s' % str(points))
 
         for pt in points:
+            log('pt=%s' % str(pt))
             if len(pt) == 3:
                 (x, y, attributes) = pt
             elif len(pt) == 2:
@@ -832,7 +845,7 @@ class PySlip(_BufferedCanvas):
                 attributes = {}
             else:
                 msg = ('Points data must be iterable of tuples: '
-                       '(x, y, [dict])\n'
+                       '(x, y[, dict])\n'
                        'Got: %s' % str(pt))
                 raise Exception(msg)
 
@@ -1625,11 +1638,14 @@ class PySlip(_BufferedCanvas):
             self.SetFocus()
 
         # get current mouse position
-        (x, y) = event.GetPositionTuple()
-
-        self.RaiseMousePositionEvent((x, y))
+        mouse_view = event.GetPositionTuple()
+        #(xgeo, ygeo) = self.View2Geo(mouse_view)
+        mouse_map = self.View2Geo(mouse_view)
+        self.RaiseEventPosition(mouse_map, mouse_view)
 
         if event.Dragging() and event.LeftIsDown():
+            (x, y) = mouse_view
+
             # are we doing box select?
             if self.is_box_select:
                 # set select box point 2 at mouse position
@@ -1753,7 +1769,7 @@ class PySlip(_BufferedCanvas):
                                         (l,
                                          (ll_corner_vx, ll_corner_vy),
                                          (tr_corner_vx, tr_corner_vy))
-                        self.RaiseSelectEvent(EventBoxSelect, l, p_data)
+                        self.RaiseEventBoxSelect(l, selection, sel_data)
 
                         # user code possibly updated screen
                         delayed_paint = True
@@ -1765,11 +1781,12 @@ class PySlip(_BufferedCanvas):
                 (clickpt_vx, clickpt_vy) = clickpt_v
 
                 # get click point in tile coords
-                clickpt_tx = float(clickpt_vx+self.view_offset_x)/self.tile_size_x
-                clickpt_ty = float(clickpt_vy+self.view_offset_y)/self.tile_size_y
+#                clickpt_tx = float(clickpt_vx+self.view_offset_x)/self.tile_size_x
+#                clickpt_ty = float(clickpt_vy+self.view_offset_y)/self.tile_size_y
 
                 # get click point in geo coords
-                clickpt_g = self.tiles.Tile2Geo(clickpt_tx, clickpt_ty)
+#                clickpt_g = self.tiles.Tile2Geo(clickpt_tx, clickpt_ty)
+                clickpt_g = self.View2Geo(clickpt_v)
 
                 # check each layer for a point select callback
                 # we work on a copy as user callback could change order
@@ -1781,7 +1798,9 @@ class PySlip(_BufferedCanvas):
                             p_data = self.layerPSelHandler[l.type](l, clickpt_g)
                         else:
                             p_data = self.layerPSelHandler[l.type](l, clickpt_v)
-                        self.RaiseSelectEvent(EventPointSelect, l, p_data,
+# HERE: construct p_data according to new doc
+                        self.RaiseEventSelect(EventSelect, layer=l,
+                                              point=p_data,
                                               vposn=clickpt_v,
                                               mposn=clickpt_g)
 
@@ -1889,7 +1908,7 @@ class PySlip(_BufferedCanvas):
                                                              ll_corner_y),
                                                             (ll_corner_x+self.sbox_w,
                                                              ll_corner_y+self.sbox_h))
-                    self.RaiseSelectEvent(EventRightBoxSelect, l, pts)
+                    self.RaiseEventSelect(EventRightBoxSelect, l, pts)
 
                     # user code possibly updated screen
                     delayed_paint = True
@@ -1912,7 +1931,7 @@ class PySlip(_BufferedCanvas):
                         pt = self.layerPSelHandler[l.type](l, clickpt_m)
                     else:
                         pt = self.layerPSelHandler[l.type](l, clickpt_v)
-                    self.RaiseSelectEvent(EventRightPointSelect, l, pt,
+                    self.RaiseEventSelect(EventRightSelect, l, pt,
                                           mposn=clickpt_m,
                                           vposn=clickpt_v)
 
@@ -2028,6 +2047,19 @@ class PySlip(_BufferedCanvas):
     # Miscellaneous
     ######
 
+    def View2Geo(self, view_posn):
+        """Convert a view coords position to a geo coords position.
+
+        view_posn  tuple of view coords (xview, yview)
+
+        Returns a tuple of geo coords (xgeo, ygeo);
+        """
+
+        (xview, yview) = view_posn
+        xtile = float(self.view_offset_x + xview) / self.tile_size_x
+        ytile = float(self.view_offset_y + yview) / self.tile_size_y
+        return self.tiles.Tile2Geo(xtile, ytile)
+
     def ResizeCallback(self, event=None):
         """Handle a window resize.
 
@@ -2120,7 +2152,7 @@ class PySlip(_BufferedCanvas):
             self.OnSize()
 
             # raise level change event
-            self.RaiseLevelChangeEvent(level)
+            self.RaiseEventLevel(level)
 
             return True
 
@@ -2154,6 +2186,7 @@ class PySlip(_BufferedCanvas):
         pt     click geo location (lon, lat) or view (x, y)
 
         Return None (no selection) or ((x, y), data) of closest point.
+        [ ( [ (x1,y1) ], 'point 1') ]
         """
 
 # TODO: speed this up?  Do we need to??
@@ -2169,7 +2202,7 @@ class PySlip(_BufferedCanvas):
                 d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
                 if d < dist:
                     dist = d
-                    res = ((x, y), data)
+                    res = [([(x,y)], data)]
 
             if dist <= layer.delta:
                 return res
@@ -2182,12 +2215,12 @@ class PySlip(_BufferedCanvas):
                 dc_h2 = dc_h / 2
                 dc_h -= 1       # why?
                 dc_w -= 1
-                (x, y, place, _, _, x_off, y_off, udata) = p
+                (x, y, place, _, _, x_off, y_off, data) = p
                 exec self.point_view_placement[place]
                 d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
                 if d < dist:
                     dist = d
-                    res = ((x, y), udata)
+                    res = [([(x,y)], data)]
 
             if dist <= layer.delta:
                 return res
@@ -2203,11 +2236,14 @@ class PySlip(_BufferedCanvas):
 
         We have to figure out which corner is which.
 
-        Return a list of (lon, lat) of points inside box.
-        Return None (no selection) or list [((lon, lat), data), ...]
-        of points inside the selection box.
+        Return a tuple (selection, data) where 'selection' is a list of
+        selected point positions (xgeo,ygeo) and 'data' is a list of userdata
+        objects associated withe selected points.
+
+        If nothing is selected return None.
         """
 
+#FIXME
 # TODO: speed this up?  Do we need to??
         # get canonical box limits
         (p1x, p1y) = p1
@@ -2291,9 +2327,14 @@ class PySlip(_BufferedCanvas):
 
         We have to figure out which corner is which.
 
-        Return a list of (lon, lat) of points inside box.
+        Return a tuple (selection, data) where 'selection' is a list of
+        selected point positions (xgeo,ygeo) and 'data' is a list of userdata
+        objects associated withe selected points.
+
+        If nothing is selected return None.
         """
 
+#FIXME
         # get canonical box limits
         (p1x, p1y) = p1
         (p2x, p2y) = p2
@@ -2345,7 +2386,7 @@ class PySlip(_BufferedCanvas):
         return result
 
     def GetBoxSelPolygonsInLayer(self, layer, p1, p2):
-        """Get list of polygons inside box p1-p2.
+        """Get list of polygons inside box p1-p2 in given layer.
 
         layer  reference to layer object we are working on
         p1     one corner point of selection box (tile coords, (x,y))
@@ -2353,10 +2394,17 @@ class PySlip(_BufferedCanvas):
 
         We have to figure out which corner is which.
 
-        Return a list of (lon, lat) of points inside box.
+        Return a tuple (selection, data) where 'selection' is a list of
+        iterables of vertex positions and 'data' is  list of data objects
+        associated with each polygon selected.
         """
 
-        return []
+        selection = []
+        data = []
+
+# FIXME
+
+        return (selection, data)
 
     def GetNearestTextInLayer(self, layer, pt):
         """Determine if clicked location selects a text object in layer data.
@@ -2394,11 +2442,12 @@ class PySlip(_BufferedCanvas):
 
         We have to figure out which corner is which.
 
-        Return a list of (lon, lat) of points inside box.
-        Return None (no selection) or list [((lon, lat), data), ...]
-        of points inside the selection box.
+        Returns (selection, data) where 'selection' is a list of text positions
+        (xgeo,ygeo) and 'data' is a list of userdata objects associated with the
+        selected text objects.
         """
 
+#FIXME
         # get canonical box limits
         (p1x, p1y) = p1
         (p2x, p2y) = p2
@@ -2468,32 +2517,6 @@ class PySlip(_BufferedCanvas):
     # Routines for pySlip events
     ######
 
-    # there is no set_select_event() method and no self.select_event boolean
-    # flag as the user controls selectability on a layer-by-layer basis.
-
-    def RaiseSelectEvent(self, evtype, layer, point, mposn=None, vposn=None):
-        """Raise a point SELECT event.
-
-        evtype  select event type
-        layer   layer the select was on
-        point   point(s) selected, ie, a single or list of point tuples:
-                    ((x, y), data)
-        mposn   map coordinates of the mouse click
-        vposn   view coordinates of the mouse click
-
-        Note: this could be a BOX select, ie, multiple points in 'point'.
-        """
-
-        event = _PySlipEvent(_myEVT_PYSLIP_SELECT, self.GetId())
-        event.evtype = evtype
-        event.layer_id = layer.id
-        event.point = point
-        event.mposn = mposn
-        event.vposn = vposn
-        log('RaiseSelectEvent: evtype=%s, layer_id=%d, point=%s, mposn=%s, vposn=%s'
-                % (str(evtype), layer.id, str(point), str(mposn), str(vposn)))
-        self.GetEventHandler().ProcessEvent(event)
-
     def SetLevelChangeEvent(self, event):
         """Set event routine on level change.
 
@@ -2502,12 +2525,15 @@ class PySlip(_BufferedCanvas):
 
         self.change_level_event = event
 
-    def RaiseLevelChangeEvent(self, level):
+    def RaiseEventLevel(self, level):
         """Raise a LEVEL event."""
 
         if self.change_level_event:
             event = _PySlipEvent(_myEVT_PYSLIP_LEVEL, self.GetId())
+
+            event.type = EventLevel
             event.level = level
+
             self.GetEventHandler().ProcessEvent(event)
 
     def SetMousePositionEvent(self, event):
@@ -2518,28 +2544,132 @@ class PySlip(_BufferedCanvas):
 
         self.mouse_position_event = event
 
-    def RaiseMousePositionEvent(self, posn):
+    def RaiseEventPosition(self, mposn, vposn):
         """Raise a mouse position event.
 
-        posn  the new mouse position (in view pixel coordinates)
+        mposn  the new mouse position (in geo coordinates)
+        vposn  the new mouse position (in view coordinates)
 
-        Posts a mouse position event with 'position' attribute containing
-        the geo coordinates of the mouse.
+        Posts a mouse position event with attributes containing the geo and
+        view coordinates of the mouse.
 
         Will raise an event if mouse moves in widget view but mouse cursor
-        is NOT on map.  'position' attribute is None in that case.
+        is NOT on map.  'event.mposn' attribute is None in that case.
         """
 
+        log('RaiseEventPosition: mposn=%s, vposn=%s'
+                % (str(mposn), str(vposn)))
+
+        # create event, assume off map
+        event = _PySlipEvent(_myEVT_PYSLIP_POSITION, self.GetId())
+        event.type = EventPosition
+        event.mposn = None
+        event.vposn = vposn
+
+        # but if on map, fill in the rest
         if self.mouse_position_event:
-            event = _PySlipEvent(_myEVT_PYSLIP_POSITION, self.GetId())
-            if posn and self.PositionIsOnMap(posn):
-                (posn_x, posn_y) = posn
-                tile_x = float(self.view_offset_x + posn_x)/self.tile_size_x
-                tile_y = float(self.view_offset_y + posn_y)/self.tile_size_y
-                event.position = self.tiles.Tile2Geo(tile_x, tile_y)
-            else:
-                event.position = None
-            self.GetEventHandler().ProcessEvent(event)
+            #if mposn and self.PositionIsOnMap(vposn):
+            if self.PositionIsOnMap(vposn):
+                event.mposn = mposn
+
+        self.GetEventHandler().ProcessEvent(event)
+
+    # there is no set_select_event() method and no self.select_event boolean
+    # flag for the select event as the user controls selectability on a
+    # layer-by-layer basis.
+
+    def RaiseEventSelect(self, mposn, vposn,
+                         layer=None, selection=None, data=None):
+        """Raise a point SELECT event.
+
+        mposn      map coordinates of the mouse click
+        vposn      view coordinates of the mouse click
+        layer      layer the select was on
+        selection  the selected object point: (xgeo,ygeo)
+
+        This event is raised even when nothing is selected.  In that case,
+        event.layer_id, .selection and .data are None and .mposn and
+        .vposn are the mouse click positions.
+        """
+
+        event = _PySlipEvent(_myEVT_PYSLIP_SELECT, self.GetId())
+
+        event.type = EventSelect
+        event.mposn = mposn
+        event.vposn = vposn
+        event.layer_id = layer.id
+        event.selection = selection
+        event.data = data
+
+        log('RaiseEventSelect: evtype=%s, layer_id=%d, selection=%s, data=%s, mposn=%s, vposn=%s'
+                % (str(evtype), layer.id, str(selection), str(data), str(mposn), str(vposn)))
+
+        self.GetEventHandler().ProcessEvent(event)
+
+    def RaiseEventBoxSelect(self, layer=None, selection=None, data=None):
+        """Raise a point BOXSELECT event.
+
+        layer      layer the select was on
+        selection  a list of 'select' objects: [(xgeo,ygeo), ...]
+        data       a list of assocoated data objects
+
+        This event is raised even when nothing is selected.  In that case,
+        event.layer_id, .selection and .data are None.
+        """
+
+        event = _PySlipEvent(_myEVT_PYSLIP_BOXSELECT, self.GetId())
+
+        event.type = EventBoxSelect
+        event.layer_id = layer.id
+        event.selection = selection
+
+        log('RaiseEventBoxSelect: evtype=%s, layer_id=%d, selection=%s, data=%s'
+                % (str(evtype), layer.id, str(selection), str(data)))
+
+        self.GetEventHandler().ProcessEvent(event)
+
+    def RaiseEventPolySelect(self, mposn, vposn, layer, selection, data):
+        """Raise a polygon SELECT event.
+
+        mposn      map coordinates of the mouse click
+        vposn      view coordinates of the mouse click
+        layer      layer the select was on
+        selection  a list of polygon vertex iterables
+        data       a list of polygon data objects
+        """
+
+        event = _PySlipEvent(_myEVT_PYSLIP_POLYSELECT, self.GetId())
+
+        event.type = EventPolySelect
+        event.mposn = mposn
+        event.vposn = vposn
+        event.layer_id = layer.id
+        event.selection = selection
+        event.data = data
+
+        log('RaiseEventPolySelect: evtype=%s, layer_id=%d, selection=%s, data=%s'
+                % (str(evtype), layer.id, str(selection), str(data)))
+
+        self.GetEventHandler().ProcessEvent(event)
+
+    def RaiseEventPolyBoxSelect(self, layer, selection, data):
+        """Raise a polygon BOXSELECT event.
+
+        layer      layer the select was on
+        selection  a list of polygon vertex iterables
+        data       a list of polygon data objects
+        """
+
+        event = _PySlipEvent(_myEVT_PYSLIP_POLYBOXSELECT, self.GetId())
+
+        event.type = EventPolyBoxSelect
+        event.layer_id = layer.id
+        event.selection = selection
+
+        log('RaiseEventPolyBoxSelect: evtype=%s, layer_id=%d, selection=%s, data=%s'
+                % (str(evtype), layer.id, str(selection), str(data)))
+
+        self.GetEventHandler().ProcessEvent(event)
 
     ######
     # Various pySlip utility routines

@@ -862,20 +862,20 @@ class AppFrame(wx.Frame):
     def imageSelect(self, event):
         """Select event from pyslip."""
 
-        point = event.point
-
-        if event.evtype == pyslip.EventPointSelect:
-            if point == self.sel_image:
+        if event.type == pyslip.EventSelect:
+            mposn = event.mposn
+            if mposn == self.sel_image:
                 # select again, turn point off
                 self.sel_image = None
                 self.pyslip.DeleteLayer(self.sel_image_layer)
                 self.sel_image_layer = None
-            elif point:
+            elif mposn:
+                # image selected, show highlight
                 if self.sel_image_layer:
                     self.pyslip.DeleteLayer(self.sel_image_layer)
-                self.sel_image = point
+                self.sel_image = mposn
                 self.sel_image_layer = \
-                    self.pyslip.AddPointLayer((point,), map_rel=True,
+                    self.pyslip.AddPointLayer((mposn,), map_rel=True,
                                               color='#0000ff',
                                               radius=5, visible=True,
                                               show_levels=[3,4],

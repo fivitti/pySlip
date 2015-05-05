@@ -682,21 +682,17 @@ class AppFrame(wx.Frame):
         then click again for off.
         """
 
-        log('pointSelect: event.mposn=%s, event.point=%s'
-                % (str(event.mposn), str(event.point)))
+        log('pointSelect: event.mposn=%s, event.selection=%s'
+                % (str(event.mposn), str(event.selection)))
+        log('event=%s' % str(dir(event)))
 
         if event.type == pyslip.EventSelect:
             point = None        # assume nothing selected
-            if event.point:
+            if event.selection:
                 # something WAS selected
-                point = event.mposn
-#                (point_list, data) = event.mposn
-#                # point_list: [ ( [ (x1,y1) ], 'point 1') ]
-#                log('pointSelect: point_list=%s' % str(point_list))
-#                point = point_list[0]       # only one point possible
-                point = event.point[0][0][0]
+                point = event.selection
             log('point=%s' % str(point))
-            if event.mposn is None or point == self.sel_point:
+            if event.selection is None or point == self.sel_point:
                 # select again, turn point off
                 self.sel_point = None
                 self.pyslip.DeleteLayer(self.sel_point_layer)
@@ -777,23 +773,24 @@ class AppFrame(wx.Frame):
         """Handle view-relative point select event from pyslip.
 
         event  the event that contains these attributes:
-                   layer_id  ID of the layer the select is for
-                   point     selected point(s) geo coordinates
-                             (if None then no point(s) was selected)
+                   layer_id   ID of the layer the select is for
+                   selection  selected point(s) geo coordinates
+                              (if None then no point(s) was selected)
 
         The point select is designed to be click for on,
         then click again for off.
         """
 
         if event.type == pyslip.EventSelect:
-            if event.point:
-                (point, data) = event.point
-            if event.point is None or point == self.sel_point_view:
+            if event.selection:
+                # something WAS selected
+                point = event.selection
+            if event.selection is None or point == self.sel_point_view:
                 # select again, turn point off
                 self.sel_point_view = None
                 self.pyslip.DeleteLayer(self.sel_point_view_layer)
                 self.sel_point_view_layer = None
-            elif event.point:
+            elif event.selection:
                 if self.sel_point_view_layer:
                     self.pyslip.DeleteLayer(self.sel_point_view_layer)
                 self.sel_point_view = point

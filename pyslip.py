@@ -850,10 +850,7 @@ class PySlip(_BufferedCanvas):
         # create draw data iterable for draw method
         draw_data = []              # list to hold draw data
 
-        log('AddPointLayer: points=%s' % str(points))
-
         for pt in points:
-            log('pt=%s' % str(pt))
             if len(pt) == 3:
                 (x, y, attributes) = pt
             elif len(pt) == 2:
@@ -881,7 +878,6 @@ class PySlip(_BufferedCanvas):
                 raise Exception(msg)
 
             # append another point to draw data list
-            log('????: x=%s, y=%s' % (str(x), str(y)))
             draw_data.append((float(x), float(y), placement.lower(),
                               radius, colour, offset_x, offset_y, udata))
 
@@ -1777,15 +1773,18 @@ class PySlip(_BufferedCanvas):
                     if l.selectable and l.visible:
                         if l.map_rel:
                             # map-relative, get all points selected (if any)
-                            p_data = self.layerBSelHandler[l.type]\
-                                        (l, ll_corner_g, tr_corner_g)
+                            sel = self.layerBSelHandler[l.type]\
+                                      (l, ll_corner_g, tr_corner_g)
                         else:
                             # view-relative
-                            p_data = self.layerBSelHandler[l.type]\
-                                        (l,
-                                         (ll_corner_vx, ll_corner_vy),
-                                         (tr_corner_vx, tr_corner_vy))
-                        self.RaiseEventBoxSelect(l, selection, sel_data)
+                            sel = self.layerBSelHandler[l.type]\
+                                      (l, (ll_corner_vx, ll_corner_vy),
+                                      (tr_corner_vx, tr_corner_vy))
+                        pts = None
+                        data = None
+                        if sel:
+                            (pts, data) = sel
+                        self.RaiseEventBoxSelect(l, pts, data)
 
                         # user code possibly updated screen
                         delayed_paint = True
@@ -1796,12 +1795,7 @@ class PySlip(_BufferedCanvas):
                 clickpt_v = event.GetPositionTuple()
                 (clickpt_vx, clickpt_vy) = clickpt_v
 
-                # get click point in tile coords
-#                clickpt_tx = float(clickpt_vx+self.view_offset_x)/self.tile_size_x
-#                clickpt_ty = float(clickpt_vy+self.view_offset_y)/self.tile_size_y
-
                 # get click point in geo coords
-#                clickpt_g = self.tiles.Tile2Geo(clickpt_tx, clickpt_ty)
                 clickpt_g = self.View2Geo(clickpt_v)
 
                 # check each layer for a point select callback
@@ -1814,7 +1808,6 @@ class PySlip(_BufferedCanvas):
                             sel = self.layerPSelHandler[l.type](l, clickpt_g)
                         else:
                             sel = self.layerPSelHandler[l.type](l, clickpt_v)
-# HERE: construct p_data according to new doc
                         self.RaiseEventSelect(mposn=clickpt_g, vposn=clickpt_v,
                                               layer=l,
                                               selection=sel)
@@ -2270,13 +2263,15 @@ class PySlip(_BufferedCanvas):
         by = min(p1y, p2y)
 
         # get a list of points inside the selection box
-        result = []
+        selection = []
+        data = []
 
         if layer.map_rel:
             for p in layer.data:
                 (x, y, _, _, _, _, _, udata) = p
                 if lx <= x <= rx and by <= y <= ty:
-                    result.append(((x, y), udata))
+                    selection.append((x, y))
+                    data.append(udata)
         else:
             for p in layer.data:
                 dc_w = self.view_width
@@ -2289,9 +2284,13 @@ class PySlip(_BufferedCanvas):
                 (x, y, place, _, _, x_off, y_off, udata) = p
                 exec self.point_view_placement[place]
                 if lx <= x <= rx and by <= y <= ty:
-                    result.append(((x, y), udata))
+                    selection.append((x, y))
+                    data.append(udata)
 
-        return result
+        if not selection:
+            return None
+
+        return (selection, data)
 
     def GetImagesInLayer(self, layer, pt):
         """Decide if click location selects image object(s) in layer data.
@@ -2338,7 +2337,7 @@ class PySlip(_BufferedCanvas):
                     sel_click = (ptx - lv, pty - tv)
                     result.append((sel_click, udata))
 
-        log('GetImagesInLayer: FINISH')
+        log('GetImagesInLayer: FINISH, selection=%s' % str(selection))
         if selection:
             return (selection, seldata)
         return None
@@ -2369,14 +2368,19 @@ class PySlip(_BufferedCanvas):
         by = min(p1y, p2y)
 
         # now construct list of images inside box
-        result = []
+        selection = []
+        data = []
         for p in layer.data:
+            log('####: layer.data=%s' % str(layer.data))
             x = p[0]
             y = p[1]
             if lx <= x <= rx and by <= y <= ty:
                 result.append((x, y))
 
-        return result
+        if not selection:
+            return None
+
+        return (selection, data)
 
     def GetNearestPolygonInLayer(self, layer, pt):
         """Get all polygon objects clicked in layer data.
@@ -2634,13 +2638,12 @@ class PySlip(_BufferedCanvas):
 
         self.GetEventHandler().ProcessEvent(event)
 
-    def RaiseEventBoxSelect(self, layer=None, selection=None):
+    def RaiseEventBoxSelect(self, layer=None, selection=None, data=None):
         """Raise a point BOXSELECT event.
 
         layer      layer the select was on
-        selection  a tuple (points, data) where 'points is a list of 'select'
-                   objects [(xgeo,ygeo), ...] and data is a list of data objects
-                   associated with the selected points
+        selection  list of selected object points [(x,y), ...] (geo or view)
+        data       a list of data objects associated with the selected points
 
         This event is raised even when nothing is selected.  In that case,
         event.layer_id, .selection and .data are None.
@@ -2650,7 +2653,8 @@ class PySlip(_BufferedCanvas):
 
         event.type = EventBoxSelect
         event.layer_id = layer.id
-        (event.selection, event.data) = selection
+        event.selection = selection
+        event.data = data
 
         log('RaiseEventBoxSelect: .type=%s, .layer_id=%d, .selection=%s, .data=%s'
                 % (str(EventBoxSelect), event.layer_id, str(event.selection), str(event.data)))

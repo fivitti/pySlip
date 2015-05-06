@@ -290,6 +290,7 @@ class AppFrame(wx.Frame):
 
         # finally, bind events to handlers
         self.pyslip.Bind(pyslip.EVT_PYSLIP_SELECT, self.handle_select_event)
+        self.pyslip.Bind(pyslip.EVT_PYSLIP_BOXSELECT, self.handle_select_event)
         self.pyslip.Bind(pyslip.EVT_PYSLIP_POSITION,
                          self.handle_position_event)
         self.pyslip.Bind(pyslip.EVT_PYSLIP_LEVEL, self.handle_level_change)
@@ -678,45 +679,45 @@ class AppFrame(wx.Frame):
                                  ([(x,y)], data)
                              (if None then no point(s) selected)
 
-        The point select is designed to be click for on,
-        then click again for off.
+        The point select is designed to be click point for on, then click point
+        again for off.  Clicking away from the already selected point doesn't
+        remove previously selected point if nothing is selected.
         """
 
-        log('pointSelect: event.mposn=%s, event.selection=%s'
-                % (str(event.mposn), str(event.selection)))
-        log('event=%s' % str(dir(event)))
+        selection = event.selection
 
         if event.type == pyslip.EventSelect:
-            point = None        # assume nothing selected
-            if event.selection:
-                # something WAS selected
-                point = event.selection
-            log('point=%s' % str(point))
-            if event.selection is None or point == self.sel_point:
-                # select again, turn point off
+            if selection and selection == self.sel_point:
+                # point select again, turn point off
                 self.sel_point = None
                 self.pyslip.DeleteLayer(self.sel_point_layer)
                 self.sel_point_layer = None
-            elif point:
+            elif selection:
+                # some other point selected
                 if self.sel_point_layer:
                     self.pyslip.DeleteLayer(self.sel_point_layer)
-                self.sel_point = point
+                self.sel_point = selection
                 self.sel_point_layer = \
-                    self.pyslip.AddPointLayer([point], map_rel=True,
+                    self.pyslip.AddPointLayer([selection], map_rel=True,
                                               color='#0000ff',
                                               radius=5, visible=True,
                                               show_levels=MRPointShowLevels,
                                               name='<sel_pt_layer>')
-        if event.type == pyslip.EventBoxSelect: # left box select
-            # remove any previous selection
-            if self.sel_point_layer:
+                self.pyslip.PlaceLayerBelowLayer(self.sel_point_layer,
+                                                 self.point_layer)
+        elif event.type == pyslip.EventBoxSelect:
+            if selection and selection == self.sel_point:
+                # same points selected, turn selection off
+                self.sel_point = None
                 self.pyslip.DeleteLayer(self.sel_point_layer)
                 self.sel_point_layer = None
-
-            if event.point:
-                pts = [pt for (pt,d) in event.point]
+            elif selection:
+                # some other set of points selected
+                if self.sel_point_layer:
+                    self.pyslip.DeleteLayer(self.sel_point_layer)
+                self.sel_point = selection
                 self.sel_point_layer = \
-                    self.pyslip.AddPointLayer(pts, map_rel=True,
+                    self.pyslip.AddPointLayer(selection, map_rel=True,
                                               color='#00ffff',
                                               radius=5, visible=True,
                                               show_levels=[3,4],
@@ -770,50 +771,55 @@ class AppFrame(wx.Frame):
             self.pyslip.SetLayerSelectable(layer, False)
 
     def pointViewSelect(self, event):
-        """Handle view-relative point select event from pyslip.
+        """Handle view-relative point select/boxselect event from pyslip.
 
         event  the event that contains these attributes:
-                   layer_id   ID of the layer the select is for
                    selection  selected point(s) geo coordinates
                               (if None then no point(s) was selected)
 
-        The point select is designed to be click for on,
-        then click again for off.
+        The point select is designed to be click point for on, then any other
+        select event turns that point off, whether there is a selection or not
+        and whether the same point is selected or not.
         """
 
+        log('pointViewSelect: .type=%s (EventSelect=%s), .selection=%s, self.sel_point_view=%s'
+                % (str(event.type), str(pyslip.EventSelect), str(event.selection), str(self.sel_point_view)))
+
+        selection = event.selection
+
         if event.type == pyslip.EventSelect:
-            if event.selection:
-                # something WAS selected
-                point = event.selection
-            if event.selection is None or point == self.sel_point_view:
-                # select again, turn point off
-                self.sel_point_view = None
+            log('pointViewSelect: EventSelect, selection=%s, self.sel_point_view=%s' % (str(selection), str(self.sel_point_view)))
+            if self.sel_point_view_layer:
+                # if there is a previous selection, remove it
                 self.pyslip.DeleteLayer(self.sel_point_view_layer)
                 self.sel_point_view_layer = None
-            elif event.selection:
-                if self.sel_point_view_layer:
-                    self.pyslip.DeleteLayer(self.sel_point_view_layer)
-                self.sel_point_view = point
+
+            if selection and selection != self.sel_point_view:
+                self.sel_point_view = selection
                 self.sel_point_view_layer = \
-                    self.pyslip.AddPointLayer((point,), map_rel=False,
+                    self.pyslip.AddPointLayer((selection,), map_rel=False,
                                               color='#0000ff',
                                               radius=3, visible=True,
                                               name='<sel_pt_view_layer>')
+            else:
+                self.sel_point_view = None
         elif event.type == pyslip.EventBoxSelect:
-            # remove any previous selection
+            log('pointViewSelect: EventBoxSelect, selection=%s, self.sel_point_view=%s' % (str(selection), str(self.sel_point_view)))
             if self.sel_point_view_layer:
                 self.pyslip.DeleteLayer(self.sel_point_view_layer)
                 self.sel_point_view_layer = None
 
-            if event.point:
-                pts = [pt for (pt,d) in event.point]
+            if selection and selection != self.sel_point_view:
+                self.sel_point_view = selection
                 self.sel_point_view_layer = \
-                    self.pyslip.AddPointLayer(pts, map_rel=False,
+                    self.pyslip.AddPointLayer(selection, map_rel=False,
                                               color='#00ffff',
                                               radius=3, visible=True,
                                               name='<boxsel_pt_view_layer>')
                 self.pyslip.PlaceLayerBelowLayer(self.sel_point_view_layer,
                                                  self.point_view_layer)
+            else:
+                self.sel_point_view = None
 
         return True
 
@@ -862,14 +868,18 @@ class AppFrame(wx.Frame):
     def imageSelect(self, event):
         """Select event from pyslip."""
 
+        log('imageSelect: .type=%s, .mposn=%s, .selection=%s' % (str(event.type), str(event.mposn), str(event.selection)))
+
         if event.type == pyslip.EventSelect:
+            log('imageSelect: .type=pyslip.EventSelect')
             mposn = event.mposn
+            selection = event.selection
             if mposn == self.sel_image:
                 # select again, turn point off
                 self.sel_image = None
                 self.pyslip.DeleteLayer(self.sel_image_layer)
                 self.sel_image_layer = None
-            elif mposn:
+            elif selection:
                 # image selected, show highlight
                 if self.sel_image_layer:
                     self.pyslip.DeleteLayer(self.sel_image_layer)
@@ -886,9 +896,9 @@ class AppFrame(wx.Frame):
                 self.pyslip.DeleteLayer(self.sel_image_layer)
                 self.sel_image_layer = None
 
-            if point:
+            if mposn:
                 self.sel_image_layer = \
-                    self.pyslip.AddPointLayer(point, map_rel=True,
+                    self.pyslip.AddPointLayer(mposn, map_rel=True,
                                               color='#00ffff',
                                               radius=5, visible=True,
                                               show_levels=[3,4],
@@ -1475,9 +1485,9 @@ class AppFrame(wx.Frame):
                                    3: SelGlassyImg5,
                                    4: SelGlassyImg6}
         self.current_layer_img_layer = None
-        for x in range(80):
-            for y in range(40):
-                ImageData.append((-30+x*2, y*2-30, GlassyImg4))
+#        for x in range(80):
+#            for y in range(40):
+#                ImageData.append((-30+x*2, y*2-30, GlassyImg4))
 
         ImageViewData = [(0, 0, CompassRoseGraphic, {'placement': 'ne',
                                                      'data': 'compass rose'})]

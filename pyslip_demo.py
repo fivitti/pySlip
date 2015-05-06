@@ -868,13 +868,13 @@ class AppFrame(wx.Frame):
     def imageSelect(self, event):
         """Select event from pyslip."""
 
-        log('imageSelect: .type=%s, .mposn=%s, .selection=%s' % (str(event.type), str(event.mposn), str(event.selection)))
+        log('imageSelect: .type=%s, .selection=%s' % (str(event.type), str(event.selection)))
+
+        selection = event.selection
 
         if event.type == pyslip.EventSelect:
-            log('imageSelect: .type=pyslip.EventSelect')
-            mposn = event.mposn
-            selection = event.selection
-            if mposn == self.sel_image:
+            log('####: pyslip.EventSelect, selection=%s' % str(selection))
+            if selection == self.sel_image:
                 # select again, turn point off
                 self.sel_image = None
                 self.pyslip.DeleteLayer(self.sel_image_layer)
@@ -883,22 +883,24 @@ class AppFrame(wx.Frame):
                 # image selected, show highlight
                 if self.sel_image_layer:
                     self.pyslip.DeleteLayer(self.sel_image_layer)
-                self.sel_image = mposn
+                self.sel_image = selection
                 self.sel_image_layer = \
-                    self.pyslip.AddPointLayer((mposn,), map_rel=True,
+                    self.pyslip.AddPointLayer((selection,), map_rel=True,
                                               color='#0000ff',
                                               radius=5, visible=True,
                                               show_levels=[3,4],
                                               name='<sel_pt_layer>')
-        elif event.evtype == pyslip.EventBoxSelect:
+                self.pyslip.PlaceLayerBelowLayer(self.sel_image_layer,
+                                                 self.image_layer)
+        elif event.type == pyslip.EventBoxSelect:
             # remove any previous selection
             if self.sel_image_layer:
                 self.pyslip.DeleteLayer(self.sel_image_layer)
                 self.sel_image_layer = None
 
-            if mposn:
+            if selection:
                 self.sel_image_layer = \
-                    self.pyslip.AddPointLayer(mposn, map_rel=True,
+                    self.pyslip.AddPointLayer(selection, map_rel=True,
                                               color='#00ffff',
                                               radius=5, visible=True,
                                               show_levels=[3,4],
@@ -975,13 +977,13 @@ class AppFrame(wx.Frame):
         event  the wxpython event object
 
         The 'event' object has attributes:
-        evtype    the pySlip event type
-        layer_id  'id' of the layer in which the image selected exists
-        mposn     the geo coords of the click
-        point     point datas is a list of: (pt, udata)
-                    pt is an (x,y) tuple of relative click posn within the image
-                    udata is userdata attached to the image (if any).
-        vposn     the view coords of the click
+        type       the pySlip event type
+        layer_id   'id' of the layer in which the image selected exists
+        mposn      the geo coords of the click
+        selection  point datas is a list of: (pt, udata)
+                     pt is an (x,y) tuple of relative click posn within the image
+                     udata is userdata attached to the image (if any).
+        vposn      the view coords of the click
 
         The code below doesn't assume a placement of the selected image, it
         figures out the correct position of the 'highlight' layers.  This helps
@@ -990,10 +992,11 @@ class AppFrame(wx.Frame):
 
         log('imageViewSelect: event=%s' % str(event))
 
-        log('imageViewSelect: event.evtype=%s' % str(event.evtype))
+        log('imageViewSelect: event.type=%s' % str(event.type))
         log('imageViewSelect: event.layer_id=%s' % str(event.layer_id))
         log('imageViewSelect: event.mposn=%s' % str(event.mposn))
-        log('imageViewSelect: event.point=%s' % str(event.point))
+        log('imageViewSelect: event.selection=%s' % str(event.selection))
+        log('imageViewSelect: event.data=%s' % str(event.data))
         log('imageViewSelect: event.vposn=%s' % str(event.vposn))
 
         # only one image selectable, remove old selection (if any)
@@ -1004,10 +1007,11 @@ class AppFrame(wx.Frame):
             self.pyslip.DeleteLayer(self.sel_imagepoint_view_layer)
             self.sel_imagepoint_view_layer = None
 
-        if event.point:
+        if event.selection:
             # unpack event data
-            (pp, udata) = event.point[0]
-            (sel_x, sel_y) = pp     # select relative point in image
+            selection = event.selection
+            data = event.data
+            (sel_x, sel_y) = selection     # select relative point in image
 
             # figure out compass rose attributes
             attr_dict = ImageViewData[0][3]
@@ -1028,7 +1032,7 @@ class AppFrame(wx.Frame):
                                  }
 
             point = eval(point_place_coords[img_placement])
-            log('AddPointLayer((point,)=%s' % str(point))
+            log('AddPointLayer((selection,)=(%s,)' % str(selection))
             self.sel_imagepoint_view_layer = \
                 self.pyslip.AddPointLayer((point,), map_rel=False,
                                           color='green',
@@ -1109,7 +1113,7 @@ class AppFrame(wx.Frame):
     def textSelect(self, event):
         """Map-relative text select event from pyslip."""
 
-        if event.evtype == pyslip.EventPointSelect:
+        if event.type == pyslip.EventPointSelect:
             if event.point:
                 (point, data) = event.point
             if event.point is None or point == self.sel_text:
@@ -1129,7 +1133,7 @@ class AppFrame(wx.Frame):
                                               name='<sel_text_layer>')
                 self.pyslip.PlaceLayerBelowLayer(self.sel_text_layer,
                                                  self.text_layer)
-        if event.evtype == pyslip.EventBoxSelect: # left box select
+        if event.type == pyslip.EventBoxSelect: # left box select
             # remove any previous selection
             if self.sel_text_layer:
                 self.pyslip.DeleteLayer(self.sel_text_layer)
@@ -1213,7 +1217,7 @@ class AppFrame(wx.Frame):
 #                                                      name='<sel_text>')
 #        return True
 
-        if event.evtype == pyslip.EventPointSelect:
+        if event.type == pyslip.EventPointSelect:
             if event.point:
                 (point, data) = event.point
             if event.point is None or point == self.sel_text_view:
@@ -1231,9 +1235,9 @@ class AppFrame(wx.Frame):
                                               radius=5, visible=True,
                                               show_levels=MRTextShowLevels,
                                               name='<sel_text_view_layer>')
-        elif event.evtype == pyslip.EventRightPointSelect: # right pt select
+        elif event.type == pyslip.EventRightPointSelect: # right pt select
             pass
-        if event.evtype == pyslip.EventBoxSelect: # left box select
+        if event.type == pyslip.EventBoxSelect: # left box select
             # remove any previous selection
             if self.sel_text_view_layer:
                 self.pyslip.DeleteLayer(self.sel_text_view_layer)
@@ -1300,7 +1304,7 @@ class AppFrame(wx.Frame):
         """Map-relative polygon select event from pyslip.
 
         event  the pyslip event which has attributes:
-                   evtype    the event type
+                   type      the event type
                    layer_id  ID of the layer selected
                    poly      iterable of poly points: ((x,y), data), can be None
                    mposn     map-relative position of mouse-click
@@ -1311,7 +1315,7 @@ class AppFrame(wx.Frame):
 
         log('polySelect: event.poly=%s' % str(event.poly))
 
-        if event.evtype == pyslip.EventPointSelect:
+        if event.type == pyslip.EventPointSelect:
             if poly:
                 if poly == self.sel_poly:
                     # polygon selected again, turn selection off

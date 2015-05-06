@@ -735,7 +735,7 @@ class PySlip(_BufferedCanvas):
         # set up dispatch dictionaries for layer select handlers
         # for point select
         self.layerPSelHandler = {self.TypePoint: self.GetNearestPointInLayer,
-                                 self.TypeImage: self.GetImagesInLayer,
+                                 self.TypeImage: self.GetImageInLayer,
                                  self.TypeText: self.GetNearestTextInLayer,
                                  self.TypePoly: self.GetNearestPolygonInLayer}
 
@@ -1808,6 +1808,10 @@ class PySlip(_BufferedCanvas):
                             sel = self.layerPSelHandler[l.type](l, clickpt_g)
                         else:
                             sel = self.layerPSelHandler[l.type](l, clickpt_v)
+                        selection = None
+                        data= None
+                        if sel:
+                            (selection, data) = sel
                         self.RaiseEventSelect(mposn=clickpt_g, vposn=clickpt_v,
                                               layer=l,
                                               selection=sel)
@@ -2292,13 +2296,13 @@ class PySlip(_BufferedCanvas):
 
         return (selection, data)
 
-    def GetImagesInLayer(self, layer, pt):
+    def GetImageInLayer(self, layer, pt):
         """Decide if click location selects image object(s) in layer data.
 
         layer  layer object we are looking in
         pt     click location, either geo (lon, lat) or view (x, y)
 
-        Returns either None if no selection or a tuple (selection, data, relsel)
+        Returns either None if no selection or a tuple (selection, data)
         where 'selection' is a tuple (xgeo,ygeo) or (xview,yview) of the object
         placement point, 'data' is the data object associated with the selected
         object and 'relsel' is the relative position within the selected object
@@ -2308,21 +2312,21 @@ class PySlip(_BufferedCanvas):
         the layer at the mouse click position but only the first is selected.
         """
 
-        log('GetImagesInLayer: START, len(layer.data)=%d' % len(layer.data))
         (ptx, pty) = pt
         selection = None
         seldata = None
-        relsel = None
+
+        log('GetImageInLayer: START, geo ptx=%s, geo pty=%s' % (str(ptx), str(pty)))
 
         # .data: [(x, y, bmap, w, h, placement, offset_x, offset_y, data),...]
         for p in layer.data:
             (x, y, _, w, h, placement, offset_x, offset_y, data) = p
             if layer.map_rel:
                 # map-relative, ptx, pty, x, y are geo coords
-                log('GetImagesInLayer: calling .GeoExtent(x=%s, y=%s, placement=%s, w=%s, h=%s, offset_x=%s, offset_y=%s'
+                log('GetImageInLayer: calling .GeoExtent(x=%s, y=%s, placement=%s, w=%s, h=%s, offset_x=%s, offset_y=%s'
                         % (str(x), str(y), str(placement), str(w), str(h), str(offset_x), str(offset_y)))
                 e = self.GeoExtent(x, y, placement, w, h, offset_x, offset_y)
-                log('GetImagesInLayer: GeoExtent() returned %s' % str(e))
+                log('GetImageInLayer: GeoExtent() returned %s' % str(e))
                 if e:
                     (llon, rlon, tlat, blat) = e
                     if llon <= ptx <= rlon and blat <= pty <= tlat:
@@ -2334,13 +2338,14 @@ class PySlip(_BufferedCanvas):
                 e = self.ViewExtent(x, y, placement, w, h, offset_x, offset_y)
                 (lv, rv, tv, bv) = e
                 if lv <= ptx <= rv and tv <= pty <= bv:
-                    sel_click = (ptx - lv, pty - tv)
-                    result.append((sel_click, udata))
+                    selection = (ptx - lv, pty - tv)
+                    seldata = data
 
-        log('GetImagesInLayer: FINISH, selection=%s' % str(selection))
+        log('GetImageInLayer: FINISH, selection=%s' % str(selection))
         if selection:
             return (selection, seldata)
         return None
+#FIXME must return relative selection
 
     def GetBoxSelImagesInLayer(self, layer, p1, p2):
         """Get list of images inside box p1-p2.
@@ -2358,7 +2363,6 @@ class PySlip(_BufferedCanvas):
         If nothing is selected return None.
         """
 
-#FIXME
         # get canonical box limits
         (p1x, p1y) = p1
         (p2x, p2y) = p2
@@ -2372,10 +2376,12 @@ class PySlip(_BufferedCanvas):
         data = []
         for p in layer.data:
             log('####: layer.data=%s' % str(layer.data))
-            x = p[0]
-            y = p[1]
+            (x, y, _, _, _, _, _, _, udata) = p
+#            x = p[0]
+#            y = p[1]
             if lx <= x <= rx and by <= y <= ty:
-                result.append((x, y))
+                selection.append((x, y))
+                data.append(udata)
 
         if not selection:
             return None
@@ -2607,7 +2613,7 @@ class PySlip(_BufferedCanvas):
     # flag for the select event as the user controls selectability on a
     # layer-by-layer basis.
 
-    def RaiseEventSelect(self, mposn, vposn, layer=None, selection=None):
+    def RaiseEventSelect(self, mposn, vposn, layer=None, selection=None, data=None):
         """Raise a point SELECT event.
 
         mposn      map coordinates of the mouse click
@@ -2796,39 +2802,42 @@ class PySlip(_BufferedCanvas):
 
 # FIXME
 
-        log('GeoExtent: lon=%s, la=%s, placement=%s, w=%s, h=%s, x_off=%s, y_off=%s'
+        log('GeoExtent: lon=%s, lat=%s, placement=%s, w=%s, h=%s, x_off=%s, y_off=%s'
                 % (str(lon), str(lat), str(placement), str(w), str(h), str(x_off), str(y_off)))
 
         # decide if object CAN be in view
         # check point in lower, right or lower-right quadrants
-        #self.view_llon = self.view_rlon = None
-        #self.view_tlat = self.view_blat = None
         if self.view_rlon < lon or self.view_blat > lat:
+            log('GeoExtent: object not in view, returning None')
             return None
 
-        # now, figure out point raw placement from (lon, lat)
+        # now, figure out point view position from (lon, lat)
         (x, y) = self.tiles.Geo2Tile(lon, lat)
-        log('GeoExtent: tile x=%s, y=%s' % (str(x), str(y)))
+        log('GeoExtent: point tile coords x=%s, y=%s' % (str(x), str(y)))
         x = x*self.tile_size_x - self.view_offset_x
         y = y*self.tile_size_y - self.view_offset_y
-        log('GeoExtent: map pixels x=%s, y=%s' % (str(x), str(y)))
+        log('GeoExtent: object point map pixels x=%s, y=%s' % (str(x), str(y)))
 
         # then do the placement of the top_left point
         w2 = w/2.0
         h2 = h/2.0
         exec self.point_map_perturb[placement]
         (tlx, tly) = (x, y)
-        log('GeoExtent: final tlx=%s, tly=%s' % (str(tlx), str(tly)))
+        log('GeoExtent: extent TL point (view) tlx=%s, tly=%s' % (str(tlx), str(tly)))
 
         # now get bottom_right corner in pixel coords
         brx = tlx + w
         bry = tly + h
-        log('GeoExtent: final brx=%s, bry=%s' % (str(brx), str(bry)))
+        log('GeoExtent: extent BR point (view) brx=%s, bry=%s' % (str(brx), str(bry)))
 
         # decide if object is off view or not
-        if (brx < self.view_offset_x or bry < self.view_offset_y
-                or tlx > (self.view_offset_x + self.view_width)
-                or tly > (self.view_offset_y + self.view_height)):
+        log('####: brx < -w = %s < %s = %s' % (str(brx), str(-w), str(brx < -w)))
+        log('####: bry < -h = %s < %s = %s' % (str(bry), str(-h), str(bry < -h)))
+        log('####: tlx > self.view_width = %s > %s = %s' % (str(tlx), str(self.view_width), str(tlx > self.view_width)))
+        log('####: tly > self.view_height = %s > %s = %s' % (str(tly), str(self.view_height), str(tly > self.view_height)))
+
+        if (brx < -w or bry < -h
+                or tlx > self.view_width or tly > self.view_height):
             log('GeoExtent: object not in view, returning None')
             return None
 

@@ -181,7 +181,7 @@ class _BufferedCanvas(wx.Panel):
 class _Layer(object):
     """A Layer object."""
 
-    DefaultDelta = 5        # default selection delta
+    DefaultDelta = 500      # default selection delta
 
     def __init__(self, id=0, painter=None, data=None, map_rel=True,
                  visible=False, show_levels=None, selectable=False,
@@ -805,7 +805,7 @@ class PySlip(_BufferedCanvas):
         """Add a layer of points, map or view relative.
 
         points       iterable of point data:
-                         (x, y, [attributes])
+                         (x, y[, attributes])
                      where x & y are either lon&lat (map) or x&y (view) coords
                      and attributes is an optional dictionary of attributes for
                      _each point_ with keys like:
@@ -829,6 +829,9 @@ class PySlip(_BufferedCanvas):
                          'data'       point user data object
         """
 
+        log('AddPointLayer: points=%s, map_rel=%s, visible=%s, show_levels=%s'
+                % (str(points), str(map_rel), str(visible), str(show_levels)))
+
         # merge global and layer defaults
         if map_rel:
             default_placement = kwargs.get('placement', self.DefaultPointPlacement)
@@ -851,6 +854,7 @@ class PySlip(_BufferedCanvas):
         draw_data = []              # list to hold draw data
 
         for pt in points:
+            log('####: pt=%s' % str(pt))
             if len(pt) == 3:
                 (x, y, attributes) = pt
             elif len(pt) == 2:
@@ -881,6 +885,7 @@ class PySlip(_BufferedCanvas):
             draw_data.append((float(x), float(y), placement.lower(),
                               radius, colour, offset_x, offset_y, udata))
 
+        log('AddPointLayer: draw_data=%s' % str(draw_data))
         return self.AddLayer(self.DrawPointLayer, draw_data, map_rel,
                              visible=visible, show_levels=show_levels,
                              selectable=selectable, name=name,
@@ -975,7 +980,7 @@ class PySlip(_BufferedCanvas):
                      selectable=False, name='<text_layer>', **kwargs):
         """Add a text layer to the map or view.
 
-        text         list of sequence of (lon, lat, text, [dict]) coordinates
+        text         list of sequence of (lon, lat, text[, dict]) coordinates
                      (optional 'dict' contains point-specific attributes)
         map_rel      points drawn relative to map if True, else view relative
         visible      True if the layer is to be immediately visible
@@ -1396,6 +1401,8 @@ class PySlip(_BufferedCanvas):
         map_rel  points relative to map if True, else relative to view
         """
 
+        log('DrawTextLayer: text=%s, map_rel=%s' % (text, str(map_rel)))
+
         if text is None:
             return
 
@@ -1459,6 +1466,7 @@ class PySlip(_BufferedCanvas):
                     (save_x, save_y) = (x, y)                   # and X, Y
                     (w, h, w2, h2, x_off, y_off) = (0, 0, 0, 0, 0, 0)
                     exec self.text_view_placement[place]
+                    log('DrawTextLayer: dc.DrawCircle(%s, %s, %s)' % (str(x), str(y), str(radius)))
                     dc.DrawCircle(x, y, radius)
                     (x, y) = (save_x, save_y)                   # restore X, Y
                     (x_off, y_off) = (save_x_off, save_y_off)   # and offsets
@@ -2196,7 +2204,7 @@ class PySlip(_BufferedCanvas):
         """Determine if clicked location selects a point in layer data.
 
         layer  layer object we are looking in
-        pt     click geo location (lon, lat) or view (x, y)
+        pt     click geo location if map-rel, else view coords
 
         Return None (no selection) or (point, data) of selected point where
         point is (xgeo,ygeo) or (xview,yview) depending on layer.map_rel.
@@ -2445,7 +2453,7 @@ class PySlip(_BufferedCanvas):
         """Determine if clicked location selects a text object in layer data.
 
         layer  layer object we are looking in
-        pt     click geo location (lon, lat)
+        pt     click view location (xview, yview)
 
         Return None (no selection) or data for closest text.
 
@@ -2455,34 +2463,72 @@ class PySlip(_BufferedCanvas):
 
         (ptx, pty) = pt
         res = None
-        dist = 1.0E+100        # more than possible
-        for p in layer.data:
-            (x, y, _, _, _, _, _, _, _, _, _, data) = p
-            d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
-            if d < dist:
-                dist = d
-                res = ((x, y), data)
+        delta = layer.delta
 
-        if dist <= layer.delta:
-            return res
+        log('GetNearestTextInLayer: ptx=%s, pty=%s, delta=%s' % (str(ptx), str(pty), str(delta)))
 
-        return None
+        if layer.map_rel:
+            for p in layer.data:
+                (x, y, _, _, _, _, _, _, _, _, _, data) = p
+                d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
+                if d < delta:
+                    res = ((x,y), data)
+                    break
+        else:       # view-rel
+            for p in layer.data:
+                dc_w = self.view_width
+                dc_h = self.view_height
+
+                dc_w2 = dc_w / 2
+                dc_h2 = dc_h / 2
+                dc_h -= 1       # why?
+                dc_w -= 1
+                (x, y, _, place, _, _, _, _, _, x_off, y_off, data) = p
+                exec self.point_view_placement[place]
+                d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
+                log('GetNearestTextInLayer: checking, x=%s, y=%s, place=%s, x_off=%s, y_off=%s, d=%s'
+                        % (str(x), str(y), str(place), str(x_off), str(y_off), str(d)))
+                if d < delta:
+                    res = ((x,y), data)
+                    break
+
+        log('GetNearestTextInLayer: returning %s' % str(res))
+        return res
+
+#        (ptx, pty) = pt
+#        log('GetNearestTextInLayer: ptx=%s, pty=%s' % (str(ptx), str(pty)))
+#        selection = []
+#        data = []
+#        dist = 1.0E+100        # more than possible
+#        delta = layer.delta
+#        for p in layer.data:
+#            (x, y, _, _, _, _, _, _, _, _, _, data) = p
+#            d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
+#            log('GetNearestTextInLayer: x=%s, y=%s, d=%s, delta=%s' % (str(x), str(y), str(d), str(delta)))
+#            if d < delta:
+#                dist = d
+#                selection = (x, y)
+#                data = udata
+#                break
+#
+#        if selection:
+#            return (selection, data)
+#        return None
 
     def GetBoxSelTextsInLayer(self, layer, p1, p2):
         """Get list of text objects inside box p1-p2.
 
         layer  reference to layer object we are working on
-        p1     one corner point of selection box (tile coords, (x,y))
-        p2     opposite corner point of selection box (tile coords, (x,y))
+        p1     one corner point of selection box (geo coords, (x,y))
+        p2     opposite corner point of selection box (geo coords, (x,y))
 
         We have to figure out which corner is which.
 
         Returns (selection, data) where 'selection' is a list of text positions
         (xgeo,ygeo) and 'data' is a list of userdata objects associated with the
-        selected text objects.
+        selected text objects.  Returns None if no selection.
         """
 
-#FIXME
         # get canonical box limits
         (p1x, p1y) = p1
         (p2x, p2y) = p2
@@ -2492,14 +2538,19 @@ class PySlip(_BufferedCanvas):
         by = min(p1y, p2y)
 
         # get a list of points inside the selection box
-        result = []
+        selection = []
+        data = []
 
         for p in layer.data:
-            (x, y, _, _, _, _, _, _, _, _, _, data) = p
+            (x, y, _, _, _, _, _, _, _, _, _, udata) = p
             if lx <= x <= rx and by <= y <= ty:
-                result.append(((x, y), data))
+                selection.append((x, y))
+                data.append(udata)
 
-        return result
+        # return appropriate result
+        if selection:
+            return (selection, data)
+        return None
 
     ######
     # The next two routines could be folded into one as they are the same.

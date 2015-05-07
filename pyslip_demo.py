@@ -1113,36 +1113,34 @@ class AppFrame(wx.Frame):
     def textSelect(self, event):
         """Map-relative text select event from pyslip."""
 
-        if event.type == pyslip.EventPointSelect:
-            if event.point:
-                (point, data) = event.point
-            if event.point is None or point == self.sel_text:
-                # select again, turn point off
+        selection = event.selection
+
+        if event.type == pyslip.EventSelect:
+            if selection is None or selection == self.sel_text:
+                # select again or no select, turn point off
                 self.sel_text = None
                 self.pyslip.DeleteLayer(self.sel_text_layer)
                 self.sel_text_layer = None
-            elif point:
+            elif selection:
                 if self.sel_text_layer:
                     self.pyslip.DeleteLayer(self.sel_text_layer)
-                self.sel_text = point
+                self.sel_text = selection
                 self.sel_text_layer = \
-                    self.pyslip.AddPointLayer((point,), map_rel=True,
+                    self.pyslip.AddPointLayer((selection,), map_rel=True,
                                               color='#0000ff',
                                               radius=5, visible=True,
                                               show_levels=MRTextShowLevels,
                                               name='<sel_text_layer>')
                 self.pyslip.PlaceLayerBelowLayer(self.sel_text_layer,
                                                  self.text_layer)
-        if event.type == pyslip.EventBoxSelect: # left box select
+        elif event.type == pyslip.EventBoxSelect: # left box select
             # remove any previous selection
             if self.sel_text_layer:
                 self.pyslip.DeleteLayer(self.sel_text_layer)
                 self.sel_text_layer = None
-
-            if event.point:
-                pts = [pt for (pt,d) in event.point]
+            if selection:
                 self.sel_text_layer = \
-                    self.pyslip.AddPointLayer(pts, map_rel=True,
+                    self.pyslip.AddPointLayer(selection, map_rel=True,
                                               color='#00ffff',
                                               radius=5, visible=True,
                                               show_levels=[3,4],
@@ -1158,11 +1156,13 @@ class AppFrame(wx.Frame):
         """Handle OnOff event for map-relative text layer control."""
 
         if event.state:
+            log('textViewOnOff: TextViewData=%s' % str(TextViewData))
             self.text_view_layer = \
                 self.pyslip.AddTextLayer(TextViewData, map_rel=False,
                                          name='<text_view_layer>',
                                          placement='cn', visible=True,
-                                         fontsize=24, textcolor='#0000ff')
+                                         fontsize=24, textcolor='#0000ff',
+                                         offset_x=0, offset_y=7, radius=3)
         else:
             self.pyslip.DeleteLayer(self.text_view_layer)
             self.text_view_layer = None
@@ -1195,58 +1195,40 @@ class AppFrame(wx.Frame):
             self.pyslip.SetLayerSelectable(layer, False)
 
     def textViewSelect(self, event):
-        """Map-relative text select event from pyslip."""
+        """View-relative text select event from pyslip."""
 
-#        if posn:
-#            for p in TextData:
-#                pp = (p[0], p[1])
-#                if pp == posn:
-#                    if pp == self.sel_view_text:
-#                        # select again, turn point off
-#                        self.sel_view_text = None
-#                        self.pyslip.DeleteLayer(self.sel_text_view_layer)
-#                        self.sel_text_view_layer = None
-#                    else:
-#                        if self.sel_text_view_layer:
-#                            self.pyslip.DeleteLayer(self.sel_text_view_layer)
-#                        self.sel_view_text = pp
-#                        self.sel_text_view_layer = \
-#                            self.pyslip.AddPointLayer((pp,), map_rel=True,
-#                                                      color='#80ffff',
-#                                                      radius=5, visible=True,
-#                                                      name='<sel_text>')
-#        return True
+        selection = event.selection
 
-        if event.type == pyslip.EventPointSelect:
-            if event.point:
-                (point, data) = event.point
-            if event.point is None or point == self.sel_text_view:
+        if event.type == pyslip.EventSelect:
+            if selection is None or selection == self.sel_text_view:
                 # select again, turn point off
                 self.sel_text_view = None
                 self.pyslip.DeleteLayer(self.sel_text_view_layer)
                 self.sel_text_view_layer = None
-            elif point:
+            elif selection:
                 if self.sel_text_view_layer:
                     self.pyslip.DeleteLayer(self.sel_text_view_layer)
-                self.sel_text_view = point
+                self.sel_text_view = selection
+                log('####: MRTextShowLevels=%s' % str(MRTextShowLevels))
                 self.sel_text_view_layer = \
-                    self.pyslip.AddPointLayer((point,), map_rel=True,
+                    self.pyslip.AddPointLayer((selection,), map_rel=True,
                                               color='#80ffff',
-                                              radius=5, visible=True,
+                                              radius=15, visible=True,
                                               show_levels=MRTextShowLevels,
                                               name='<sel_text_view_layer>')
-        elif event.type == pyslip.EventRightPointSelect: # right pt select
-            pass
-        if event.type == pyslip.EventBoxSelect: # left box select
+                self.pyslip.PlaceLayerBelowLayer(self.sel_text_view_layer,
+                                                 self.text_view_layer)
+#        elif event.type == pyslip.EventRightPointSelect: # right pt select
+#            pass
+        elif event.type == pyslip.EventBoxSelect: # left box select
             # remove any previous selection
             if self.sel_text_view_layer:
                 self.pyslip.DeleteLayer(self.sel_text_view_layer)
                 self.sel_text_view_layer = None
 
-            if event.point:
-                pts = [pt for (pt,d) in event.point]
+            if selection:
                 self.sel_text_view_layer = \
-                    self.pyslip.AddPointLayer(pts, map_rel=True,
+                    self.pyslip.AddPointLayer(selection, map_rel=True,
                                               color='#00ffff',
                                               radius=5, visible=True,
                                               show_levels=[3,4],
@@ -1331,7 +1313,7 @@ class AppFrame(wx.Frame):
                     self.sel_poly_layer = \
                         self.pyslip.AddPointLayer(poly, map_rel=True,
                                                   color='#ff00ff',
-                                                  radius=9, visible=True,
+                                                  radius=5, visible=True,
                                                   show_levels=[3,4],
                                                   name='<sel_poly>')
         else:   # box select, not yet implemented
@@ -1549,7 +1531,7 @@ class AppFrame(wx.Frame):
                     (84.991275, 24.695102, 'बोधगया (Bodh Gaya)', text_placement)])
 #        TextDataColour = '#ffffff40'
 
-        TextViewData = [(0, 7, '%s %s' % (DemoName, DemoVersion))]
+        TextViewData = [(0, 0, '%s %s' % (DemoName, DemoVersion))]
 
         PolyData = [#(((150.0,10.0),(160.0,20.0),(170.0,10.0),(165.0,0.0),(155.0,0.0)),
                     #  {'width': 3, 'color': 'blue', 'closed': True}),
@@ -1591,7 +1573,7 @@ class AppFrame(wx.Frame):
 
         self.text_view_layer = None
         self.sel_text_view_layer = None
-        self.sel_view_text = None
+        self.sel_text_view = None
 
         self.poly_layer = None
         self.sel_poly_layer = None

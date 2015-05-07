@@ -1162,7 +1162,7 @@ class AppFrame(wx.Frame):
                                          name='<text_view_layer>',
                                          placement='cn', visible=True,
                                          fontsize=24, textcolor='#0000ff',
-                                         offset_x=0, offset_y=7, radius=3)
+                                         offset_x=0, offset_y=3)
         else:
             self.pyslip.DeleteLayer(self.text_view_layer)
             self.text_view_layer = None
@@ -1209,11 +1209,10 @@ class AppFrame(wx.Frame):
                 if self.sel_text_view_layer:
                     self.pyslip.DeleteLayer(self.sel_text_view_layer)
                 self.sel_text_view = selection
-                log('####: MRTextShowLevels=%s' % str(MRTextShowLevels))
                 self.sel_text_view_layer = \
-                    self.pyslip.AddPointLayer((selection,), map_rel=True,
+                    self.pyslip.AddPointLayer((selection,), map_rel=False,
                                               color='#80ffff',
-                                              radius=15, visible=True,
+                                              radius=5, visible=True,
                                               show_levels=MRTextShowLevels,
                                               name='<sel_text_view_layer>')
                 self.pyslip.PlaceLayerBelowLayer(self.sel_text_view_layer,
@@ -1228,7 +1227,7 @@ class AppFrame(wx.Frame):
 
             if selection:
                 self.sel_text_view_layer = \
-                    self.pyslip.AddPointLayer(selection, map_rel=True,
+                    self.pyslip.AddPointLayer(selection, map_rel=False,
                                               color='#00ffff',
                                               radius=5, visible=True,
                                               show_levels=[3,4],

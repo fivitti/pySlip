@@ -882,6 +882,8 @@ class PySlip(_BufferedCanvas):
                 raise Exception(msg)
 
             # append another point to draw data list
+            log('===: x=%s, y=%s, radius=%s, offset_x=%s, offset=%s'
+                    % (str(x), str(y), str(radius), str(offset_x), str(offset_y)))
             draw_data.append((float(x), float(y), placement.lower(),
                               radius, colour, offset_x, offset_y, udata))
 
@@ -968,6 +970,8 @@ class PySlip(_BufferedCanvas):
                 w_cache = w
                 h_cache = h
 
+            log('AddImageLayer: lon=%s, lat=%s, w=%s, h=%s, offset_x=%s, offset_y=%s'
+                    % (str(lon), str(lat), str(w), str(h), str(offset_x), str(offset_y)))
             draw_data.append((float(lon), float(lat), bmap, w, h,
                               placement.lower(), offset_x, offset_y, udata))
 
@@ -1047,7 +1051,8 @@ class PySlip(_BufferedCanvas):
             offset_x = attributes.get('offset_x', default_offset_x)
             offset_y = attributes.get('offset_y', default_offset_y)
             udata = attributes.get('data', default_data)
-
+            log('AddTextLayer: lon=%s, lat=%s, radius=%s, offset_x=%s, offset_y=%s'
+                    % (str(lon), str(lat), str(radius), str(offset_x), str(offset_y)))
             draw_data.append((float(lon), float(lat), tdata, placement.lower(),
                               radius, colour, textcolour, fontname, fontsize,
                               offset_x, offset_y, udata))
@@ -1184,6 +1189,8 @@ class PySlip(_BufferedCanvas):
 
         Returns unique ID of the new layer.
         """
+
+        log('AddLayer: data=%s' % str(data))
 
         # get layer ID
         id = self.next_layer_id

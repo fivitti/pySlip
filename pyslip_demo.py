@@ -783,13 +783,9 @@ class AppFrame(wx.Frame):
         and whether the same point is selected or not.
         """
 
-        log('pointViewSelect: .type=%s (EventSelect=%s), .selection=%s, self.sel_point_view=%s'
-                % (str(event.type), str(pyslip.EventSelect), str(event.selection), str(self.sel_point_view)))
-
         selection = event.selection
 
         if event.type == pyslip.EventSelect:
-            log('pointViewSelect: EventSelect, selection=%s, self.sel_point_view=%s' % (str(selection), str(self.sel_point_view)))
             if self.sel_point_view_layer:
                 # if there is a previous selection, remove it
                 self.pyslip.DeleteLayer(self.sel_point_view_layer)
@@ -805,7 +801,6 @@ class AppFrame(wx.Frame):
             else:
                 self.sel_point_view = None
         elif event.type == pyslip.EventBoxSelect:
-            log('pointViewSelect: EventBoxSelect, selection=%s, self.sel_point_view=%s' % (str(selection), str(self.sel_point_view)))
             if self.sel_point_view_layer:
                 self.pyslip.DeleteLayer(self.sel_point_view_layer)
                 self.sel_point_view_layer = None
@@ -869,12 +864,9 @@ class AppFrame(wx.Frame):
     def imageSelect(self, event):
         """Select event from pyslip."""
 
-        log('imageSelect: .type=%s, .selection=%s' % (str(event.type), str(event.selection)))
-
         selection = event.selection
 
         if event.type == pyslip.EventSelect:
-            log('####: pyslip.EventSelect, selection=%s' % str(selection))
             if selection == self.sel_image:
                 # select again, turn point off
                 self.sel_image = None
@@ -991,13 +983,6 @@ class AppFrame(wx.Frame):
         with debugging, as we can move the compass rose anywhere we like.
         """
 
-        log('imageViewSelect: event=%s' % str(dir(event)))
-
-        log('imageViewSelect: event.type=%s' % str(event.type))
-        log('imageViewSelect: event.layer_id=%s' % str(event.layer_id))
-        log('imageViewSelect: event.selection=%s' % str(event.selection))
-        log('imageViewSelect: event.data=%s' % str(event.data))
-
         # only one image selectable, remove old selection (if any)
         if self.sel_image_view_layer:
             # already selected, remove old selection
@@ -1031,7 +1016,6 @@ class AppFrame(wx.Frame):
                                  }
 
             point = eval(point_place_coords[img_placement])
-            log('AddPointLayer((selection,)=(%s,)' % str(selection))
             self.sel_imagepoint_view_layer = \
                 self.pyslip.AddPointLayer((point,), map_rel=False,
                                           color='green',
@@ -1055,7 +1039,6 @@ class AppFrame(wx.Frame):
                                  None: '(((x, y),(x+CR_Width,y),(x+CR_Width,y+CR_Height),(x,y+CR_Height)),p_dict)',
                                 }
             pdata = eval(poly_place_coords[img_placement])
-            log('pdata=%s' % str(pdata))
             self.sel_image_view_layer = \
                 self.pyslip.AddPolygonLayer((pdata,), map_rel=False,
 #                                            placement=img_placement,
@@ -1155,7 +1138,6 @@ class AppFrame(wx.Frame):
         """Handle OnOff event for map-relative text layer control."""
 
         if event.state:
-            log('textViewOnOff: TextViewData=%s' % str(TextViewData))
             self.text_view_layer = \
                 self.pyslip.AddTextLayer(TextViewData, map_rel=False,
                                          name='<text_view_layer>',
@@ -1293,8 +1275,6 @@ class AppFrame(wx.Frame):
         """
 
         selection = event.selection
-
-        log('polySelect: event.selection=%s' % str(event.selection))
 
         if event.type == pyslip.EventSelect:
             if selection:
@@ -1616,9 +1596,6 @@ class AppFrame(wx.Frame):
 
         layer_id = event.layer_id
 
-        log('handle_select_event: layer_id=%d, self.demo_select_dispatch=%s'
-                % (layer_id, str(self.demo_select_dispatch)))
-
         self.demo_select_dispatch.get(layer_id, self.null_handler)(event)
 
     def null_handler(self, event):
@@ -1628,9 +1605,6 @@ class AppFrame(wx.Frame):
 
     def handle_position_event(self, event):
         """Handle a pySlip POSITION event."""
-
-        log('handle_position_event: event.mposn=%s, event.vposn=%s'
-                % (str(event.mposn), str(event.vposn)))
 
         posn_str = ''
         if event.mposn:

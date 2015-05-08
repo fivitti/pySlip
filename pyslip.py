@@ -2225,8 +2225,6 @@ class PySlip(_BufferedCanvas):
 # http://en.wikipedia.org/wiki/Kd-tree
 # would need to create kd-tree in AddLayer()
 
-        log('GetNearestPointInLayer: layer.delta=%s' % str(layer.delta))
-
         (ptx, pty) = pt
         result = None
         delta = layer.delta
@@ -2910,6 +2908,5 @@ class PySlip(_BufferedCanvas):
         """Display graphical warning message."""
 
         log(msg)
-#        print(msg)
         wx.MessageBox(msg, 'Info', wx.OK | wx.ICON_INFORMATION)
 

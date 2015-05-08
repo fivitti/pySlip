@@ -59,7 +59,7 @@ InitViewPosition = (-8.008889, 31.63)       # Marrakech (مراكش), Morocco
 # levels on which various layers show
 MRPointShowLevels = [3, 4]
 MRImageShowLevels = [3, 4]
-MRTextShowLevels = [3, 4]
+MRTextShowLevels = None #[3, 4]
 MRPolyShowLevels = [3, 4]
 
 # the number of decimal places in a lon/lat display
@@ -1522,6 +1522,7 @@ class AppFrame(wx.Frame):
                         text_placement),
                     (114.158889, +22.278333, '香港 (Hong Kong)',
                         {'placement': 'nw'}),
+                    (98.392, 7.888, 'นครภูเก็ต (Phuket)', text_placement),
                     ( 96.16, +16.80, 'ရန်ကုန် (Yangon)', capital),
                     (104.93, +11.54, ' ភ្នំពេញ (Phnom Penh)',
                         {'placement': 'ce', 'fontsize': 12, 'color': 'red'}),

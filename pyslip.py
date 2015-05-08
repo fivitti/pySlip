@@ -72,9 +72,9 @@ def point_inside_polygon(x, y, poly):
     """
 
     # we want a *copy* of original iterable plus extra wraparound point
+    l_poly = list(poly)
 #FASTER
-#    l_poly = list(poly)
-    l_poly = poly[:]
+#    l_poly = poly[:]
     l_poly.append(l_poly[0])  # ensure poly wraps around
 
     inside = False
@@ -181,7 +181,7 @@ class _BufferedCanvas(wx.Panel):
 class _Layer(object):
     """A Layer object."""
 
-    DefaultDelta = 500      # default selection delta
+    DefaultDelta = 50      # default selection delta
 
     def __init__(self, id=0, painter=None, data=None, map_rel=True,
                  visible=False, show_levels=None, selectable=False,
@@ -200,7 +200,7 @@ class _Layer(object):
         """
 
         self.painter = painter          # routine to draw layer
-        self.data = data                # data that defined the layer
+        self.data = data                # data that defines the layer
         self.map_rel = map_rel          # True if layer is map relative
         self.visible = visible          # True if layer visible
         self.show_levels = show_levels  # None or list of levels to auto-show
@@ -555,6 +555,22 @@ class PySlip(_BufferedCanvas):
                          }
     placements.append(point_view_perturb)
 
+    # dictionary for view-relative point placement
+    # NOT using the offset values
+    point_view_no_offset = {'cc': 'x+=dc_w2;      y+=dc_h2',
+                            'nw': '',
+                            'cn': 'x+=dc_w2',
+                            'ne': 'x+=dc_w',
+                            'ce': 'x+=dc_w;       y+=dc_h2',
+                            'se': 'x+=dc_w;       y+=dc_h',
+                            'cs': 'x+=dc_w2;      y+=dc_h',
+                            'sw': 'pass;          y+=dc_h',
+                            'cw': 'pass;          y+=dc_h2',
+                            None: '',
+                            False: '',
+                            '':   ''}
+    placements.append(point_view_no_offset)
+
     # now pre-compile all the dictionary placement strings
     for p_dict in placements:
         for key in p_dict:
@@ -737,7 +753,7 @@ class PySlip(_BufferedCanvas):
         self.layerPSelHandler = {self.TypePoint: self.GetNearestPointInLayer,
                                  self.TypeImage: self.GetImageInLayer,
                                  self.TypeText: self.GetNearestTextInLayer,
-                                 self.TypePoly: self.GetNearestPolygonInLayer}
+                                 self.TypePoly: self.GetFirstPolygonInLayer}
 
         # for box select
         self.layerBSelHandler = {self.TypePoint: self.GetBoxSelPointsInLayer,
@@ -829,9 +845,6 @@ class PySlip(_BufferedCanvas):
                          'data'       point user data object
         """
 
-        log('AddPointLayer: points=%s, map_rel=%s, visible=%s, show_levels=%s'
-                % (str(points), str(map_rel), str(visible), str(show_levels)))
-
         # merge global and layer defaults
         if map_rel:
             default_placement = kwargs.get('placement', self.DefaultPointPlacement)
@@ -854,7 +867,6 @@ class PySlip(_BufferedCanvas):
         draw_data = []              # list to hold draw data
 
         for pt in points:
-            log('####: pt=%s' % str(pt))
             if len(pt) == 3:
                 (x, y, attributes) = pt
             elif len(pt) == 2:
@@ -882,12 +894,9 @@ class PySlip(_BufferedCanvas):
                 raise Exception(msg)
 
             # append another point to draw data list
-            log('===: x=%s, y=%s, radius=%s, offset_x=%s, offset=%s'
-                    % (str(x), str(y), str(radius), str(offset_x), str(offset_y)))
             draw_data.append((float(x), float(y), placement.lower(),
                               radius, colour, offset_x, offset_y, udata))
 
-        log('AddPointLayer: draw_data=%s' % str(draw_data))
         return self.AddLayer(self.DrawPointLayer, draw_data, map_rel,
                              visible=visible, show_levels=show_levels,
                              selectable=selectable, name=name,
@@ -970,8 +979,6 @@ class PySlip(_BufferedCanvas):
                 w_cache = w
                 h_cache = h
 
-            log('AddImageLayer: lon=%s, lat=%s, w=%s, h=%s, offset_x=%s, offset_y=%s'
-                    % (str(lon), str(lat), str(w), str(h), str(offset_x), str(offset_y)))
             draw_data.append((float(lon), float(lat), bmap, w, h,
                               placement.lower(), offset_x, offset_y, udata))
 
@@ -1051,8 +1058,6 @@ class PySlip(_BufferedCanvas):
             offset_x = attributes.get('offset_x', default_offset_x)
             offset_y = attributes.get('offset_y', default_offset_y)
             udata = attributes.get('data', default_data)
-            log('AddTextLayer: lon=%s, lat=%s, radius=%s, offset_x=%s, offset_y=%s'
-                    % (str(lon), str(lat), str(radius), str(offset_x), str(offset_y)))
             draw_data.append((float(lon), float(lat), tdata, placement.lower(),
                               radius, colour, textcolour, fontname, fontsize,
                               offset_x, offset_y, udata))
@@ -1189,8 +1194,6 @@ class PySlip(_BufferedCanvas):
 
         Returns unique ID of the new layer.
         """
-
-        log('AddLayer: data=%s' % str(data))
 
         # get layer ID
         id = self.next_layer_id
@@ -1408,8 +1411,6 @@ class PySlip(_BufferedCanvas):
         map_rel  points relative to map if True, else relative to view
         """
 
-        log('DrawTextLayer: text=%s, map_rel=%s' % (text, str(map_rel)))
-
         if text is None:
             return
 
@@ -1473,7 +1474,6 @@ class PySlip(_BufferedCanvas):
                     (save_x, save_y) = (x, y)                   # and X, Y
                     (w, h, w2, h2, x_off, y_off) = (0, 0, 0, 0, 0, 0)
                     exec self.text_view_placement[place]
-                    log('DrawTextLayer: dc.DrawCircle(%s, %s, %s)' % (str(x), str(y), str(radius)))
                     dc.DrawCircle(x, y, radius)
                     (x, y) = (save_x, save_y)                   # restore X, Y
                     (x_off, y_off) = (save_x_off, save_y_off)   # and offsets
@@ -1797,7 +1797,9 @@ class PySlip(_BufferedCanvas):
                                       (tr_corner_vx, tr_corner_vy))
                         pts = None
                         data = None
+                        relsel = None
                         if sel:
+                            #(pts, data, relsel) = sel
                             (pts, data) = sel
                         self.RaiseEventBoxSelect(l, pts, data)
 
@@ -1825,12 +1827,14 @@ class PySlip(_BufferedCanvas):
                             sel = self.layerPSelHandler[l.type](l, clickpt_v)
                         selection = None
                         data= None
+                        relsel = None
                         if sel:
+                            #(selection, data, relsel) = sel
                             (selection, data) = sel
                         self.RaiseEventSelect(mposn=clickpt_g, vposn=clickpt_v,
                                               layer=l,
                                               selection=sel)
-                                              #data=data)
+#                                              data=data)
 
                         # user code possibly updated screen
                         delayed_paint = True
@@ -2221,8 +2225,11 @@ class PySlip(_BufferedCanvas):
 # http://en.wikipedia.org/wiki/Kd-tree
 # would need to create kd-tree in AddLayer()
 
+        log('GetNearestPointInLayer: layer.delta=%s' % str(layer.delta))
+
         (ptx, pty) = pt
-        res = None
+        result = None
+        delta = layer.delta
         dist = 9999999.0        # more than possible
         if layer.map_rel:
             for p in layer.data:
@@ -2230,28 +2237,28 @@ class PySlip(_BufferedCanvas):
                 d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
                 if d < dist:
                     dist = d
-                    res = ((x,y), data)
+                    result = ((x,y), data)
 
             if dist <= layer.delta:
-                return res
+                return result
         else:
-            for p in layer.data:
-                dc_w = self.view_width
-                dc_h = self.view_height
+            dc_w = self.view_width
+            dc_h = self.view_height
 
-                dc_w2 = dc_w / 2
-                dc_h2 = dc_h / 2
-                dc_h -= 1       # why?
-                dc_w -= 1
+            dc_w2 = dc_w / 2
+            dc_h2 = dc_h / 2
+            dc_h -= 1       # why?
+            dc_w -= 1
+            for p in layer.data:
                 (x, y, place, _, _, x_off, y_off, data) = p
                 exec self.point_view_placement[place]
                 d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
                 if d < dist:
                     dist = d
-                    res = ((x,y), data)
+                    result = ((x,y), data)
 
             if dist <= layer.delta:
-                return res
+                return result
 
         return None
 
@@ -2328,38 +2335,30 @@ class PySlip(_BufferedCanvas):
         """
 
         (ptx, pty) = pt
-        selection = None
-        seldata = None
-
-        log('GetImageInLayer: START, geo ptx=%s, geo pty=%s' % (str(ptx), str(pty)))
+        result = None
 
         # .data: [(x, y, bmap, w, h, placement, offset_x, offset_y, data),...]
         for p in layer.data:
             (x, y, _, w, h, placement, offset_x, offset_y, data) = p
             if layer.map_rel:
                 # map-relative, ptx, pty, x, y are geo coords
-                log('GetImageInLayer: calling .GeoExtent(x=%s, y=%s, placement=%s, w=%s, h=%s, offset_x=%s, offset_y=%s'
-                        % (str(x), str(y), str(placement), str(w), str(h), str(offset_x), str(offset_y)))
                 e = self.GeoExtent(x, y, placement, w, h, offset_x, offset_y)
-                log('GetImageInLayer: GeoExtent() returned %s' % str(e))
                 if e:
                     (llon, rlon, tlat, blat) = e
                     if llon <= ptx <= rlon and blat <= pty <= tlat:
-                        selection = (x, y)
-                        seldata = data
+                        #result = ((x, y), data, None)
+                        result = ((x, y), data)
                         break
             else:
                 # view_relative, ptx, pty, x, y are view coords
                 e = self.ViewExtent(x, y, placement, w, h, offset_x, offset_y)
                 (lv, rv, tv, bv) = e
                 if lv <= ptx <= rv and tv <= pty <= bv:
-                    selection = (ptx - lv, pty - tv)
-                    seldata = data
+                    #result = ((x, y), data, None)
+                    result = ((x, y), data)
+                    break
 
-        log('GetImageInLayer: FINISH, selection=%s' % str(selection))
-        if selection:
-            return (selection, seldata)
-        return None
+        return result
 #FIXME must return relative selection
 
     def GetBoxSelImagesInLayer(self, layer, p1, p2):
@@ -2390,10 +2389,7 @@ class PySlip(_BufferedCanvas):
         selection = []
         data = []
         for p in layer.data:
-            log('####: layer.data=%s' % str(layer.data))
             (x, y, _, _, _, _, _, _, udata) = p
-#            x = p[0]
-#            y = p[1]
             if lx <= x <= rx and by <= y <= ty:
                 selection.append((x, y))
                 data.append(udata)
@@ -2403,35 +2399,36 @@ class PySlip(_BufferedCanvas):
 
         return (selection, data)
 
-    def GetNearestPolygonInLayer(self, layer, pt):
+    def GetFirstPolygonInLayer(self, layer, pt):
         """Get all polygon objects clicked in layer data.
 
         layer  layer object we are looking in
         pt     click geo location (lon, lat)
 
-        Returns a list of selection objects: ((x,y), udata).
-        More than one polygon may be selected in a single click.
+        Returns an iterable: ((x,y), udata) of the first polygon selected.
+        Returns None if no polygon selected.
         """
 
-        log('GetNearestPolygonInLayer: pt=%s' % str(pt))
-
         (ptx, pty) = pt
-        result = []
+        result = None
 
         # (poly, placement, width, colour, close, filled, fillcolour, offset_x, offset_y, udata)
         for p in layer.data:
             (poly, placement, _, _, _, _, _, offset_x, offset_y, udata) = p
             if layer.map_rel:
-                log('GetNearestPolygonInLayer: map-rel layer')
                 # map-relative, all points are geo coordinates
                 if self.point_in_poly_map(poly, ptx, pty,
                                           placement, offset_x, offset_y):
-                    result.append((pt, udata))
+                    #result = (pt, udata)
+                    result = (poly, udata)
+                    break
             else:
                 # view-relative, all points are view pixels
                 if self.point_in_poly_view(poly, ptx, pty,
                                            placement, offset_x, offset_y):
-                    result.append((pt, udata))
+                    #result = (pt, udata)
+                    result = (poly, udata)
+                    break
 
         return result
 
@@ -2472,8 +2469,6 @@ class PySlip(_BufferedCanvas):
         res = None
         delta = layer.delta
 
-        log('GetNearestTextInLayer: ptx=%s, pty=%s, delta=%s' % (str(ptx), str(pty), str(delta)))
-
         if layer.map_rel:
             for p in layer.data:
                 (x, y, _, _, _, _, _, _, _, _, _, data) = p
@@ -2491,36 +2486,13 @@ class PySlip(_BufferedCanvas):
                 dc_h -= 1       # why?
                 dc_w -= 1
                 (x, y, _, place, _, _, _, _, _, x_off, y_off, data) = p
-                exec self.point_view_placement[place]
+                exec self.point_view_no_offset[place]
                 d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
-                log('GetNearestTextInLayer: checking, x=%s, y=%s, place=%s, x_off=%s, y_off=%s, d=%s'
-                        % (str(x), str(y), str(place), str(x_off), str(y_off), str(d)))
                 if d < delta:
                     res = ((x,y), data)
                     break
 
-        log('GetNearestTextInLayer: returning %s' % str(res))
         return res
-
-#        (ptx, pty) = pt
-#        log('GetNearestTextInLayer: ptx=%s, pty=%s' % (str(ptx), str(pty)))
-#        selection = []
-#        data = []
-#        dist = 1.0E+100        # more than possible
-#        delta = layer.delta
-#        for p in layer.data:
-#            (x, y, _, _, _, _, _, _, _, _, _, data) = p
-#            d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
-#            log('GetNearestTextInLayer: x=%s, y=%s, d=%s, delta=%s' % (str(x), str(y), str(d), str(delta)))
-#            if d < delta:
-#                dist = d
-#                selection = (x, y)
-#                data = udata
-#                break
-#
-#        if selection:
-#            return (selection, data)
-#        return None
 
     def GetBoxSelTextsInLayer(self, layer, p1, p2):
         """Get list of text objects inside box p1-p2.
@@ -2650,9 +2622,6 @@ class PySlip(_BufferedCanvas):
         is NOT on map.  'event.mposn' attribute is None in that case.
         """
 
-        log('RaiseEventPosition: mposn=%s, vposn=%s'
-                % (str(mposn), str(vposn)))
-
         # create event, assume off map
         event = _PySlipEvent(_myEVT_PYSLIP_POSITION, self.GetId())
         event.type = EventPosition
@@ -2697,9 +2666,6 @@ class PySlip(_BufferedCanvas):
         if selection:
             (event.selection, event.data) = selection
 
-        log('RaiseEventSelect: .type=%s, .layer_id=%d, .mposn=%s, .vposn=%s, .selection=%s, .data=%s'
-                % (str(EventSelect), layer.id, str(event.mposn), str(event.vposn), str(event.selection), str(event.data)))
-
         self.GetEventHandler().ProcessEvent(event)
 
     def RaiseEventBoxSelect(self, layer=None, selection=None, data=None):
@@ -2719,9 +2685,6 @@ class PySlip(_BufferedCanvas):
         event.layer_id = layer.id
         event.selection = selection
         event.data = data
-
-        log('RaiseEventBoxSelect: .type=%s, .layer_id=%d, .selection=%s, .data=%s'
-                % (str(EventBoxSelect), event.layer_id, str(event.selection), str(event.data)))
 
         self.GetEventHandler().ProcessEvent(event)
 
@@ -2744,9 +2707,6 @@ class PySlip(_BufferedCanvas):
         event.selection = selection
         event.data = data
 
-        log('RaiseEventPolySelect: .type=%s, .layer_id=%d, .mposn=%s, .vposn=%s, .selection=%s, .data=%s'
-                % (str(EventPolySelect), event.layer_id, str(event.mposn), str(event.vposn), str(selection), str(data)))
-
         self.GetEventHandler().ProcessEvent(event)
 
     def RaiseEventPolyBoxSelect(self, layer, selection, data):
@@ -2762,9 +2722,6 @@ class PySlip(_BufferedCanvas):
         event.type = EventPolyBoxSelect
         event.layer_id = layer.id
         (event.selection, event.data) = selection
-
-        log('RaiseEventPolyBoxSelect: .type=%s, .layer_id=%d, .selection=%s, .data=%s'
-                % (str(EventPolyBoxSelect), layer.id, str(event.selection), str(event.data)))
 
         self.GetEventHandler().ProcessEvent(event)
 
@@ -2788,28 +2745,7 @@ class PySlip(_BufferedCanvas):
         Returns True if point is inside the polygon.
         """
 
-        log('point_in_poly_map: ptx=%s, pty=%s' % (str(ptx), str(pty)))
-
         return point_inside_polygon(ptx, pty, poly)
-
-#        # convert polygon and placement into list of (x,y) tuples
-#        view_poly = []
-#        for (gx, gy) in poly:
-#            log('BEFORE: gx=%s, gy=%s' % (str(gx), str(gy)))
-#            (tx, ty) =  self.tiles.Geo2Tile(gx, gy)             # tx=10.2, ty=6.1
-#            log('DURING: tx=%s, ty=%s' % (str(tx), str(ty)))
-#            x = tx*self.tiles.tile_size_x - self.view_offset_x
-#            y = ty*self.tiles.tile_size_y - self.view_offset_y
-#            log('DURING: x=%s, y=%s, .view_offset_x=%d, .view_offset_y=%d'
-#                % (str(x), str(y), self.view_offset_x, self.view_offset_y))
-#            exec self.point_map_placement[placement]
-#            log('AFTER: x=%s, y=%s, placement=%s' % (str(x), str(y), str(placement)))
-#            view_poly.append((x, y))
-
-        # decide if (ptx,pty) is inside polygon
-        result = point_inside_polygon(ptx, pty, view_poly)
-        log('RETURN: %s' % str(result))
-        return result
 
     def point_in_poly_view(self, poly, ptx, pty, placement, offset_x, offset_y):
         """Decide if a point is inside a view-relative polygon.
@@ -2827,14 +2763,11 @@ class PySlip(_BufferedCanvas):
         # convert polygon and placement into list of (x,y) tuples
         view_poly = []
         for (gx, gy) in poly:
-            log('BEFORE: gx=%s, gy=%s' % (str(gx), str(gy)))
             (tx, ty) =  self.tiles.Geo2Tile(gx, gy)
-            log('DURING: tx=%s, ty=%s' % (str(tx), str(ty)))
             x = tx - self.view_offset_x
             y = ty - self.view_offset_y
-            log('DURING: x=%s, y=%s' % (str(x), str(y)))
+            x_off = y_off = 0
             exec self.point_map_placement[placement]
-            log('AFTER: x=%s, y=%s' % (str(x), str(y)))
             view_poly.append((x, y))
 
         # decide if (ptx,pty) is inside polygon
@@ -2860,50 +2793,34 @@ class PySlip(_BufferedCanvas):
 
 # FIXME
 
-        log('GeoExtent: lon=%s, lat=%s, placement=%s, w=%s, h=%s, x_off=%s, y_off=%s'
-                % (str(lon), str(lat), str(placement), str(w), str(h), str(x_off), str(y_off)))
-
         # decide if object CAN be in view
         # check point in lower, right or lower-right quadrants
         if self.view_rlon < lon or self.view_blat > lat:
-            log('GeoExtent: object not in view, returning None')
             return None
 
         # now, figure out point view position from (lon, lat)
         (x, y) = self.tiles.Geo2Tile(lon, lat)
-        log('GeoExtent: point tile coords x=%s, y=%s' % (str(x), str(y)))
         x = x*self.tile_size_x - self.view_offset_x
         y = y*self.tile_size_y - self.view_offset_y
-        log('GeoExtent: object point map pixels x=%s, y=%s' % (str(x), str(y)))
 
         # then do the placement of the top_left point
         w2 = w/2.0
         h2 = h/2.0
         exec self.point_map_perturb[placement]
         (tlx, tly) = (x, y)
-        log('GeoExtent: extent TL point (view) tlx=%s, tly=%s' % (str(tlx), str(tly)))
 
         # now get bottom_right corner in pixel coords
         brx = tlx + w
         bry = tly + h
-        log('GeoExtent: extent BR point (view) brx=%s, bry=%s' % (str(brx), str(bry)))
 
         # decide if object is off view or not
-        log('####: brx < -w = %s < %s = %s' % (str(brx), str(-w), str(brx < -w)))
-        log('####: bry < -h = %s < %s = %s' % (str(bry), str(-h), str(bry < -h)))
-        log('####: tlx > self.view_width = %s > %s = %s' % (str(tlx), str(self.view_width), str(tlx > self.view_width)))
-        log('####: tly > self.view_height = %s > %s = %s' % (str(tly), str(self.view_height), str(tly > self.view_height)))
-
         if (brx < -w or bry < -h
                 or tlx > self.view_width or tly > self.view_height):
-            log('GeoExtent: object not in view, returning None')
             return None
 
         # return geo extent
         (llon, tlat) = self.View2Geo((tlx, tly))
         (rlon, blat) = self.View2Geo((brx, bry))
-        log('GeoExtent: returning (%s, %s, %s, %s)'
-                % (str(llon), str(rlon), str(tlat), str(blat)))
 
         return (llon, rlon, tlat, blat)
 
@@ -2988,4 +2905,11 @@ class PySlip(_BufferedCanvas):
             result = kwargs.get(kws[-1], default)
 
         return result
+
+    def info(self, msg):
+        """Display graphical warning message."""
+
+        log(msg)
+#        print(msg)
+        wx.MessageBox(msg, 'Info', wx.OK | wx.ICON_INFORMATION)
 

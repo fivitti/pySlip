@@ -638,6 +638,7 @@ class AppFrame(wx.Frame):
                                           color=PointDataColour, radius=3,
                                           offset_x=0, offset_y=0, visible=True,
                                           show_levels=MRPointShowLevels,
+                                          delta=40,
                                           name='<pt_layer>')
         else:
             self.pyslip.DeleteLayer(self.point_layer)
@@ -983,21 +984,19 @@ class AppFrame(wx.Frame):
         selection  point datas is a list of: (pt, udata)
                      pt is an (x,y) tuple of relative click posn within the image
                      udata is userdata attached to the image (if any).
-        vposn      the view coords of the click
+        vposn      the view coords of the click 
 
         The code below doesn't assume a placement of the selected image, it
         figures out the correct position of the 'highlight' layers.  This helps
         with debugging, as we can move the compass rose anywhere we like.
         """
 
-        log('imageViewSelect: event=%s' % str(event))
+        log('imageViewSelect: event=%s' % str(dir(event)))
 
         log('imageViewSelect: event.type=%s' % str(event.type))
         log('imageViewSelect: event.layer_id=%s' % str(event.layer_id))
-        log('imageViewSelect: event.mposn=%s' % str(event.mposn))
         log('imageViewSelect: event.selection=%s' % str(event.selection))
         log('imageViewSelect: event.data=%s' % str(event.data))
-        log('imageViewSelect: event.vposn=%s' % str(event.vposn))
 
         # only one image selectable, remove old selection (if any)
         if self.sel_image_view_layer:
@@ -1285,20 +1284,21 @@ class AppFrame(wx.Frame):
         """Map-relative polygon select event from pyslip.
 
         event  the pyslip event which has attributes:
-                   type      the event type
-                   layer_id  ID of the layer selected
-                   poly      iterable of poly points: ((x,y), data), can be None
-                   mposn     map-relative position of mouse-click
-                   vposn     view-relative position of mouse-click
+                   type       the event type
+                   layer_id   ID of the layer selected
+                   selection  iterable of poly points: ((x,y), data),
+                              can be None
+                   mposn      map-relative position of mouse-click
+                   vposn      view-relative position of mouse-click
         """
 
-        poly = event.poly
+        selection = event.selection
 
-        log('polySelect: event.poly=%s' % str(event.poly))
+        log('polySelect: event.selection=%s' % str(event.selection))
 
-        if event.type == pyslip.EventPointSelect:
-            if poly:
-                if poly == self.sel_poly:
+        if event.type == pyslip.EventSelect:
+            if selection:
+                if selection == self.sel_poly:
                     # polygon selected again, turn selection off
                     self.sel_poly = None
                     self.pyslip.DeleteLayer(self.sel_poly_layer)
@@ -1308,15 +1308,15 @@ class AppFrame(wx.Frame):
                     if self.sel_poly_layer:
                         # deselect previously selected poly
                         self.pyslip.DeleteLayer(self.sel_poly_layer)
-                    self.sel_poly = poly
+                    self.sel_poly = selection
                     self.sel_poly_layer = \
-                        self.pyslip.AddPointLayer(poly, map_rel=True,
+                        self.pyslip.AddPointLayer(selection, map_rel=True,
                                                   color='#ff00ff',
                                                   radius=5, visible=True,
                                                   show_levels=[3,4],
                                                   name='<sel_poly>')
         else:   # box select, not yet implemented
-            raise Exception('Not yet implemented')
+            self.pyslip.info('Polygon box-selection not yet implemented')
 
         return True
 
@@ -1533,16 +1533,16 @@ class AppFrame(wx.Frame):
 
         TextViewData = [(0, 0, '%s %s' % (DemoName, DemoVersion))]
 
-        PolyData = [#(((150.0,10.0),(160.0,20.0),(170.0,10.0),(165.0,0.0),(155.0,0.0)),
-                    #  {'width': 3, 'color': 'blue', 'closed': True}),
+        PolyData = [(((150.0,10.0),(160.0,20.0),(170.0,10.0),(165.0,0.0),(155.0,0.0)),
+                      {'width': 3, 'color': 'blue', 'closed': True}),
                     (((165.0,-35.0),(175.0,-35.0),(175.0,-45.0),(165.0,-45.0)),
                       {'width': 10, 'color': '#00ff00c0', 'filled': True,
                        'fillcolor': '#ffff0040'}),
-                    #(((190.0,-30.0),(220.0,-50.0),(220.0,-30.0),(190.0,-50.0)),
-                    #  {'width': 3, 'color': 'green', 'filled': True,
-                    #   'fillcolor': 'yellow'}),
-                    #(((190.0,+50.0),(220.0,+65.0),(220.0,+50.0),(190.0,+65.0)),
-                    #  {'width': 10, 'color': '#00000040'})
+                    (((190.0,-30.0),(220.0,-50.0),(220.0,-30.0),(190.0,-50.0)),
+                      {'width': 3, 'color': 'green', 'filled': True,
+                       'fillcolor': 'yellow'}),
+                    (((190.0,+50.0),(220.0,+65.0),(220.0,+50.0),(190.0,+65.0)),
+                      {'width': 10, 'color': '#00000040'})
                    ]
 
         PolyViewData = [(((0,0),(230,0),(230,40),(-230,40),(-230,0)),

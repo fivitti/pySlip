@@ -46,10 +46,10 @@ InitViewLevel = 4
 # a selection of cities, position from WikiPedia, etc
 #InitViewPosition = (0.0, 51.48)             # Greenwich, England
 #InitViewPosition = (5.33, 60.389444)        # Bergen, Norway
-#InitViewPosition = (151.209444, -33.859972) # Sydney, Australia
+InitViewPosition = (151.209444, -33.859972) # Sydney, Australia
 #InitViewPosition = (-77.036667, 38.895111)  # Washington, DC, USA
 #InitViewPosition = (132.455278, 34.385278)  # Hiroshima, Japan
-InitViewPosition = (-8.008889, 31.63)       # Marrakech (مراكش), Morocco
+#InitViewPosition = (-8.008889, 31.63)       # Marrakech (مراكش), Morocco
 #InitViewPosition = (18.95, 69.65)           # Tromsø, Norway
 #InitViewPosition = (-70.933333, -53.166667) # Punta Arenas, Chile
 #InitViewPosition = (168.3475, -46.413056)   # Invercargill, New Zealand
@@ -844,6 +844,8 @@ class AppFrame(wx.Frame):
 
         selection = event.selection
 
+        log('imageSelect: event.type=%s, .selection=%s' % (str(event.type), str(selection)))
+
         # select again, turn selection off
         if selection == self.sel_image:
             self.pyslip.DeleteLayer(self.sel_image_layer)
@@ -1307,8 +1309,6 @@ class AppFrame(wx.Frame):
 
         Select a polygon to turn it on, select again to turn it off.
         """
-
-        log('polyViewSelect: id=%s, posn=%s' % (str(id), str(posn)))
 
         if posn:
             for p in PolyData:

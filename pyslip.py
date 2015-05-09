@@ -1772,16 +1772,22 @@ class PySlip(_BufferedCanvas):
                 ll_corner_vy = self.sbox_1_y
                 tr_corner_vx = self.sbox_1_x + self.sbox_w
                 tr_corner_vy = self.sbox_1_y + self.sbox_h
+                log('box select: ll_corner_vx=%d, ll_corner_vy=%d, tr_corner_vx=%d, tr_corner_vy=%d'
+                        % (ll_corner_vx, ll_corner_vy, tr_corner_vx, tr_corner_vy))
+                log('box select: self.sbox_w=%d, self.sbox_h=%d' % (self.sbox_w, self.sbox_h))
 
                 # selection box corners in tile coords
                 ll_corner_tx = float(ll_corner_vx+self.view_offset_x) / self.tile_size_x
                 ll_corner_ty = float(ll_corner_vy+self.view_offset_y) / self.tile_size_y
                 tr_corner_tx = float(tr_corner_vx+self.view_offset_x) / self.tile_size_x
                 tr_corner_ty = float(tr_corner_vy+self.view_offset_y) / self.tile_size_y
+                log('box select: ll_corner_tx=%d, ll_corner_ty=%d, tr_corner_tx=%d, tr_corner_ty=%d'
+                        % (ll_corner_tx, ll_corner_ty, tr_corner_tx, tr_corner_ty))
 
                 # selection box in geo coords
                 ll_corner_g = self.tiles.Tile2Geo(ll_corner_tx, ll_corner_ty)
                 tr_corner_g = self.tiles.Tile2Geo(tr_corner_tx, tr_corner_ty)
+                log('box select: ll_corner_g=%s, tr_corner_g=%s' % (str(ll_corner_g), str(tr_corner_g)))
 
                 # check each layer for a box select event
                 # we work on a copy as user response could change order
@@ -2365,15 +2371,15 @@ class PySlip(_BufferedCanvas):
                     result = ((x, y), data)
                     break
 
-        return result
 #FIXME must return relative selection
+        return result
 
     def GetBoxSelImagesInLayer(self, layer, p1, p2):
         """Get list of images inside box p1-p2.
 
         layer  reference to layer object we are working on
-        p1     one corner point of selection box (tile coords, (x,y))
-        p2     opposite corner point of selection box (tile coords, (x,y))
+        p1     one corner point of selection box ((x,y), geo/view)
+        p2     opposite corner point of selection box ((x,y), geo/view)
 
         We have to figure out which corner is which.
 
@@ -2384,26 +2390,40 @@ class PySlip(_BufferedCanvas):
         If nothing is selected return None.
         """
 
+        log('GetBoxSelImagesInLayer: layer=%s, p1=%s, p2=%s' % (str(layer), str(p1), str(p2)))
+
         # get canonical box limits
         (p1x, p1y) = p1
         (p2x, p2y) = p2
         lx = min(p1x, p2x)      # left x coord
         rx = max(p1x, p2x)
-        ty = max(p1y, p2y)      # top y coord
-        by = min(p1y, p2y)
+        ty = min(p1y, p2y)      # top y coord
+        by = max(p1y, p2y)
+
+        log('GetBoxSelImagesInLayer: lx=%d, rx=%d, ty=%d, by=%d' % (lx, rx, ty, by))
 
         # now construct list of images inside box
         selection = []
         data = []
         for p in layer.data:
-            (x, y, _, _, _, _, _, _, udata) = p
-            if lx <= x <= rx and by <= y <= ty:
-                selection.append((x, y))
-                data.append(udata)
+            (x, y, _, w, h, placement, offset_x, offset_y, udata) = p
+            log('GetBoxSelImagesInLayer: p=%s' % str(p))
+            if layer.map_rel:
+                # map-relative, p1, p2, x, y all in geo coordinates
+                e = self.GeoExtent(x, y, placement, w, h, offset_x, offset_y)
+            else:
+                # view-relative, p1, p2, x, y all in view coordinates
+                e = self.ViewExtent(x, y, placement, w, h, offset_x, offset_y)
+            log('GetBoxSelImagesInLayer: e=%s' % str(e))
+            if e:
+                (lv, rv, tv, bv) = e
+                if lv >= lx and rv <= rx and tv >= ty and bv <= by:
+                    log('####: append (%s, %s)' % (str(x), str(y)))
+                    selection.append((x, y))
+                    data.append(udata)
 
         if not selection:
             return None
-
         return (selection, data)
 
     def GetFirstPolygonInLayer(self, layer, pt):

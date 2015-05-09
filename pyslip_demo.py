@@ -68,26 +68,6 @@ LonLatPrecision = 3
 # startup size of the application
 DefaultAppSize = (1000, 700)
 
-# how close click has to be before point is selected
-# the value is distance squared (degrees^2)
-PointSelectDelta = 0.025
-
-# unselected point colour (rgb) and size
-PointsColour = '#ff0000'
-PointsSize = 3
-
-# Selected point colour (rgb) and size
-SelectColour = '#0000ff'
-SelectSize = 5
-
-# Polygon point colour (rgba) and size
-PolygonColour = '#0000ff'
-PolygonSize = 4
-
-# Polygon2 point colour (rgba) and size
-Polygon2Colour = '#000000'
-Polygon2Size = 4
-
 # image used for shipwrecks, glassy buttons, etc
 ShipImg = 'graphics/shipwreck.png'
 

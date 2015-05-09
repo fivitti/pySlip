@@ -1358,8 +1358,9 @@ class PySlip(_BufferedCanvas):
             (dc_w, dc_h) = dc.GetSize()
             dc_w2 = dc_w / 2
             dc_h2 = dc_h / 2
-            dc_h -= 1
-            dc_w -= 1
+# FIXME
+#            dc_h -= 1       # why?
+#            dc_w -= 1
             for (x, y, place, radius, colour, x_off, y_off, udata) in data:
                 if radius:
                     dc.SetPen(wx.Pen(colour))
@@ -1453,8 +1454,9 @@ class PySlip(_BufferedCanvas):
             # draw text on the view
             dc_w2 = dc_w / 2
             dc_h2 = dc_h / 2
-            dc_w -= 1
-            dc_h -= 1
+# FIXME
+#            dc_w -= 1   # why?
+#            dc_h -= 1
             for t in text:
                 # for each text element, get unpacked data
                 (x, y, tdata, place, radius, colour, textcolour,
@@ -1529,8 +1531,9 @@ class PySlip(_BufferedCanvas):
             (dc_w, dc_h) = dc.GetSize()
             dc_w2 = dc_w / 2
             dc_h2 = dc_h / 2
-            dc_w -= 1
-            dc_h -= 1
+# FIXME
+#            dc_w -= 1   # why?
+#            dc_h -= 1
             for (p, place, width, colour, closed,
                  filled, fillcolour, x_off, y_off, udata) in data:
                 # fetch the exec code, don't refetch for each point in polygon
@@ -2217,6 +2220,8 @@ class PySlip(_BufferedCanvas):
         layer  layer object we are looking in
         pt     click geo location if map-rel, else view coords
 
+        We must look for the nearest point to the click.
+
         Return None (no selection) or (point, data) of selected point where
         point is (xgeo,ygeo) or (xview,yview) depending on layer.map_rel.
         """
@@ -2229,24 +2234,27 @@ class PySlip(_BufferedCanvas):
         result = None
         delta = layer.delta
         dist = 9999999.0        # more than possible
+
         if layer.map_rel:
+            (vptx, vpty) = self.ConvertGeo2ViewMasked(ptx, pty)
             for p in layer.data:
                 (x, y, _, _, _, _, _, data) = p
-                d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
-                if d < dist:
-                    dist = d
-                    result = ((x,y), data)
-
-            if dist <= layer.delta:
-                return result
+                pt = self.ConvertGeo2ViewMasked(x, y)
+                if pt:
+                    (vx, vy) = pt
+                    d = (vx - vptx) * (vx - vptx) + (vy - vpty) * (vy - vpty)
+                    if d < dist:
+                        dist = d
+                        result = ((x,y), data)
         else:
             dc_w = self.view_width
             dc_h = self.view_height
 
             dc_w2 = dc_w / 2
             dc_h2 = dc_h / 2
-            dc_h -= 1       # why?
-            dc_w -= 1
+# FIXME
+#            dc_h -= 1       # why?
+#            dc_w -= 1
             for p in layer.data:
                 (x, y, place, _, _, x_off, y_off, data) = p
                 exec self.point_view_placement[place]
@@ -2255,8 +2263,8 @@ class PySlip(_BufferedCanvas):
                     dist = d
                     result = ((x,y), data)
 
-            if dist <= layer.delta:
-                return result
+        if dist <= layer.delta:
+            return result
 
         return None
 
@@ -2303,8 +2311,9 @@ class PySlip(_BufferedCanvas):
 
                 dc_w2 = dc_w / 2
                 dc_h2 = dc_h / 2
-                dc_h -= 1
-                dc_w -= 1
+# FIXME
+#                dc_h -= 1   # why?
+#                dc_w -= 1
                 (x, y, place, _, _, x_off, y_off, udata) = p
                 exec self.point_view_placement[place]
                 if lx <= x <= rx and by <= y <= ty:
@@ -2481,8 +2490,9 @@ class PySlip(_BufferedCanvas):
 
                 dc_w2 = dc_w / 2
                 dc_h2 = dc_h / 2
-                dc_h -= 1       # why?
-                dc_w -= 1
+# FIXME
+#                dc_h -= 1       # why?
+#                dc_w -= 1
                 (x, y, _, place, _, _, _, _, _, x_off, y_off, data) = p
                 exec self.point_view_no_offset[place]
                 d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
@@ -2683,6 +2693,10 @@ class PySlip(_BufferedCanvas):
         event.layer_id = layer.id
         event.selection = selection
         event.data = data
+
+        # attributes with no meaning in box select
+        event.mposn = None
+        event.vposn = None
 
         self.GetEventHandler().ProcessEvent(event)
 

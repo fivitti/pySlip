@@ -2762,6 +2762,7 @@ class PySlip(_BufferedCanvas):
         view_poly = []
         for (gx, gy) in poly:
             (tx, ty) =  self.tiles.Geo2Tile(gx, gy)
+# FIXME tile/view confusion
             x = tx - self.view_offset_x
             y = ty - self.view_offset_y
             x_off = y_off = 0

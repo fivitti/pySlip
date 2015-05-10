@@ -1772,22 +1772,16 @@ class PySlip(_BufferedCanvas):
                 ll_corner_vy = self.sbox_1_y
                 tr_corner_vx = self.sbox_1_x + self.sbox_w
                 tr_corner_vy = self.sbox_1_y + self.sbox_h
-                log('box select: ll_corner_vx=%d, ll_corner_vy=%d, tr_corner_vx=%d, tr_corner_vy=%d'
-                        % (ll_corner_vx, ll_corner_vy, tr_corner_vx, tr_corner_vy))
-                log('box select: self.sbox_w=%d, self.sbox_h=%d' % (self.sbox_w, self.sbox_h))
 
                 # selection box corners in tile coords
                 ll_corner_tx = float(ll_corner_vx+self.view_offset_x) / self.tile_size_x
                 ll_corner_ty = float(ll_corner_vy+self.view_offset_y) / self.tile_size_y
                 tr_corner_tx = float(tr_corner_vx+self.view_offset_x) / self.tile_size_x
                 tr_corner_ty = float(tr_corner_vy+self.view_offset_y) / self.tile_size_y
-                log('box select: ll_corner_tx=%d, ll_corner_ty=%d, tr_corner_tx=%d, tr_corner_ty=%d'
-                        % (ll_corner_tx, ll_corner_ty, tr_corner_tx, tr_corner_ty))
 
                 # selection box in geo coords
                 ll_corner_g = self.tiles.Tile2Geo(ll_corner_tx, ll_corner_ty)
                 tr_corner_g = self.tiles.Tile2Geo(tr_corner_tx, tr_corner_ty)
-                log('box select: ll_corner_g=%s, tr_corner_g=%s' % (str(ll_corner_g), str(tr_corner_g)))
 
                 # check each layer for a box select event
                 # we work on a copy as user response could change order
@@ -1838,7 +1832,6 @@ class PySlip(_BufferedCanvas):
                         relsel = None
                         if sel:
                             (selection, data, relsel) = sel
-                            #(selection, data) = sel
                         self.RaiseEventSelect(mposn=clickpt_g, vposn=clickpt_v,
                                               layer=l, selection=sel,
                                               data=data, relsel=relsel)
@@ -2253,7 +2246,6 @@ class PySlip(_BufferedCanvas):
         else:
             dc_w = self.view_width
             dc_h = self.view_height
-
             dc_w2 = dc_w / 2
             dc_h2 = dc_h / 2
 # FIXME
@@ -2392,8 +2384,6 @@ class PySlip(_BufferedCanvas):
         If nothing is selected return None.
         """
 
-        log('GetBoxSelImagesInLayer: layer=%s, p1=%s, p2=%s' % (str(layer), str(p1), str(p2)))
-
         # get canonical box limits
         (p1x, p1y) = p1
         (p2x, p2y) = p2
@@ -2402,25 +2392,20 @@ class PySlip(_BufferedCanvas):
         ty = min(p1y, p2y)      # top y coord
         by = max(p1y, p2y)
 
-        log('GetBoxSelImagesInLayer: lx=%d, rx=%d, ty=%d, by=%d' % (lx, rx, ty, by))
-
         # now construct list of images inside box
         selection = []
         data = []
         for p in layer.data:
             (x, y, _, w, h, placement, offset_x, offset_y, udata) = p
-            log('GetBoxSelImagesInLayer: p=%s' % str(p))
             if layer.map_rel:
                 # map-relative, p1, p2, x, y all in geo coordinates
                 e = self.GeoExtent(x, y, placement, w, h, offset_x, offset_y)
             else:
                 # view-relative, p1, p2, x, y all in view coordinates
                 e = self.ViewExtent(x, y, placement, w, h, offset_x, offset_y)
-            log('GetBoxSelImagesInLayer: e=%s' % str(e))
             if e:
                 (lv, rv, tv, bv) = e
                 if lv >= lx and rv <= rx and tv >= ty and bv <= by:
-                    log('####: append (%s, %s)' % (str(x), str(y)))
                     selection.append((x, y))
                     data.append(udata)
 
@@ -2454,15 +2439,16 @@ class PySlip(_BufferedCanvas):
                     dist = d
         else:       # view-rel
             for p in layer.data:
+                (x, y, _, place, _, _, _, _, _, x_off, y_off, data) = p
+
                 dc_w = self.view_width
                 dc_h = self.view_height
-
                 dc_w2 = dc_w / 2
                 dc_h2 = dc_h / 2
 # FIXME
 #                dc_h -= 1       # why?
 #                dc_w -= 1
-                (x, y, _, place, _, _, _, _, _, x_off, y_off, data) = p
+
                 exec self.point_view_no_offset[place]
                 d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
                 if d < dist:
@@ -2499,11 +2485,26 @@ class PySlip(_BufferedCanvas):
         selection = []
         data = []
 
-        for p in layer.data:
-            (x, y, _, _, _, _, _, _, _, _, _, udata) = p
-            if lx <= x <= rx and by <= y <= ty:
-                selection.append((x, y))
-                data.append(udata)
+        if layer.map_rel:
+            # map-relative
+            for p in layer.data:
+                (x, y, _, _, _, _, _, _, _, _, _, udata) = p
+                if lx <= x <= rx and by <= y <= ty:
+                    selection.append((x, y))
+                    data.append(udata)
+        else:
+            # view-relative
+            for p in layer.data:
+                (x, y, _, place, _, _, _, _, _, x_off, y_off, udata) = p
+                dc_w = self.view_width
+                dc_h = self.view_height
+                dc_w2 = dc_w / 2
+                dc_h2 = dc_h / 2
+                exec self.point_view_placement[place]
+
+                if lx <= x <= rx and by <= y <= ty:
+                    selection.append((x, y))
+                    data.append(udata)
 
         # return appropriate result
         if selection:
@@ -2712,6 +2713,8 @@ class PySlip(_BufferedCanvas):
         This event is raised even when nothing is selected.  In that case,
         event.layer_id, .selection and .data are None.
         """
+
+        log('RaiseEventBoxSelect: selection=%s, data=%s' % (str(selection), str(data)))
 
         event = _PySlipEvent(_myEVT_PYSLIP_BOXSELECT, self.GetId())
 

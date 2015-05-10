@@ -844,7 +844,6 @@ class AppFrame(wx.Frame):
 
         selection = event.selection
         relsel = event.relsel
-        log('imageSelect: event.type=%s, .selection=%s, .relsel=%s' % (str(event.type), str(selection), str(relsel)))
 
         # select again, turn selection off
         if selection == self.sel_image:
@@ -950,7 +949,6 @@ class AppFrame(wx.Frame):
 
         selection = event.selection
         relsel = event.relsel
-        log('####: selection=%s, relsel=%s' % (str(selection), str(relsel)))
 
         # only one image selectable, remove old selection (if any)
         if self.sel_image_view_layer:
@@ -1562,7 +1560,6 @@ class AppFrame(wx.Frame):
 
         layer_id = event.layer_id
 
-        log('event: %s' % str(dir(event)))
         log('handle_select_event: event.type=%s, .mposn=%s, .vposn=%s, .selection=%s'
                 % (str(event.type), str(event.mposn), str(event.vposn), str(event.selection)))
 

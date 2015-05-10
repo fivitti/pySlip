@@ -949,6 +949,8 @@ class AppFrame(wx.Frame):
         """
 
         selection = event.selection
+        relsel = event.relsel
+        log('####: selection=%s, relsel=%s' % (str(selection), str(relsel)))
 
         # only one image selectable, remove old selection (if any)
         if self.sel_image_view_layer:
@@ -958,7 +960,7 @@ class AppFrame(wx.Frame):
 
         if selection:
             # unpack event data
-            (sel_x, sel_y) = selection     # select relative point in image
+            (sel_x, sel_y) = relsel     # select relative point in image
 
 # FIXME  This should be cleaner, user shouldn't have to know internal structure
             # figure out compass rose attributes

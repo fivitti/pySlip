@@ -1808,7 +1808,6 @@ class PySlip(_BufferedCanvas):
                         data = None
                         relsel = None
                         if sel:
-                            #(pts, data, relsel) = sel
                             (pts, data) = sel
                         self.RaiseEventBoxSelect(l, pts, data)
 
@@ -1838,12 +1837,11 @@ class PySlip(_BufferedCanvas):
                         data= None
                         relsel = None
                         if sel:
-                            #(selection, data, relsel) = sel
-                            (selection, data) = sel
+                            (selection, data, relsel) = sel
+                            #(selection, data) = sel
                         self.RaiseEventSelect(mposn=clickpt_g, vposn=clickpt_v,
-                                              layer=l,
-                                              selection=sel)
-#                                              data=data)
+                                              layer=l, selection=sel,
+                                              data=data, relsel=relsel)
 
                         # user code possibly updated screen
                         delayed_paint = True
@@ -2228,8 +2226,8 @@ class PySlip(_BufferedCanvas):
 
         We must look for the nearest point to the click.
 
-        Return None (no selection) or (point, data) of selected point where
-        point is (xgeo,ygeo) or (xview,yview) depending on layer.map_rel.
+        Return None (no selection) or (point, data, None) of selected point
+        where point is (xgeo,ygeo) or (xview,yview) depending on layer.map_rel.
         """
 
 # TODO: speed this up?  Do we need to??
@@ -2251,7 +2249,7 @@ class PySlip(_BufferedCanvas):
                     d = (vx - vptx) * (vx - vptx) + (vy - vpty) * (vy - vpty)
                     if d < dist:
                         dist = d
-                        result = ((x,y), data)
+                        result = ((x,y), data, None)
         else:
             dc_w = self.view_width
             dc_h = self.view_height
@@ -2267,7 +2265,7 @@ class PySlip(_BufferedCanvas):
                 d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
                 if d < dist:
                     dist = d
-                    result = ((x,y), data)
+                    result = ((x,y), data, None)
 
         if dist <= layer.delta:
             return result
@@ -2337,7 +2335,7 @@ class PySlip(_BufferedCanvas):
         layer  layer object we are looking in
         pt     click location, either geo (lon, lat) or view (x, y)
 
-        Returns either None if no selection or a tuple (selection, data)
+        Returns either None if no selection or a tuple (selection, data, relsel)
         where 'selection' is a tuple (xgeo,ygeo) or (xview,yview) of the object
         placement point, 'data' is the data object associated with the selected
         object and 'relsel' is the relative position within the selected object
@@ -2359,16 +2357,15 @@ class PySlip(_BufferedCanvas):
                 if e:
                     (llon, rlon, tlat, blat) = e
                     if llon <= ptx <= rlon and blat <= pty <= tlat:
-                        #result = ((x, y), data, None)
-                        result = ((x, y), data)
+                        result = ((x, y), data, None)
                         break
             else:
                 # view_relative, ptx, pty, x, y are view coords
                 e = self.ViewExtent(x, y, placement, w, h, offset_x, offset_y)
                 (lv, rv, tv, bv) = e
                 if lv <= ptx <= rv and tv <= pty <= bv:
-                    #result = ((x, y), data, None)
-                    result = ((x, y), data)
+                    relsel = (int(ptx-lv), int(pty-tv))
+                    result = ((x, y), data, relsel)
                     break
 
 #FIXME must return relative selection
@@ -2446,15 +2443,13 @@ class PySlip(_BufferedCanvas):
                 # map-relative, all points are geo coordinates
                 if self.point_in_poly_map(poly, ptx, pty,
                                           placement, offset_x, offset_y):
-                    #result = (pt, udata)
-                    result = (poly, udata)
+                    result = (poly, udata, None)
                     break
             else:
                 # view-relative, all points are view pixels
                 if self.point_in_poly_view(poly, ptx, pty,
                                            placement, offset_x, offset_y):
-                    #result = (pt, udata)
-                    result = (poly, udata)
+                    result = (poly, udata, None)
                     break
 
         return result
@@ -2493,7 +2488,7 @@ class PySlip(_BufferedCanvas):
         """
 
         (ptx, pty) = pt
-        res = None
+        result = None
         delta = layer.delta
 
         if layer.map_rel:
@@ -2501,7 +2496,7 @@ class PySlip(_BufferedCanvas):
                 (x, y, _, _, _, _, _, _, _, _, _, data) = p
                 d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
                 if d < delta:
-                    res = ((x,y), data)
+                    result = ((x,y), data, None)
                     break
         else:       # view-rel
             for p in layer.data:
@@ -2517,10 +2512,10 @@ class PySlip(_BufferedCanvas):
                 exec self.point_view_no_offset[place]
                 d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
                 if d < delta:
-                    res = ((x,y), data)
+                    result = ((x,y), data, None)
                     break
 
-        return res
+        return result
 
     def GetBoxSelTextsInLayer(self, layer, p1, p2):
         """Get list of text objects inside box p1-p2.
@@ -2668,7 +2663,8 @@ class PySlip(_BufferedCanvas):
     # flag for the select event as the user controls selectability on a
     # layer-by-layer basis.
 
-    def RaiseEventSelect(self, mposn, vposn, layer=None, selection=None, data=None):
+    def RaiseEventSelect(self, mposn, vposn, layer=None, selection=None,
+                         data=None, relsel=None):
         """Raise a point SELECT event.
 
         mposn      map coordinates of the mouse click
@@ -2677,6 +2673,7 @@ class PySlip(_BufferedCanvas):
         selection  None if no selection or a tuple (point, data) where 'point'
                    is the selected object point ((xgeo,ygeo) or (xview,yview))
                    and data is the associated data object
+        data       
 
         This event is raised even when nothing is selected.  In that case,
         event.layer_id, .selection and .data are None and .mposn and
@@ -2691,8 +2688,9 @@ class PySlip(_BufferedCanvas):
         event.layer_id = layer.id
         event.selection = None
         event.data = None
+        event.relsel = None
         if selection:
-            (event.selection, event.data) = selection
+            (event.selection, event.data, event.relsel) = selection
 
         self.GetEventHandler().ProcessEvent(event)
 

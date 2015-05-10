@@ -2428,6 +2428,88 @@ class PySlip(_BufferedCanvas):
             return None
         return (selection, data)
 
+    def GetNearestTextInLayer(self, layer, pt):
+        """Determine if clicked location selects a text object in layer data.
+
+        layer  layer object we are looking in
+        pt     click view location (xview, yview)
+
+        Return None (no selection) or data for closest text.
+
+        Just search for text 'hotspot' - just like point select.
+        Later make text sensitive (need text extent data).
+        """
+
+        (ptx, pty) = pt
+        result = None
+        delta = layer.delta
+        dist = 9999999.0
+
+        if layer.map_rel:
+            for p in layer.data:
+                (x, y, _, _, _, _, _, _, _, _, _, data) = p
+                d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
+                if d < dist:
+                    result = ((x,y), data, None)
+                    dist = d
+        else:       # view-rel
+            for p in layer.data:
+                dc_w = self.view_width
+                dc_h = self.view_height
+
+                dc_w2 = dc_w / 2
+                dc_h2 = dc_h / 2
+# FIXME
+#                dc_h -= 1       # why?
+#                dc_w -= 1
+                (x, y, _, place, _, _, _, _, _, x_off, y_off, data) = p
+                exec self.point_view_no_offset[place]
+                d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
+                if d < dist:
+                    result = ((x,y), data, None)
+                    dist = d
+
+        if dist <= delta:
+            return result
+        return None
+
+    def GetBoxSelTextsInLayer(self, layer, p1, p2):
+        """Get list of text objects inside box p1-p2.
+
+        layer  reference to layer object we are working on
+        p1     one corner point of selection box (geo coords, (x,y))
+        p2     opposite corner point of selection box (geo coords, (x,y))
+
+        We have to figure out which corner is which.
+
+        Returns (selection, data) where 'selection' is a list of text positions
+        (xgeo,ygeo) and 'data' is a list of userdata objects associated with the
+        selected text objects.  Returns None if no selection.
+        """
+
+        # get canonical box limits
+        (p1x, p1y) = p1
+        (p2x, p2y) = p2
+        lx = min(p1x, p2x)      # left x coord
+        rx = max(p1x, p2x)
+        ty = max(p1y, p2y)      # top y coord
+        by = min(p1y, p2y)
+
+        # get a list of points inside the selection box
+        selection = []
+        data = []
+
+        for p in layer.data:
+            (x, y, _, _, _, _, _, _, _, _, _, udata) = p
+            if lx <= x <= rx and by <= y <= ty:
+                selection.append((x, y))
+                data.append(udata)
+
+        # return appropriate result
+        if selection:
+            return (selection, data)
+        return None
+
     def GetFirstPolygonInLayer(self, layer, pt):
         """Get all polygon objects clicked in layer data.
 
@@ -2479,85 +2561,6 @@ class PySlip(_BufferedCanvas):
 # FIXME
 
         return (selection, data)
-
-    def GetNearestTextInLayer(self, layer, pt):
-        """Determine if clicked location selects a text object in layer data.
-
-        layer  layer object we are looking in
-        pt     click view location (xview, yview)
-
-        Return None (no selection) or data for closest text.
-
-        Just search for text 'hotspot' - just like point select.
-        Later make text sensitive (need text extent data).
-        """
-
-        (ptx, pty) = pt
-        result = None
-        delta = layer.delta
-
-        if layer.map_rel:
-            for p in layer.data:
-                (x, y, _, _, _, _, _, _, _, _, _, data) = p
-                d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
-                if d < delta:
-                    result = ((x,y), data, None)
-                    break
-        else:       # view-rel
-            for p in layer.data:
-                dc_w = self.view_width
-                dc_h = self.view_height
-
-                dc_w2 = dc_w / 2
-                dc_h2 = dc_h / 2
-# FIXME
-#                dc_h -= 1       # why?
-#                dc_w -= 1
-                (x, y, _, place, _, _, _, _, _, x_off, y_off, data) = p
-                exec self.point_view_no_offset[place]
-                d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
-                if d < delta:
-                    result = ((x,y), data, None)
-                    break
-
-        return result
-
-    def GetBoxSelTextsInLayer(self, layer, p1, p2):
-        """Get list of text objects inside box p1-p2.
-
-        layer  reference to layer object we are working on
-        p1     one corner point of selection box (geo coords, (x,y))
-        p2     opposite corner point of selection box (geo coords, (x,y))
-
-        We have to figure out which corner is which.
-
-        Returns (selection, data) where 'selection' is a list of text positions
-        (xgeo,ygeo) and 'data' is a list of userdata objects associated with the
-        selected text objects.  Returns None if no selection.
-        """
-
-        # get canonical box limits
-        (p1x, p1y) = p1
-        (p2x, p2y) = p2
-        lx = min(p1x, p2x)      # left x coord
-        rx = max(p1x, p2x)
-        ty = max(p1y, p2y)      # top y coord
-        by = min(p1y, p2y)
-
-        # get a list of points inside the selection box
-        selection = []
-        data = []
-
-        for p in layer.data:
-            (x, y, _, _, _, _, _, _, _, _, _, udata) = p
-            if lx <= x <= rx and by <= y <= ty:
-                selection.append((x, y))
-                data.append(udata)
-
-        # return appropriate result
-        if selection:
-            return (selection, data)
-        return None
 
     ######
     # The next two routines could be folded into one as they are the same.

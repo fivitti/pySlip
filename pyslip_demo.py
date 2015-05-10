@@ -843,8 +843,8 @@ class AppFrame(wx.Frame):
         """
 
         selection = event.selection
-
-        log('imageSelect: event.type=%s, .selection=%s' % (str(event.type), str(selection)))
+        relsel = event.relsel
+        log('imageSelect: event.type=%s, .selection=%s, .relsel=%s' % (str(event.type), str(selection), str(relsel)))
 
         # select again, turn selection off
         if selection == self.sel_image:

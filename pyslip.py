@@ -2357,7 +2357,12 @@ class PySlip(_BufferedCanvas):
                 if e:
                     (llon, rlon, tlat, blat) = e
                     if llon <= ptx <= rlon and blat <= pty <= tlat:
-                        result = ((x, y), data, None)
+                        # figure out relsel point
+                        (ptx, ty) = pt
+                        (vptx, vpty) = self.ConvertGeo2ViewMasked(ptx, pty)
+                        (imgx, imgy) = self.ConvertGeo2ViewMasked(x, y)
+                        relsel = (int(vptx - imgx), int(vpty - imgy))
+                        result = ((x, y), data, relsel)
                         break
             else:
                 # view_relative, ptx, pty, x, y are view coords

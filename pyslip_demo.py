@@ -1217,7 +1217,7 @@ class AppFrame(wx.Frame):
             self.pyslip.SetLayerSelectable(layer, False)
 
     def polySelect(self, event):
-        """Map-relative polygon select event from pyslip.
+        """Map- and view-relative polygon select event from pyslip.
 
         event  the event that contains these attributes:
                    type       the type of point selection: single or box
@@ -1250,7 +1250,7 @@ class AppFrame(wx.Frame):
                                                   show_levels=[3,4],
                                                   name='<sel_poly>')
         else:   # box select, not yet implemented
-            self.pyslip.info('Polygon box-selection not yet implemented')
+            self.unimplemented('polygon box-selection')
 
         return True
 
@@ -1329,6 +1329,16 @@ class AppFrame(wx.Frame):
                                                       radius=5, visible=True,
                                                       name='<sel_polyv>')
         return True
+
+    ######
+    # Small utility routines
+    ######
+
+    def unimplemented(self, msg):
+        """Issue an "Sorry, ..." message."""
+
+        self.pyslip.warn('Sorry, %s is not implemented at the moment.' % msg)
+
 
     ######
     # Finish initialization of data, etc

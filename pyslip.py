@@ -2949,8 +2949,28 @@ class PySlip(_BufferedCanvas):
         return result
 
     def info(self, msg):
-        """Display graphical warning message."""
+        """Display an information message, log and graphically."""
 
-        log(msg)
-        wx.MessageBox(msg, 'Info', wx.OK | wx.ICON_INFORMATION)
+        log_msg = '# ' + msg
+        length = len(log_msg)
+        prefix = '#### Information '
+        banner = prefix + '#'*(80 - len(log_msg) - len(prefix))
+        log(banner)
+        log(log_msg)
+        log(banner)
+
+        wx.MessageBox(msg, 'Warning', wx.OK | wx.ICON_INFORMATION)
+
+    def warn(self, msg):
+        """Display a warning message, log and graphically."""
+
+        log_msg = '# ' + msg
+        length = len(log_msg)
+        prefix = '#### Warning '
+        banner = prefix + '#'*(80 - len(log_msg) - len(prefix))
+        log(banner)
+        log(log_msg)
+        log(banner)
+
+        wx.MessageBox(msg, 'Warning', wx.OK | wx.ICON_ERROR)
 

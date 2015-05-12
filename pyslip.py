@@ -31,6 +31,7 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
+import traceback
 from PIL import Image
 import wx
 
@@ -2582,15 +2583,13 @@ class PySlip(_BufferedCanvas):
                 dc_w2 = dc_w/2.0
                 dc_h = float(self.view_height)
                 dc_h2 = dc_h/2.0
-#                w2 = w/2.0
-#                h2 = h/2.0
 
                 inside = True
                 for (x, y) in poly:
                     x_off = offset_x
                     y_off = offset_y
                     exec self.point_view_placement[placement]
-                    if not (lx <= x <= rx and by <= y <= ty):
+                    if not (lx <= x <= rx and ty <= y <= by):
                         inside = False
                         break
                 if inside:
@@ -2841,13 +2840,14 @@ class PySlip(_BufferedCanvas):
 
         # convert polygon and placement into list of (x,y) tuples
         view_poly = []
-        for (gx, gy) in poly:
-            (tx, ty) =  self.tiles.Geo2Tile(gx, gy)
-# FIXME tile/view confusion
-            x = tx - self.view_offset_x
-            y = ty - self.view_offset_y
-            x_off = y_off = 0
-            exec self.point_map_placement[placement]
+        for (x, y) in poly:
+            x_off = offset_x
+            y_off = offset_y
+            dc_w = float(self.view_width)
+            dc_w2 = dc_w/2.0
+            dc_h = float(self.view_height)
+            dc_h2 = dc_h/2.0
+            exec self.point_view_placement[placement]
             view_poly.append((x, y))
 
         # decide if (ptx,pty) is inside polygon
@@ -3061,3 +3061,4 @@ class PySlip(_BufferedCanvas):
                 tr_corner_vy = self.sbox_1_y + self.sbox_h
 
         return (ll_corner_vx, ll_corner_vy, tr_corner_vx, tr_corner_vy)
+

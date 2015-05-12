@@ -1226,31 +1226,45 @@ class AppFrame(wx.Frame):
 
         The selection could be a single or box select.
 
-        Select a polygon to turn it on, select again to turn it off.
+        Select a polygon to turn it on, any other polygon selection turns
+        it off, unless previous selection again selected.
         """
 
         selection = event.selection
 
         if event.type == pyslip.EventSelect:
+            # turn any previous selection off
+            if self.sel_poly_layer:
+                self.pyslip.DeleteLayer(self.sel_poly_layer)
+                self.sel_poly_layer = None
+
             if selection:
-                if selection == self.sel_poly:
-                    # polygon selected again, turn selection off
-                    self.pyslip.DeleteLayer(self.sel_poly_layer)
-                    self.sel_poly = self.sel_poly_layer = None
-                else:
-                    # new selection
-                    if self.sel_poly_layer:
-                        # deselect previously selected poly
-                        self.pyslip.DeleteLayer(self.sel_poly_layer)
-                    self.sel_poly = selection
-                    self.sel_poly_layer = \
-                        self.pyslip.AddPointLayer(selection, map_rel=True,
-                                                  color='#ff00ff',
-                                                  radius=5, visible=True,
-                                                  show_levels=[3,4],
-                                                  name='<sel_poly>')
-        else:   # box select, not yet implemented
-            self.unimplemented('polygon box-selection')
+                # new selection
+                self.sel_poly_layer = \
+                    self.pyslip.AddPointLayer(selection, map_rel=True,
+                                              color='#ff00ff',
+                                              radius=5, visible=True,
+                                              show_levels=[3,4],
+                                              name='<sel_poly>')
+        else:
+            # .seletion: [((x,y),...), ...]
+            # box select
+            if self.sel_poly_layer:
+                # turn any previous selection off
+                self.pyslip.DeleteLayer(self.sel_poly_layer)
+                self.sel_poly_layer = None
+
+            if selection:
+                # new selection, flatten all polygon points into one iterable
+                points = []
+                for poly in selection:
+                    points.extend(poly)
+                self.sel_poly_layer = \
+                    self.pyslip.AddPointLayer(points, map_rel=True,
+                                              color='#ff00ff',
+                                              radius=5, visible=True,
+                                              show_levels=[3,4],
+                                              name='<sel_poly>')
 
         return True
 
@@ -1296,8 +1310,7 @@ class AppFrame(wx.Frame):
             self.del_select_handler(layer)
             self.pyslip.SetLayerSelectable(layer, False)
 
-#    def polyViewSelect(self, event): # id, posn=None):
-    def polyViewSelect(self, id, posn=None):
+    def polyViewSelect(self, event):
         """View-relative polygon select event from pyslip.
 
         event  the event that contains these attributes:
@@ -1310,24 +1323,67 @@ class AppFrame(wx.Frame):
         Select a polygon to turn it on, select again to turn it off.
         """
 
-        if posn:
-            for p in PolyData:
-                pp = (p[0], p[1])
-                if pp == posn:
-                    if pp == self.sel_view_poly:
-                        # select again, turn polygon off
-                        self.view_sel_poly = None
-                        self.pyslip.DeleteLayer(self.sel_poly_view_layer)
-                        self.sel_poly_view_layer = None
-                    else:
-                        if self.sel_poly_view_layer:
-                            self.pyslip.DeleteLayer(self.sel_poly_view_layer)
-                        self.view_sel_poly = pp
-                        self.sel_poly_view_layer = \
-                            self.pyslip.AddPointLayer((pp,), map_rel=True,
-                                                      color='#80ffff',
-                                                      radius=5, visible=True,
-                                                      name='<sel_polyv>')
+#        if posn:
+#            for p in PolyData:
+#                pp = (p[0], p[1])
+#                if pp == posn:
+#                    if pp == self.sel_view_poly:
+#                        # select again, turn polygon off
+#                        self.view_sel_poly = None
+#                        self.pyslip.DeleteLayer(self.sel_poly_view_layer)
+#                        self.sel_poly_view_layer = None
+#                    else:
+#                        if self.sel_poly_view_layer:
+#                            self.pyslip.DeleteLayer(self.sel_poly_view_layer)
+#                        self.view_sel_poly = pp
+#                        self.sel_poly_view_layer = \
+#                            self.pyslip.AddPointLayer((pp,), map_rel=True,
+#                                                      color='#80ffff',
+#                                                      radius=5, visible=True,
+#                                                      name='<sel_polyv>')
+#        return True
+
+        selection = event.selection
+
+        if event.type == pyslip.EventSelect:
+            # turn any previous selection off
+            if self.sel_poly_view_layer:
+                self.pyslip.DeleteLayer(self.sel_poly_view_layer)
+                self.sel_poly_view_layer = None
+
+            if selection:
+                # new selection
+                self.sel_poly_view_layer = \
+                    self.pyslip.AddPointLayer(selection, map_rel=True,
+                                              color='#ff00ff',
+                                              radius=5, visible=True,
+                                              show_levels=[3,4],
+                                              name='<sel_view_poly>')
+        else:
+            # box select
+            if self.sel_poly_view_layer:
+                # turn any previous selection off
+                self.pyslip.DeleteLayer(self.sel_poly_view_layer)
+                self.sel_poly_view_layer = None
+
+            if selection:
+                # new selection, flatten all polygon points into one iterable
+                points = []
+                for poly in selection:
+                    points.extend(poly)
+                if points[0] == points[-1]:
+                    points.pop()
+                # figure out polygon placement attribute
+                poly_placement = PolyViewData[0][1]['placement'] 
+
+                self.sel_poly_view_layer = \
+                    self.pyslip.AddPointLayer(points, map_rel=False,
+                                              placement=poly_placement,
+                                              color='#ff0000',
+                                              radius=5, visible=True,
+                                              show_levels=[3,4],
+                                              name='<sel_view_boxpoly>')
+
         return True
 
     ######
@@ -1500,7 +1556,7 @@ class AppFrame(wx.Frame):
                       {'width': 10, 'color': '#00000040'})
                    ]
 
-        PolyViewData = [(((0,0),(230,0),(230,40),(-230,40),(-230,0)),
+        PolyViewData = [(((230,0),(230,40),(-230,40),(-230,0)),
                         {'width': 3, 'color': '#00ff00ff', 'closed': True,
                          'placement': 'cn', 'offset_y': 1})]
 

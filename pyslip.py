@@ -414,7 +414,7 @@ class PySlip(_BufferedCanvas):
                             None: '',
                             False: '',
                             '':   ''}
-    placements.append(point_view_placement)
+#    placements.append(point_view_placement)
 
     # dictionary for map-relative image placement
     # assumes variables x, y, w, h, w2, h2, x_off & y_off are set
@@ -1768,10 +1768,8 @@ class PySlip(_BufferedCanvas):
                 log('box select')
                 # possible box selection
                 # get selection box in view coordinates
-                ll_corner_vx = self.sbox_1_x
-                ll_corner_vy = self.sbox_1_y
-                tr_corner_vx = self.sbox_1_x + self.sbox_w
-                tr_corner_vy = self.sbox_1_y + self.sbox_h
+                (ll_corner_vx, ll_corner_vy,
+                        tr_corner_vx, tr_corner_vy) = self.sel_box_canonical()
 
                 # selection box corners in tile coords
                 ll_corner_tx = float(ll_corner_vx+self.view_offset_x) / self.tile_size_x
@@ -2512,7 +2510,7 @@ class PySlip(_BufferedCanvas):
         return None
 
     def GetFirstPolygonInLayer(self, layer, pt):
-        """Get all polygon objects clicked in layer data.
+        """Get first polygon objects clicked in layer data.
 
         layer  layer object we are looking in
         pt     click geo location (lon, lat)
@@ -2556,11 +2554,51 @@ class PySlip(_BufferedCanvas):
         associated with each polygon selected.
         """
 
+        # get canonical box limits
+        (lx, by) = p1
+        (rx, ty) = p2
+
+        # step through all polygons, find ones inside box select
         selection = []
         data = []
 
-# FIXME
+        for p in layer.data:
+            (poly, placement, _, _, _, _, _, offset_x, offset_y, udata) = p
+            if layer.map_rel:
+                # map-relative, all points are geo coordinates, convert to view
+                inside = True
+                for (x, y) in poly:
+                    # map-rel poly, points in geo coords
+                    if not (lx <= x <= rx and by <= y <= ty):
+                        inside = False
+                        break
+                if inside:
+                    selection.append(poly)
+                    data.append(udata)
+            else:
+                # view-relative, all points are view pixels
+                # prepare the half values, etc
+                dc_w = float(self.view_width)
+                dc_w2 = dc_w/2.0
+                dc_h = float(self.view_height)
+                dc_h2 = dc_h/2.0
+#                w2 = w/2.0
+#                h2 = h/2.0
 
+                inside = True
+                for (x, y) in poly:
+                    x_off = offset_x
+                    y_off = offset_y
+                    exec self.point_view_placement[placement]
+                    if not (lx <= x <= rx and by <= y <= ty):
+                        inside = False
+                        break
+                if inside:
+                    selection.append(poly)
+                    data.append(udata)
+
+        if not selection:
+            return None
         return (selection, data)
 
     ######
@@ -2974,3 +3012,52 @@ class PySlip(_BufferedCanvas):
 
         wx.MessageBox(msg, 'Warning', wx.OK | wx.ICON_ERROR)
 
+    def sel_box_canonical(self):
+        """'Canonicalize' a selection box limits.
+
+        Uses instance variables (all in view coordinates):
+            self.sbox_1_x    X position of box select start
+            self.sbox_1_y    Y position of box select start
+            self.sbox_w      width of selection box (start to finish)
+            self.sbox_h      height of selection box (start to finish)
+
+        Four ways to draw the selection box (starting in each of the four
+        corners), so four cases.
+
+        The sign of the width/height values are decided with respect to the
+        origin at view top-left corner.  That is, a negative width means
+        the box was started at the right and swept to the left.  A negative
+        height means the selection started low and swept high in the view.
+
+        Returns a tuple (llx, llr, urx, ury) where llx is lower left X, ury is
+        upper right corner Y, etc.  All returned values in view coordinates.
+        """
+
+        if self.sbox_h >= 0:
+            if self.sbox_w >= 0:
+                # 2
+                ll_corner_vx = self.sbox_1_x
+                ll_corner_vy = self.sbox_1_y + self.sbox_h
+                tr_corner_vx = self.sbox_1_x + self.sbox_w
+                tr_corner_vy = self.sbox_1_y
+            else:
+                # 1
+                ll_corner_vx = self.sbox_1_x + self.sbox_w
+                ll_corner_vy = self.sbox_1_y + self.sbox_h
+                tr_corner_vx = self.sbox_1_x
+                tr_corner_vy = self.sbox_1_y
+        else:
+            if self.sbox_w >= 0:
+                # 3
+                ll_corner_vx = self.sbox_1_x
+                ll_corner_vy = self.sbox_1_y
+                tr_corner_vx = self.sbox_1_x + self.sbox_w
+                tr_corner_vy = self.sbox_1_y + self.sbox_h
+            else:
+                # 4
+                ll_corner_vx = self.sbox_1_x + self.sbox_w
+                ll_corner_vy = self.sbox_1_y
+                tr_corner_vx = self.sbox_1_x
+                tr_corner_vy = self.sbox_1_y + self.sbox_h
+
+        return (ll_corner_vx, ll_corner_vy, tr_corner_vx, tr_corner_vy)

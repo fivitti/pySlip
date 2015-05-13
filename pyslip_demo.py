@@ -534,7 +534,7 @@ class AppFrame(wx.Frame):
         # create widgets
         text_obj = LayerControl(parent, 'Text, map relative %s'
                                         % str(MRTextShowLevels),
-                                selectable=True, editable=True)
+                                selectable=True, editable=False)
 
         # tie to event handler(s)
         text_obj.Bind(EVT_ONOFF, self.textOnOff)
@@ -843,7 +843,7 @@ class AppFrame(wx.Frame):
         """
 
         selection = event.selection
-        relsel = event.relsel
+        #relsel = event.relsel
 
         # select again, turn selection off
         if selection == self.sel_image:
@@ -904,7 +904,9 @@ class AppFrame(wx.Frame):
             if self.sel_image_view_layer:
                 self.pyslip.DeleteLayer(self.sel_image_view_layer)
                 self.sel_image_view_layer = None
-                self.sel_image_view_point = None
+            if self.sel_imagepoint_view_layer:
+                self.pyslip.DeleteLayer(self.sel_imagepoint_view_layer)
+                self.sel_imagepoint_view_layer = None
 
     def imageViewShowOnOff(self, event):
         """Handle ShowOnOff event for image layer control."""
@@ -912,11 +914,15 @@ class AppFrame(wx.Frame):
         if event.state:
             self.pyslip.ShowLayer(self.image_view_layer)
             if self.sel_image_view_layer:
-                self.pyslip.ShowLayer(self.sel_image_layer)
+                self.pyslip.ShowLayer(self.sel_image_view_layer)
+            if self.sel_imagepoint_view_layer:
+                self.pyslip.ShowLayer(self.sel_imagepoint_view_layer)
         else:
             self.pyslip.HideLayer(self.image_view_layer)
             if self.sel_image_view_layer:
-                self.pyslip.HideLayer(self.sel_image_layer)
+                self.pyslip.HideLayer(self.sel_image_view_layer)
+            if self.sel_imagepoint_view_layer:
+                self.pyslip.HideLayer(self.sel_imagepoint_view_layer)
 
     def imageViewSelectOnOff(self, event):
         """Handle SelectOnOff event for image layer control."""
@@ -950,17 +956,21 @@ class AppFrame(wx.Frame):
         selection = event.selection
         relsel = event.relsel
 
-        # only one image selectable, remove old selection (if any)
+        # only one image selectable, remove old selections (if any)
         if self.sel_image_view_layer:
             self.pyslip.DeleteLayer(self.sel_image_view_layer)
+            self.sel_image_view_layer = None
+        if self.sel_imagepoint_view_layer:
             self.pyslip.DeleteLayer(self.sel_imagepoint_view_layer)
-            self.sel_image_view_layer = self.sel_imagepoint_view_layer = None
+            self.sel_imagepoint_view_layer = None
 
         if selection:
-            # unpack event data
+            # unpack event relative selection point
             (sel_x, sel_y) = relsel     # select relative point in image
 
 # FIXME  This should be cleaner, user shouldn't have to know internal structure
+# FIXME  or fiddle with placement perturbations
+
             # figure out compass rose attributes
             attr_dict = ImageViewData[0][3]
             img_placement = attr_dict['placement']
@@ -1005,9 +1015,6 @@ class AppFrame(wx.Frame):
             pdata = eval(poly_place_coords[img_placement])
             self.sel_image_view_layer = \
                 self.pyslip.AddPolygonLayer((pdata,), map_rel=False,
-#                                            placement=img_placement,
-#                                            color='green',
-#                                            width=5, visible=True,
                                             name='<sel_image_view_outline>',
                                            )
 

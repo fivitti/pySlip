@@ -46,8 +46,6 @@ except ImportError:
 
 __version__ = '3.0'
 
-__all__ = ['PySlip']
-
 # type of SELECT events
 (EventLevel, EventPosition, EventSelect, EventBoxSelect,
     EventPolySelect, EventPolyBoxSelect, EventRightSelect) = range(7)
@@ -74,8 +72,6 @@ def point_inside_polygon(x, y, poly):
 
     # we want a *copy* of original iterable plus extra wraparound point
     l_poly = list(poly)
-#FASTER
-#    l_poly = poly[:]
     l_poly.append(l_poly[0])  # ensure poly wraps around
 
     inside = False
@@ -415,7 +411,7 @@ class PySlip(_BufferedCanvas):
                             None: '',
                             False: '',
                             '':   ''}
-#    placements.append(point_view_placement)
+    placements.append(point_view_placement)
 
     # dictionary for map-relative image placement
     # assumes variables x, y, w, h, w2, h2, x_off & y_off are set
@@ -659,10 +655,6 @@ class PySlip(_BufferedCanvas):
 
     # layer type values
     (TypePoint, TypeImage, TypeText, TypePoly) = range(4)
-#    TypePoint = 0
-#    TypeImage = 1
-#    TypePoly = 2
-#    TypeText = 3
 
 
     def __init__(self, parent, tile_src=None, start_level=None,
@@ -724,8 +716,6 @@ class PySlip(_BufferedCanvas):
 
         # various other state variables
         self.was_dragging = False               # True if dragging map
-        self.move_dx = 0                        # drag delta values
-        self.move_dy = 0
         self.last_drag_x = None                 # previous drag position
         self.last_drag_y = None
 
@@ -1165,12 +1155,8 @@ class PySlip(_BufferedCanvas):
 
             # if polygon is to be filled, ensure closed
             if close:
-#FASTER
                 p = list(p)     # must get a *copy*
                 p.append(p[0])
-#                new_p = p[:]
-#                p = new_p
-#                p.append(p[0])
 
             draw_data.append((p, placement.lower(), width, colour, close,
                               filled, fillcolour, offset_x, offset_y, udata))
@@ -1359,9 +1345,6 @@ class PySlip(_BufferedCanvas):
             (dc_w, dc_h) = dc.GetSize()
             dc_w2 = dc_w / 2
             dc_h2 = dc_h / 2
-# FIXME
-#            dc_h -= 1       # why?
-#            dc_w -= 1
             for (x, y, place, radius, colour, x_off, y_off, udata) in data:
                 if radius:
                     dc.SetPen(wx.Pen(colour))
@@ -1455,9 +1438,6 @@ class PySlip(_BufferedCanvas):
             # draw text on the view
             dc_w2 = dc_w / 2
             dc_h2 = dc_h / 2
-# FIXME
-#            dc_w -= 1   # why?
-#            dc_h -= 1
             for t in text:
                 # for each text element, get unpacked data
                 (x, y, tdata, place, radius, colour, textcolour,
@@ -1532,9 +1512,6 @@ class PySlip(_BufferedCanvas):
             (dc_w, dc_h) = dc.GetSize()
             dc_w2 = dc_w / 2
             dc_h2 = dc_h / 2
-# FIXME
-#            dc_w -= 1   # why?
-#            dc_h -= 1
             for (p, place, width, colour, closed,
                  filled, fillcolour, x_off, y_off, udata) in data:
                 # fetch the exec code, don't refetch for each point in polygon
@@ -1587,23 +1564,23 @@ class PySlip(_BufferedCanvas):
         self.RecalcViewLonLatLimits()
         self.Update()
 
-    def GotoLevelAndPosition(self, level, posn):
+    def GotoLevelAndPosition(self, level, gposn):
         """Goto a map level and set view to centre on a position.
 
         level  the map level to use
-        posn   a tuple (lon,lat) to centre view on
+        gposn  a tuple (lon,lat) to centre view on
 
         Does nothing if we can't use desired level.
         """
 
         if self.ZoomToLevel(level):
-            self.GotoPosition(posn)
+            self.GotoPosition(gposn)
 
-    def ZoomToArea(self, posn, size):
+    def ZoomToArea(self, gposn, size):
         """Set view to level and position to view an area.
 
-        posn  a tuple (lon,lat) to centre view on
-        size  a tuple (width,height) of area in degrees
+        gposn  a tuple (lon,lat) to centre view on
+        size   a tuple (width,height) of area in degrees
 
         Centre an area and zoom to view such that the area will fill
         approximately 50% of width or height, whichever is greater.
@@ -1625,7 +1602,7 @@ class PySlip(_BufferedCanvas):
             if awidth >= view_deg_width / 2 or aheight >= view_deg_height / 2:
                 break
 
-        self.GotoLevelAndPosition(level, posn)
+        self.GotoLevelAndPosition(level, gposn)
 
     ######
     # Convert between geo and view coordinates
@@ -1670,7 +1647,6 @@ class PySlip(_BufferedCanvas):
 
         # get current mouse position
         mouse_view = event.GetPositionTuple()
-        #(xgeo, ygeo) = self.View2Geo(mouse_view)
         mouse_map = self.View2Geo(mouse_view)
         self.RaiseEventPosition(mouse_map, mouse_view)
 
@@ -1766,21 +1742,19 @@ class PySlip(_BufferedCanvas):
         # if any layers interested, inform of possible select
         if not self.was_dragging:
             if self.is_box_select:
-                log('box select')
-                # possible box selection
-                # get selection box in view coordinates
-                (ll_corner_vx, ll_corner_vy,
-                        tr_corner_vx, tr_corner_vy) = self.sel_box_canonical()
+                log('OnLeftUp: box select')
+                # get canonical selection box in view coordinates
+                (ll_vx, ll_vy, tr_vx, tr_vy) = self.sel_box_canonical()
 
                 # selection box corners in tile coords
-                ll_corner_tx = float(ll_corner_vx+self.view_offset_x) / self.tile_size_x
-                ll_corner_ty = float(ll_corner_vy+self.view_offset_y) / self.tile_size_y
-                tr_corner_tx = float(tr_corner_vx+self.view_offset_x) / self.tile_size_x
-                tr_corner_ty = float(tr_corner_vy+self.view_offset_y) / self.tile_size_y
+                ll_tx = float(ll_vx+self.view_offset_x) / self.tile_size_x
+                ll_ty = float(ll_vy+self.view_offset_y) / self.tile_size_y
+                tr_tx = float(tr_vx+self.view_offset_x) / self.tile_size_x
+                tr_ty = float(tr_vy+self.view_offset_y) / self.tile_size_y
 
                 # selection box in geo coords
-                ll_corner_g = self.tiles.Tile2Geo(ll_corner_tx, ll_corner_ty)
-                tr_corner_g = self.tiles.Tile2Geo(tr_corner_tx, tr_corner_ty)
+                ll_g = self.tiles.Tile2Geo(ll_tx, ll_ty)
+                tr_g = self.tiles.Tile2Geo(tr_tx, tr_ty)
 
                 # check each layer for a box select event
                 # we work on a copy as user response could change order
@@ -1790,28 +1764,26 @@ class PySlip(_BufferedCanvas):
                     if l.selectable and l.visible:
                         if l.map_rel:
                             # map-relative, get all points selected (if any)
-                            sel = self.layerBSelHandler[l.type]\
-                                      (l, ll_corner_g, tr_corner_g)
+                            sel = self.layerBSelHandler[l.type](l, ll_g, tr_g)
                         else:
                             # view-relative
-                            sel = self.layerBSelHandler[l.type]\
-                                      (l, (ll_corner_vx, ll_corner_vy),
-                                      (tr_corner_vx, tr_corner_vy))
+                            sel = self.layerBSelHandler[l.type](l,
+                                                                (ll_vx, ll_vy),
+                                                                (tr_vx, tr_vy))
                         pts = None
                         data = None
                         relsel = None
                         if sel:
-                            (pts, data) = sel
+                            (pts, data, relsel) = sel
                         self.RaiseEventBoxSelect(l, pts, data)
 
                         # user code possibly updated screen
                         delayed_paint = True
                 self.is_box_select = False
             else:
-                log('point select')
+                log('OnLeftUp: point select')
                 # possible point selection, get click point in view coords
                 clickpt_v = event.GetPositionTuple()
-                (clickpt_vx, clickpt_vy) = clickpt_v
 
                 # get click point in geo coords
                 clickpt_g = self.View2Geo(clickpt_v)
@@ -1859,20 +1831,21 @@ class PySlip(_BufferedCanvas):
         # ignore next Left UP event
         self.ignore_next_up = True
 
-        # TODO: should ignore double-click off the map, but within view
-        # a possible workaround is to limit minimum view level
+        # FIXME: should ignore double-click off the map, but within view
+        # FIXME: a possible workaround is to limit minimum view level
 
         # get view coords of mouse double click, want same centre afterwards
-        xy = event.GetPositionTuple()
+        vposn = event.GetPositionTuple()
+        gposn = self.View2Geo(vposn)
 
         if event.ShiftDown():
             # zoom out if shift key also down
             if self.ZoomToLevel(self.level - 1):
-                self.ZoomOut(xy)
+                self.ZoomOut(gposn)
         else:
             # zoom in
             if self.ZoomToLevel(self.level + 1):
-                self.ZoomIn(xy)
+                self.ZoomIn(gposn)
 
     def OnMiddleDown(self, event):
         """Middle mouse button down.  Do nothing in this version."""
@@ -1916,12 +1889,11 @@ class PySlip(_BufferedCanvas):
         # if any layers interested, inform of possible select
         if self.is_box_select:
             # possible box selection
-            ll_corner_x = (self.sbox_1_x+self.view_offset_x) / self.tile_size_x
-            ll_corner_y = (self.sbox_1_y+self.view_offset_y) / self.tile_size_y
+            ll_x = (self.sbox_1_x + self.view_offset_x) / self.tile_size_x
+            ll_y = (self.sbox_1_y + self.view_offset_y) / self.tile_size_y
 
-            ll_corner_g = self.tiles.Tile2Geo(ll_corner_x, ll_corner_y)
-            tr_corner_g = self.tiles.Tile2Geo(ll_corner_x + self.sbox_w,
-                                              ll_corner_y + self.sbox_h)
+            ll_g = self.tiles.Tile2Geo(ll_x, ll_y)
+            tr_g = self.tiles.Tile2Geo(ll_x + self.sbox_w, ll_y + self.sbox_h)
 
             # check each layer for a box select event
             # we work on a copy as user response could change order
@@ -1930,27 +1902,26 @@ class PySlip(_BufferedCanvas):
                 if l.selectable and l.visible:   # and l.event_box_select:
                     if l.map_rel:
                         # map-relative, get all points selected (if any)
-                        pts = self.layerBSelHandler[l.type](l, ll_corner_g,
-                                                            tr_corner_g)
+                        pts = self.layerBSelHandler[l.type](l, ll_g, tr_g)
                     else:
                         # view-relative
                         pts = self.layerBSelHandler[l.type](l,
-                                                            (ll_corner_x,
-                                                             ll_corner_y),
-                                                            (ll_corner_x+self.sbox_w,
-                                                             ll_corner_y+self.sbox_h))
+                                                            (ll_x, ll_y),
+                                                            (ll_x+self.sbox_w,
+                                                             ll_y+self.sbox_h))
                     self.RaiseEventSelect(EventRightBoxSelect, l, pts)
 
                     # user code possibly updated screen
                     delayed_paint = True
             self.is_box_select = False
         else:
-            # possible point selection
-            clickpt_v = event.GetPositionTuple()
-            (clickpt_v_x, clickpt_v_y) = clickpt_v
-            clickpt_v_x = clickpt_v_x + self.view_offset_x
-            clickpt_v_y = clickpt_v_y + self.view_offset_y
-            clickpt_m = self.tiles.Tile2Geo(clickpt_v_x, clickpt_v_y)
+            # possible point selection, get tile coords
+            click_v = event.GetPositionTuple()
+            (click_vx, click_vy) = click_v
+            click_vx += self.view_offset_x
+            click_vy += self.view_offset_y
+            click_g = self.tiles.Tile2Geo(click_vx, click_vy)
+            # FIXME: do we REALLY need tile coords?
 
             # check each layer for a point select callback
             # we work on a copy as user callback could change order
@@ -1959,12 +1930,11 @@ class PySlip(_BufferedCanvas):
                 # if layer visible, selectable and there is a callback
                 if l.selectable and l.visible:
                     if l.map_rel:
-                        pt = self.layerPSelHandler[l.type](l, clickpt_m)
+                        pt = self.layerPSelHandler[l.type](l, click_g)
                     else:
-                        pt = self.layerPSelHandler[l.type](l, clickpt_v)
+                        pt = self.layerPSelHandler[l.type](l, click_v)
                     self.RaiseEventSelect(EventRightSelect, l, pt,
-                                          mposn=clickpt_m,
-                                          vposn=clickpt_v)
+                                          mposn=click_g, vposn=click_v)
 
                     # user code possibly updated screen
                     delayed_paint = True
@@ -1989,14 +1959,15 @@ class PySlip(_BufferedCanvas):
         # get centre of view in map coords, want same centre afterwards
         x = self.view_width / 2
         y = self.view_height / 2
+        gposn = self.View2Geo((x, y))
 
         # determine which way to zoom, & *can* we zoom?
         if event.GetWheelRotation() > 0:
             if self.ZoomToLevel(self.level + 1):
-                self.ZoomIn((x, y))
+                self.ZoomIn(gposn)
         else:
             if self.ZoomToLevel(self.level - 1):
-                self.ZoomOut((x, y))
+                self.ZoomOut(gposn)
 
     ######
     # Method that overrides _BufferedCanvas.Draw() method.
@@ -2023,30 +1994,28 @@ class PySlip(_BufferedCanvas):
         # figure out how to draw tiles
         if self.view_offset_x < 0:
             # View > Map in X - centre in X direction
-            col_list = range(0, self.tiles.num_tiles_x)
+            col_list = range(self.tiles.num_tiles_x)
             x_pix_start = -self.view_offset_x
         else:
             # Map > View - determine layout in X direction
-            x_offset = self.view_offset_x + self.move_dx
-            start_x_tile = int(x_offset / self.tile_size_x)
-            stop_x_tile = ((x_offset + self.view_width + self.tile_size_x - 1)
-                           / self.tile_size_x)
+            start_x_tile = int(self.view_offset_x / self.tile_size_x)
+            stop_x_tile = (self.view_offset_x + self.view_width + self.tile_size_x - 1) / self.tile_size_x
             stop_x_tile = int(stop_x_tile)
+            stop_x_tile = min(self.tiles.num_tiles_x-1, stop_x_tile) + 1
             col_list = range(start_x_tile, stop_x_tile)
-            x_pix_start = start_x_tile * self.tile_size_y - x_offset
+            x_pix_start = start_x_tile * self.tile_size_y - self.view_offset_x
 
         if self.view_offset_y < 0:
             # View > Map in Y - centre in Y direction
-            row_list = range(0, self.tiles.num_tiles_y)
+            row_list = range(self.tiles.num_tiles_y)
             y_pix_start = -self.view_offset_y
         else:
-            y_offset = self.view_offset_y + self.move_dy
-            start_y_tile = int(y_offset / self.tile_size_y)
-            stop_y_tile = ((y_offset + self.view_height
-                            + self.tile_size_y - 1) / self.tile_size_y)
-            stop_y_tile = int(stop_y_tile)
+            # Map > View - determine layout in Y direction
+            start_y_tile = int(self.view_offset_y / self.tile_size_y)
+            stop_y_tile = int((self.view_offset_y + self.view_height + self.tile_size_y - 1) / self.tile_size_y)
+            stop_y_tile = min(self.tiles.num_tiles_y-1, stop_y_tile) + 1
             row_list = range(start_y_tile, stop_y_tile)
-            y_pix_start = start_y_tile * self.tile_size_y - y_offset
+            y_pix_start = start_y_tile * self.tile_size_y - self.view_offset_y
 
         # start pasting tiles onto the view
         # use x_pix and y_pix to place tiles
@@ -2078,15 +2047,15 @@ class PySlip(_BufferedCanvas):
     # Miscellaneous
     ######
 
-    def View2Geo(self, view_posn):
+    def View2Geo(self, vposn):
         """Convert a view coords position to a geo coords position.
 
-        view_posn  tuple of view coords (xview, yview)
+        vposn  tuple of view coords (xview, yview)
 
         Returns a tuple of geo coords (xgeo, ygeo);
         """
 
-        (xview, yview) = view_posn
+        (xview, yview) = vposn
         xtile = float(self.view_offset_x + xview) / self.tile_size_x
         ytile = float(self.view_offset_y + yview) / self.tile_size_y
         return self.tiles.Tile2Geo(xtile, ytile)
@@ -2151,16 +2120,15 @@ class PySlip(_BufferedCanvas):
         """
 
         # get geo coords of top-left of view
-        tltile_x = float(self.view_offset_x)/self.tiles.tile_size_x
-        tltile_y = float(self.view_offset_y)/self.tiles.tile_size_y
+        tltile_x = float(self.view_offset_x) / self.tiles.tile_size_x
+        tltile_y = float(self.view_offset_y) / self.tiles.tile_size_y
         (self.view_llon, self.view_tlat) = self.tiles.Tile2Geo(tltile_x,
                                                                tltile_y)
 
         # then get geo coords of bottom-right of view
-        tltile_x = float(self.view_offset_x+self.view_width)/self.tiles.tile_size_x
-        tltile_y = float(self.view_offset_y+self.view_height)/self.tiles.tile_size_y
-        (self.view_rlon, self.view_blat) = self.tiles.Tile2Geo(tltile_x,
-                                                               tltile_y)
+        tltile_x = float(self.view_offset_x + self.view_width) / self.tiles.tile_size_x
+        tltile_y = float(self.view_offset_y + self.view_height) / self.tiles.tile_size_y
+        (self.view_rlon, self.view_blat) = self.tiles.Tile2Geo(tltile_x, tltile_y)
 
     def ZoomToLevel(self, level):
         """Use a new tile level.
@@ -2168,7 +2136,6 @@ class PySlip(_BufferedCanvas):
         level  the new tile level to use.
 
         Returns True if all went well.
-        Maintain centre of map, if possible.
         """
 
         if self.min_level <= level <= self.max_level:
@@ -2247,9 +2214,6 @@ class PySlip(_BufferedCanvas):
             dc_h = self.view_height
             dc_w2 = dc_w / 2
             dc_h2 = dc_h / 2
-# FIXME
-#            dc_h -= 1       # why?
-#            dc_w -= 1
             for p in layer.data:
                 (x, y, place, _, _, x_off, y_off, data) = p
                 exec self.point_view_placement[place]
@@ -2263,14 +2227,12 @@ class PySlip(_BufferedCanvas):
 
         return None
 
-    def GetBoxSelPointsInLayer(self, layer, p1, p2):
+    def GetBoxSelPointsInLayer(self, layer, ll, ur):
         """Get list of points inside box.
 
         layer  reference to layer object we are working on
-        p1     one corner point of selection box (tile coords, (x,y))
-        p2     opposite corner point of selection box (tile coords, (x,y))
-
-        We have to figure out which corner is which.
+        ll     lower-left corner point of selection box
+        ur     upper-right corner point of selection box
 
         Return a tuple (selection, data) where 'selection' is a list of
         selected point positions (xgeo,ygeo) and 'data' is a list of userdata
@@ -2279,15 +2241,9 @@ class PySlip(_BufferedCanvas):
         If nothing is selected return None.
         """
 
-#FIXME
-# TODO: speed this up?  Do we need to??
         # get canonical box limits
-        (p1x, p1y) = p1
-        (p2x, p2y) = p2
-        lx = min(p1x, p2x)      # left x coord
-        rx = max(p1x, p2x)
-        ty = max(p1y, p2y)      # top y coord
-        by = min(p1y, p2y)
+        (lx, by) = ll
+        (rx, ty) = ur
 
         # get a list of points inside the selection box
         selection = []
@@ -2306,19 +2262,15 @@ class PySlip(_BufferedCanvas):
 
                 dc_w2 = dc_w / 2
                 dc_h2 = dc_h / 2
-# FIXME
-#                dc_h -= 1   # why?
-#                dc_w -= 1
                 (x, y, place, _, _, x_off, y_off, udata) = p
                 exec self.point_view_placement[place]
-                if lx <= x <= rx and by <= y <= ty:
+                if lx <= x <= rx and ty <= y <= by:
                     selection.append((x, y))
                     data.append(udata)
 
-        if not selection:
-            return None
-
-        return (selection, data)
+        if selection:
+            return (selection, data, None)
+        return None
 
     def GetImageInLayer(self, layer, pt):
         """Decide if click location selects image object(s) in layer data.
@@ -2364,17 +2316,14 @@ class PySlip(_BufferedCanvas):
                     result = ((x, y), data, relsel)
                     break
 
-#FIXME must return relative selection
         return result
 
-    def GetBoxSelImagesInLayer(self, layer, p1, p2):
-        """Get list of images inside box p1-p2.
+    def GetBoxSelImagesInLayer(self, layer, ll, ur):
+        """Get list of images inside selection box.
 
         layer  reference to layer object we are working on
-        p1     one corner point of selection box ((x,y), geo/view)
-        p2     opposite corner point of selection box ((x,y), geo/view)
-
-        We have to figure out which corner is which.
+        ll     lower-left corner point of selection box (view coords)
+        ur     upper-right corner point of selection box (view coords)
 
         Return a tuple (selection, data) where 'selection' is a list of
         selected point positions (xgeo,ygeo) and 'data' is a list of userdata
@@ -2384,12 +2333,8 @@ class PySlip(_BufferedCanvas):
         """
 
         # get canonical box limits
-        (p1x, p1y) = p1
-        (p2x, p2y) = p2
-        lx = min(p1x, p2x)      # left x coord
-        rx = max(p1x, p2x)
-        ty = min(p1y, p2y)      # top y coord
-        by = max(p1y, p2y)
+        (boxlx, boxby) = ll
+        (boxrx, boxty) = ur
 
         # now construct list of images inside box
         selection = []
@@ -2397,20 +2342,20 @@ class PySlip(_BufferedCanvas):
         for p in layer.data:
             (x, y, _, w, h, placement, offset_x, offset_y, udata) = p
             if layer.map_rel:
-                # map-relative, p1, p2, x, y all in geo coordinates
+                # map-relative, ll, ur, x, y all in geo coordinates
                 e = self.GeoExtent(x, y, placement, w, h, offset_x, offset_y)
             else:
-                # view-relative, p1, p2, x, y all in view coordinates
+                # view-relative, ll, ur, x, y all in view coordinates
                 e = self.ViewExtent(x, y, placement, w, h, offset_x, offset_y)
             if e:
-                (lv, rv, tv, bv) = e
-                if lv >= lx and rv <= rx and tv >= ty and bv <= by:
+                (li, ri, ti, bi) = e    # image extents
+                if boxlx <= li and ri <= boxrx and boxty >= ti and bi >= boxby:
                     selection.append((x, y))
                     data.append(udata)
 
         if not selection:
             return None
-        return (selection, data)
+        return (selection, data, None)
 
     def GetNearestTextInLayer(self, layer, pt):
         """Determine if clicked location selects a text object in layer data.
@@ -2418,24 +2363,34 @@ class PySlip(_BufferedCanvas):
         layer  layer object we are looking in
         pt     click view location (xview, yview)
 
-        Return None (no selection) or data for closest text.
+        Return ((x,y), data, None) for the selected text object, or None if
+        no selection.  The x and y coordinates are view/geo depending on
+        the layer.map_rel value.
 
         Just search for text 'hotspot' - just like point select.
-        Later make text sensitive (need text extent data).
+        Later make text clickable (need text extent data).
         """
 
-        (ptx, pty) = pt
+        (vptx, vpty) = pt
         result = None
         delta = layer.delta
         dist = 9999999.0
 
         if layer.map_rel:
-            for p in layer.data:
-                (x, y, _, _, _, _, _, _, _, _, _, data) = p
-                d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
-                if d < dist:
-                    result = ((x,y), data, None)
-                    dist = d
+            # convert mouse click geo coords to view coords
+            result = self.ConvertGeo2ViewMasked(vptx, vpty)
+            if result:
+                (vptx, vpty) = result
+                # check each point in the layer
+                for p in layer.data:
+                    (x, y, _, _, _, _, _, _, _, _, _, data) = p
+                    vpt = self.ConvertGeo2ViewMasked(x, y)
+                    if vpt:
+                        (vx, vy) = vpt
+                        d = (vx - vptx) * (vx - vptx) + (vy - vpty) * (vy - vpty)
+                        if d < dist:
+                            result = ((x,y), data, None)
+                            dist = d
         else:       # view-rel
             for p in layer.data:
                 (x, y, _, place, _, _, _, _, _, x_off, y_off, data) = p
@@ -2444,12 +2399,9 @@ class PySlip(_BufferedCanvas):
                 dc_h = self.view_height
                 dc_w2 = dc_w / 2
                 dc_h2 = dc_h / 2
-# FIXME
-#                dc_h -= 1       # why?
-#                dc_w -= 1
 
                 exec self.point_view_no_offset[place]
-                d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
+                d = (x - vptx) * (x - vptx) + (y - vpty) * (y - vpty)
                 if d < dist:
                     result = ((x,y), data, None)
                     dist = d
@@ -2458,27 +2410,26 @@ class PySlip(_BufferedCanvas):
             return result
         return None
 
-    def GetBoxSelTextsInLayer(self, layer, p1, p2):
-        """Get list of text objects inside box p1-p2.
+    def GetBoxSelTextsInLayer(self, layer, ll, ur):
+        """Get list of text objects inside box ll-ur.
 
         layer  reference to layer object we are working on
-        p1     one corner point of selection box (geo coords, (x,y))
-        p2     opposite corner point of selection box (geo coords, (x,y))
+        ll     lower-left corner point of selection box
+        ur     upper-right corner point of selection box
 
-        We have to figure out which corner is which.
+        The 'll' and 'ur' points are in view or geo coords, depending on
+        the layer.map_rel value.
 
-        Returns (selection, data) where 'selection' is a list of text positions
-        (xgeo,ygeo) and 'data' is a list of userdata objects associated with the
-        selected text objects.  Returns None if no selection.
+        Returns (selection, data, None) where 'selection' is a list of text
+        positions (geo or view, depending on layer.map_rel) and 'data' is a list
+        of userdata objects associated with the selected text objects.
+
+        Returns None if no selection.
         """
 
         # get canonical box limits
-        (p1x, p1y) = p1
-        (p2x, p2y) = p2
-        lx = min(p1x, p2x)      # left x coord
-        rx = max(p1x, p2x)
-        ty = max(p1y, p2y)      # top y coord
-        by = min(p1y, p2y)
+        (lx, by) = ll
+        (rx, ty) = ur
 
         # get a list of points inside the selection box
         selection = []
@@ -2500,14 +2451,13 @@ class PySlip(_BufferedCanvas):
                 dc_w2 = dc_w / 2
                 dc_h2 = dc_h / 2
                 exec self.point_view_placement[place]
-
-                if lx <= x <= rx and by <= y <= ty:
+                if lx <= x <= rx and ty <= y <= by:
                     selection.append((x, y))
                     data.append(udata)
 
         # return appropriate result
         if selection:
-            return (selection, data)
+            return (selection, data, None)
         return None
 
     def GetFirstPolygonInLayer(self, layer, pt):
@@ -2523,7 +2473,7 @@ class PySlip(_BufferedCanvas):
         (ptx, pty) = pt
         result = None
 
-        # (poly, placement, width, colour, close, filled, fillcolour, offset_x, offset_y, udata)
+        # (poly, place, width, colour, close, filled, fillcolour, off_x, off_y, udata)
         for p in layer.data:
             (poly, placement, _, _, _, _, _, offset_x, offset_y, udata) = p
             if layer.map_rel:
@@ -2598,7 +2548,7 @@ class PySlip(_BufferedCanvas):
 
         if not selection:
             return None
-        return (selection, data)
+        return (selection, data, None)
 
     ######
     # The next two routines could be folded into one as they are the same.
@@ -2611,40 +2561,38 @@ class PySlip(_BufferedCanvas):
     # reduction in detail (SVG-ish), but we'll never be doing *that*!
     ######
 
-    def ZoomIn(self, xy):
+    def ZoomIn(self, gposn):
         """Zoom map in to the next level.
 
-        xy  is a tuple (x, y) of pixel coords of new centre after zoom
+        gposn  is a tuple (x, y) of geo coords of new centre after zoom
 
         The tile stuff has already been set to the correct level.
         """
 
-        # predict the view offset after zoom
-        (map_x, map_y) = self.GetMapCoordsFromView(xy)
-        self.view_offset_x = map_x * 2 - self.view_width / 2
-        self.view_offset_y = map_y * 2 - self.view_height / 2
+        # move to desired position
+        self.GotoPosition(gposn)
 
         # set some internal state through resize code
         self.ResizeCallback()
 
+        # redraw the map
         self.Update()
 
-    def ZoomOut(self, xy):
+    def ZoomOut(self, gposn):
         """Zoom map out to the previous level.
 
-        xy  is a tuple (x, y) of pixel coords of new centre after zoom
+        gposn  is a tuple (x, y) of geo coords of new centre after zoom
 
         The tile stuff has already been set to the correct level.
         """
 
-        # set view state
-        (map_x, map_y) = self.GetMapCoordsFromView(xy)
-        self.view_offset_x = map_x / 2 - self.view_width / 2
-        self.view_offset_y = map_y / 2 - self.view_height / 2
+        # move to desired position
+        self.GotoPosition(gposn)
 
         # set some internal state through size code
         self.ResizeCallback()
 
+        # redraw the map
         self.Update()
 
     ######
@@ -2705,9 +2653,9 @@ class PySlip(_BufferedCanvas):
 
         self.GetEventHandler().ProcessEvent(event)
 
-    # there is no set_select_event() method and no self.select_event boolean
-    # flag for the select event as the user controls selectability on a
-    # layer-by-layer basis.
+# there is no set_select_event() method and no self.select_event boolean
+# flag for the select event as the user controls selectability on a
+# layer-by-layer basis.
 
     def RaiseEventSelect(self, mposn, vposn, layer=None, selection=None,
                          data=None, relsel=None):
@@ -2719,7 +2667,7 @@ class PySlip(_BufferedCanvas):
         selection  None if no selection or a tuple (point, data) where 'point'
                    is the selected object point ((xgeo,ygeo) or (xview,yview))
                    and data is the associated data object
-        data       
+        data
 
         This event is raised even when nothing is selected.  In that case,
         event.layer_id, .selection and .data are None and .mposn and
@@ -2870,8 +2818,6 @@ class PySlip(_BufferedCanvas):
 
         If object extent is totally off the map, return None.
         """
-
-# FIXME
 
         # decide if object CAN be in view
         # check point in lower, right or lower-right quadrants

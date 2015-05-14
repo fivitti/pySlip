@@ -52,47 +52,6 @@ __version__ = '3.0'
 
 
 ######
-# utility routines.
-######
-
-def point_inside_polygon(point, poly):
-    """Decide if point is inside polygon.
-
-    point  tuple of (x,y) coordnates of point in question (geo or view)
-    poly   polygon in form [(x1,y1), (x2,y2), ...]
-
-    Returns True if point is properly inside polygon.
-    May return True or False if point on edge of polygon.
-
-    Slightly modified version of the 'published' algorithm found on the 'net.
-    Instead of indexing into the poly, create a new poly that 'wraps around'.
-    Even with the extra code, it runs in 2/3 the time.
-    """
-
-    (x, y) = point
-
-    # we want a *copy* of original iterable plus extra wraparound point
-    l_poly = list(poly)
-    l_poly.append(l_poly[0])  # ensure poly wraps around
-
-    inside = False
-
-    (p1x, p1y) = l_poly[0]
-
-    for (p2x, p2y) in l_poly:
-        if y > min(p1y, p2y):
-            if y <= max(p1y, p2y):
-                if x <= max(p1x, p2x):
-                    if p1y != p2y:
-                        xinters = (y-p1y)*(p2x-p1x)/(p2y-p1y) + p1x
-                    if p1x == p2x or x <= xinters:
-                        inside = not inside
-        (p1x, p1y) = (p2x, p2y)
-
-    return inside
-
-
-######
 # Base class for the widget canvas - buffered and flicker-free.
 ######
 
@@ -2754,6 +2713,43 @@ class PySlip(_BufferedCanvas):
     # Various pySlip utility routines
     ######
 
+    @staticmethod
+    def point_inside_polygon(point, poly):
+        """Decide if point is inside polygon.
+    
+        point  tuple of (x,y) coordnates of point in question (geo or view)
+        poly   polygon in form [(x1,y1), (x2,y2), ...]
+    
+        Returns True if point is properly inside polygon.
+        May return True or False if point on edge of polygon.
+    
+        Slightly modified version of the 'published' algorithm found on the 'net.
+        Instead of indexing into the poly, create a new poly that 'wraps around'.
+        Even with the extra code, it runs in 2/3 the time.
+        """
+    
+        (x, y) = point
+    
+        # we want a *copy* of original iterable plus extra wraparound point
+        l_poly = list(poly)
+        l_poly.append(l_poly[0])  # ensure poly wraps around
+    
+        inside = False
+    
+        (p1x, p1y) = l_poly[0]
+    
+        for (p2x, p2y) in l_poly:
+            if y > min(p1y, p2y):
+                if y <= max(p1y, p2y):
+                    if x <= max(p1x, p2x):
+                        if p1y != p2y:
+                            xinters = (y-p1y)*(p2x-p1x)/(p2y-p1y) + p1x
+                        if p1x == p2x or x <= xinters:
+                            inside = not inside
+            (p1x, p1y) = (p2x, p2y)
+    
+        return inside
+
     def point_in_poly_map(self, poly, geo, placement, offset_x, offset_y):
         """Decide if a point is inside a map-relative polygon.
 
@@ -2770,7 +2766,7 @@ class PySlip(_BufferedCanvas):
         """
 
 # FIXME: worry aboput placement
-        return point_inside_polygon(geo, poly)
+        return self.point_inside_polygon(geo, poly)
 
     def point_in_poly_view(self, poly, view, placement, offset_x, offset_y):
         """Decide if a point is inside a view-relative polygon.
@@ -2798,7 +2794,7 @@ class PySlip(_BufferedCanvas):
             view_poly.append((x, y))
 
         # decide if (ptx,pty) is inside polygon
-        return point_inside_polygon(view, view_poly)
+        return self.point_inside_polygon(view, view_poly)
 
     def GeoExtent(self, geo, placement, w, h, x_off, y_off):
         """Get geo extent of area.

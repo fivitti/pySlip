@@ -69,7 +69,7 @@ class GMTCache(pycacheback.pyCacheBack):
 
 # where earlier-cached tiles will be
 # this can be overridden in the GMTTiles() constructor
-DefaultTileDir = 'tiles'
+DefaultTileDir = 'gmt_tiles'
 
 # set maximum number of in-memory tiles for each level
 DefaultMaxLRU = 10000
@@ -212,11 +212,10 @@ class GMTTiles(tiles.Tiles):
 
         return self.cache[(self.level, x, y)]
 
-    def Geo2Tile(self, xgeo, ygeo):
+    def Geo2Tile(self, geo):
         """Convert geo to tile fractional coordinates for level in use.
 
-        xgeo   geo longitude in degrees
-        ygeo   geo latitude in degrees
+        geo  a tuple of geo coordinates (xgeo, ygeo)
 
         Returns (xtile, ytile).
 
@@ -224,6 +223,8 @@ class GMTTiles(tiles.Tiles):
 
         This is an easy transformation as geo coordinates are Cartesian.
         """
+
+        (xgeo, ygeo) = geo
 
         # get extent information
         (min_xgeo, max_xgeo, min_ygeo, max_ygeo) = self.extent
@@ -237,16 +238,17 @@ class GMTTiles(tiles.Tiles):
 
         return (x/tdeg_x, y/tdeg_y)
 
-    def Tile2Geo(self, xtile, ytile):
+    def Tile2Geo(self, tile):
         """Convert tile fractional coordinates to geo for level in use.
 
-        xtile  tile fractional X coordinate
-        ytile  tile fractional Y coordinate
+        tile  a tuple (xtile,ytile) of tile fractional coordinates
 
         Note that we assume the point *is* on the map!
 
         This is an easy transformation as geo coordinates are Cartesian.
         """
+
+        (xtile, ytile) = tile
 
         # get extent information
         (min_xgeo, max_xgeo, min_ygeo, max_ygeo) = self.extent
@@ -277,7 +279,7 @@ if __name__ == '__main__':
             expect_lat = max_lat
             tile_x = 0.0
             tile_y = 0.0
-            (lon, lat) = tiles.Tile2Geo(tile_x, tile_y)
+            (lon, lat) = tiles.Tile2Geo((tile_x, tile_y))
             msg = 'Expected geo (%f,%f) but got (%f,%f)' % (expect_lon, expect_lat, lon, lat)
             self.assertAlmostEqual(expect_lon, lon, places=4, msg=msg)
             self.assertAlmostEqual(expect_lat, lat, places=4, msg=msg)
@@ -287,7 +289,7 @@ if __name__ == '__main__':
             expect_lat = min_lat
             tile_x = 0.0
             tile_y = tiles.num_tiles_y
-            (lon, lat) = tiles.Tile2Geo(tile_x, tile_y)
+            (lon, lat) = tiles.Tile2Geo((tile_x, tile_y))
             msg = 'Expected geo (%f,%f) but got (%f,%f)' % (expect_lon, expect_lat, lon, lat)
             self.assertAlmostEqual(expect_lon, lon, places=4, msg=msg)
             self.assertAlmostEqual(expect_lat, lat, places=4, msg=msg)
@@ -297,7 +299,7 @@ if __name__ == '__main__':
             expect_lat = max_lat
             tile_x = tiles.num_tiles_x
             tile_y = 0.0
-            (lon, lat) = tiles.Tile2Geo(tile_x, tile_y)
+            (lon, lat) = tiles.Tile2Geo((tile_x, tile_y))
             msg = 'Expected geo (%f,%f) but got (%f,%f)' % (expect_lon, expect_lat, lon, lat)
             self.assertAlmostEqual(expect_lon, lon, places=4, msg=msg)
             self.assertAlmostEqual(expect_lat, lat, places=4, msg=msg)
@@ -307,7 +309,7 @@ if __name__ == '__main__':
             expect_lat = min_lat
             tile_x = tiles.num_tiles_x
             tile_y = tiles.num_tiles_y
-            (lon, lat) = tiles.Tile2Geo(tile_x, tile_y)
+            (lon, lat) = tiles.Tile2Geo((tile_x, tile_y))
             msg = 'Expected geo (%f,%f) but got (%f,%f)' % (expect_lon, expect_lat, lon, lat)
             self.assertAlmostEqual(expect_lon, lon, places=4, msg=msg)
             self.assertAlmostEqual(expect_lat, lat, places=4, msg=msg)
@@ -317,7 +319,7 @@ if __name__ == '__main__':
             expect_lat = 0.0
             tile_x = tiles.num_tiles_x / 2.0
             tile_y = tiles.num_tiles_y / 2.0
-            (lon, lat) = tiles.Tile2Geo(tile_x, tile_y)
+            (lon, lat) = tiles.Tile2Geo((tile_x, tile_y))
             msg = 'Expected geo (%f,%f) but got (%f,%f)' % (expect_lon, expect_lat, lon, lat)
             self.assertAlmostEqual(expect_lon, lon, places=4, msg=msg)
             self.assertAlmostEqual(expect_lat, lat, places=4, msg=msg)
@@ -334,7 +336,7 @@ if __name__ == '__main__':
             expect_ytile = 0.0
             geo_x = min_lon
             geo_y = max_lat
-            (xtile, ytile) = tiles.Geo2Tile(geo_x, geo_y)
+            (xtile, ytile) = tiles.Geo2Tile((geo_x, geo_y))
             msg = ('Expected tile (%f,%f) but got (%f,%f)'
                    % (expect_xtile, expect_ytile, xtile, ytile))
             self.assertAlmostEqual(expect_xtile, xtile, places=4, msg=msg)
@@ -345,7 +347,7 @@ if __name__ == '__main__':
             expect_ytile = 0.0
             geo_x = max_lon
             geo_y = max_lat
-            (xtile, ytile) = tiles.Geo2Tile(geo_x, geo_y)
+            (xtile, ytile) = tiles.Geo2Tile((geo_x, geo_y))
             msg = ('Expected tile (%f,%f) but got (%f,%f)'
                    % (expect_xtile, expect_ytile, xtile, ytile))
             self.assertAlmostEqual(expect_xtile, xtile, places=4, msg=msg)
@@ -356,7 +358,7 @@ if __name__ == '__main__':
             expect_ytile = tiles.num_tiles_y
             geo_x = min_lon
             geo_y = min_lat
-            (xtile, ytile) = tiles.Geo2Tile(geo_x, geo_y)
+            (xtile, ytile) = tiles.Geo2Tile((geo_x, geo_y))
             msg = ('Expected tile (%f,%f) but got (%f,%f)'
                    % (expect_xtile, expect_ytile, xtile, ytile))
             self.assertAlmostEqual(expect_xtile, xtile, places=4, msg=msg)
@@ -367,7 +369,7 @@ if __name__ == '__main__':
             expect_ytile = tiles.num_tiles_y
             geo_x = max_lon
             geo_y = min_lat
-            (xtile, ytile) = tiles.Geo2Tile(geo_x, geo_y)
+            (xtile, ytile) = tiles.Geo2Tile((geo_x, geo_y))
             msg = ('Expected tile (%f,%f) but got (%f,%f)'
                    % (expect_xtile, expect_ytile, xtile, ytile))
             self.assertAlmostEqual(expect_xtile, xtile, places=4, msg=msg)
@@ -378,7 +380,7 @@ if __name__ == '__main__':
             expect_ytile = tiles.num_tiles_y/2.0
             geo_x = min_lon + (max_lon-min_lon)/2.0
             geo_y = min_lat + (max_lat-min_lat)/2.0
-            (xtile, ytile) = tiles.Geo2Tile(geo_x, geo_y)
+            (xtile, ytile) = tiles.Geo2Tile((geo_x, geo_y))
             msg = ('Expected tile (%f,%f) but got (%f,%f)'
                    % (expect_xtile, expect_ytile, xtile, ytile))
             self.assertAlmostEqual(expect_xtile, xtile, places=4, msg=msg)

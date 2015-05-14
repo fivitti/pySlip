@@ -941,6 +941,8 @@ class AppFrame(wx.Frame):
         event  the event that contains these attributes:
                    selection  [list of] tuple (xgeo,ygeo) of selected point
                               (if None then no point(s) selected)
+                   relsel     relative position of single point select,
+                              None if box select
 
         The selection could be a single or box select.
 
@@ -954,7 +956,7 @@ class AppFrame(wx.Frame):
         """
 
         selection = event.selection
-        relsel = event.relsel
+        relsel = event.relsel       # None if box select
 
         # only one image selectable, remove old selections (if any)
         if self.sel_image_view_layer:
@@ -965,40 +967,42 @@ class AppFrame(wx.Frame):
             self.sel_imagepoint_view_layer = None
 
         if selection:
-            # unpack event relative selection point
-            (sel_x, sel_y) = relsel     # select relative point in image
-
-# FIXME  This should be cleaner, user shouldn't have to know internal structure
-# FIXME  or fiddle with placement perturbations
-
             # figure out compass rose attributes
             attr_dict = ImageViewData[0][3]
             img_placement = attr_dict['placement']
 
-            # add selection point
-            point_place_coords = {'ne': '(sel_x - CR_Width, sel_y)',
-                                  'ce': '(sel_x - CR_Width, sel_y - CR_Height/2.0)',
-                                  'se': '(sel_x - CR_Width, sel_y - CR_Height)',
-                                  'cs': '(sel_x - CR_Width/2.0, sel_y - CR_Height)',
-                                  'sw': '(sel_x, sel_y - CR_Height)',
-                                  'cw': '(sel_x, sel_y - CR_Height/2.0)',
-                                  'nw': '(sel_x, sel_y)',
-                                  'cn': '(sel_x - CR_Width/2.0, sel_y)',
-                                  'cc': '(sel_x - CR_Width/2.0, sel_y - CR_Height/2.0)',
-                                  '':   '(sel_x, sel_y)',
-                                  None: '(sel_x, sel_y)',
-                                 }
+            self.sel_imagepoint_view_layer = None
+            if relsel:
+                # unpack event relative selection point
+                (sel_x, sel_y) = relsel     # select relative point in image
 
-            point = eval(point_place_coords[img_placement])
-            self.sel_imagepoint_view_layer = \
-                self.pyslip.AddPointLayer((point,), map_rel=False,
-                                          color='green',
-                                          radius=5, visible=True,
-                                          placement=img_placement,
-                                          name='<sel_image_view_point>')
+# FIXME  This should be cleaner, user shouldn't have to know internal structure
+# FIXME  or fiddle with placement perturbations
+
+                # add selection point
+                point_place_coords = {'ne': '(sel_x - CR_Width, sel_y)',
+                                      'ce': '(sel_x - CR_Width, sel_y - CR_Height/2.0)',
+                                      'se': '(sel_x - CR_Width, sel_y - CR_Height)',
+                                      'cs': '(sel_x - CR_Width/2.0, sel_y - CR_Height)',
+                                      'sw': '(sel_x, sel_y - CR_Height)',
+                                      'cw': '(sel_x, sel_y - CR_Height/2.0)',
+                                      'nw': '(sel_x, sel_y)',
+                                      'cn': '(sel_x - CR_Width/2.0, sel_y)',
+                                      'cc': '(sel_x - CR_Width/2.0, sel_y - CR_Height/2.0)',
+                                      '':   '(sel_x, sel_y)',
+                                      None: '(sel_x, sel_y)',
+                                     }
+
+                point = eval(point_place_coords[img_placement])
+                self.sel_imagepoint_view_layer = \
+                    self.pyslip.AddPointLayer((point,), map_rel=False,
+                                              color='green',
+                                              radius=5, visible=True,
+                                              placement=img_placement,
+                                              name='<sel_image_view_point>')
 
             # add polygon outline around image
-            (x, y) = event.vposn
+#            (x, y) = event.vposn
             p_dict = {'placement': img_placement, 'width': 3, 'color': 'green', 'closed': True}
             poly_place_coords = {'ne': '(((-CR_Width,0),(0,0),(0,CR_Height),(-CR_Width,CR_Height)),p_dict)',
                                  'ce': '(((-CR_Width,-CR_Height/2.0),(0,-CR_Height/2.0),(0,CR_Height/2.0),(-CR_Width,CR_Height/2.0)),p_dict)',

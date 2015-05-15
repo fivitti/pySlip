@@ -501,6 +501,12 @@ class PySlip(_BufferedCanvas):
         # True if we send event on level change
         self.change_level_event = True
 
+        # default cursor
+        self.default_cursor = wx.CURSOR_DEFAULT
+
+        # state of the SHIFT key
+        self.shift_down = False
+
         # set up dispatch dictionaries for layer select handlers
         # for point select
         self.layerPSelHandler = {self.TypePoint: self.GetPointInLayer,
@@ -527,6 +533,10 @@ class PySlip(_BufferedCanvas):
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
         self.Bind(wx.EVT_ENTER_WINDOW, self.OnEnterWindow)
         self.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeaveWindow)
+
+        # we also check KEY events, mostly for SHIFT key
+        self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
+        self.Bind(wx.EVT_KEY_UP, self.OnKeyUp)
 
         # set callback from Tile source object when tile(s) available
         self.tiles.SetAvailableCallback(self.OnTileAvailable)
@@ -1475,14 +1485,28 @@ class PySlip(_BufferedCanvas):
             # redraw client area
             self.Update()
 
+    def OnKeyDown(self, event):
+        if event.m_keyCode == wx.WXK_SHIFT:
+            self.shift_down = True
+            self.default_cursor = wx.CURSOR_CROSS
+            self.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
+
+    def OnKeyUp(self, event):
+        if event.m_keyCode == wx.WXK_SHIFT:
+            self.shift_down = False
+            self.default_cursor = wx.CURSOR_DEFAULT
+            self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+
+
     def OnLeftDown(self, event):
         """Left mouse button down. Prepare for possible drag."""
 
         click_posn = event.GetPositionTuple()
 
-        if event.ShiftDown():
+#        if event.ShiftDown():
+        if self.shift_down:
             self.is_box_select = True
-            self.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
+#            self.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
             (self.sbox_w, self.sbox_h) = (0, 0)
             (self.sbox_1_x, self.sbox_1_y) = click_posn
         else:
@@ -1509,7 +1533,7 @@ class PySlip(_BufferedCanvas):
             return
 
         # cursor back to normal
-        self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+        self.SetCursor(wx.StockCursor(self.default_cursor))
 
         # we need a repaint to remove any selection box, but NOT YET!
         delayed_paint = self.sbox_1_x       # True if box select active
@@ -1613,7 +1637,8 @@ class PySlip(_BufferedCanvas):
         vposn = event.GetPositionTuple()
         gposn = self.View2Geo(vposn)
 
-        if event.ShiftDown():
+#        if event.ShiftDown():
+        if self.shift_down:
             # zoom out if shift key also down
             if self.ZoomToLevel(self.level - 1):
                 self.ZoomOut(gposn)
@@ -1637,7 +1662,8 @@ class PySlip(_BufferedCanvas):
 
         click_posn = event.GetPositionTuple()
 
-        if event.ShiftDown():
+#        if event.ShiftDown():
+        if self.shift_down:
             self.is_box_select = True
             self.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
             (self.sbox_w, self.sbox_h) = (0, 0)
@@ -1812,8 +1838,11 @@ class PySlip(_BufferedCanvas):
         # draw selection rectangle, if any
         if self.sbox_1_x:
             penclr = wx.Colour(0, 0, 255)
-            dc.SetPen(wx.Pen(penclr, width=1))
-            brushclr = wx.Colour(0, 0, 0)
+            pen = wx.Pen(penclr, 1, wx.USER_DASH) 
+            pen.SetDashes([1, 1, 1, 1]) 
+#            pen = wx.Pen(penclr, 1, wx.SHORT_DASH) 
+            dc.SetPen(pen) 
+            brushclr = wx.Colour(255, 255, 255)
             dc.SetBrush(wx.Brush(brushclr, style=wx.TRANSPARENT))
             dc.DrawRectangle(self.sbox_1_x, self.sbox_1_y,
                              self.sbox_w, self.sbox_h)

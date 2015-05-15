@@ -89,10 +89,10 @@ class TestAssumptions(unittest.TestCase):
                    (copy_delta/list_delta)))
         self.assertTrue(list_delta > copy_delta, msg)
 
-    def test_dispatch_faster2(self):
+    def test_dispatch_slower(self):
         """Test that dispatch is faster than function if/elif/else.
 
-        pySlip uses code like this:
+        pySlip used to use code like this:
             x = ...
             y = ...
             test = {'ab': 'x+=1;y-=1',
@@ -114,8 +114,9 @@ class TestAssumptions(unittest.TestCase):
             x = ...
             y = ...
             (x, y) = test(x, y, place, x_off, y_off)
-        """
 
+        The function approach (which we use) should be faster.
+        """
 
         LOOPS = 1000000
 
@@ -186,10 +187,10 @@ class TestAssumptions(unittest.TestCase):
             (x, y) = test(x, y, place, w, h, x_off, y_off)
         func_delta = time.time() - start
 
-        msg = ("Function if/else is faster than 'exec dispatch[i]'?\n"
-                   "exec=%.2fs, function=%.2fs (function is %.1f times faster)"
-               % (exec_delta, func_delta, exec_delta/func_delta))
-        self.assertTrue(exec_delta < func_delta, msg)
+        msg = ("Function if/else is slower than 'exec dispatch[i]'?\n"
+                   "exec=%.2fs, function=%.2fs (exec is %.1f times faster)"
+               % (exec_delta, func_delta, func_delta/exec_delta))
+        self.assertTrue(exec_delta > func_delta, msg)
 
     def test_copy_faster(self):
         """Test that a[:] copy is slower than copy.copy(a)."""

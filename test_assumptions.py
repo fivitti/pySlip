@@ -89,119 +89,107 @@ class TestAssumptions(unittest.TestCase):
                    (copy_delta/list_delta)))
         self.assertTrue(list_delta > copy_delta, msg)
 
-    def test_dispatch_faster(self):
-        """Test that dispatch is faster than inline if/elif/else.
-
-        In pySlip we do all placement via an 'exec' instead of if/else code.
-        The assumption is that this is FASTER.
-
-        That is, this:
-            dispatch = {0: 'x += 2',
-                        1: 'x -= 1',
-                        2: 'x = 4'}
-            exec dispatch[i]
-        is faster than:
-            if i == 0:
-                x += 2
-            elif i == 1:
-                x -= 1
-            else:
-                x = 4
-        """
-
-        import random
-
-        loops = 1000000
-
-        dispatch = {0: 'x += 2',
-                    1: 'x -= 1',
-                    2: 'x = 4'}
-        for key in dispatch:
-            dispatch[key] = compile(dispatch[key], 'string', 'exec')
-
-        start = time.time()
-        for _ in xrange(loops):
-            x = 5
-            i = 1
-            exec dispatch[i]
-        dispatch_delta = time.time() - start
-
-        start = time.time()
-        for _ in xrange(loops):
-            x = 5
-            i = 1
-            if i == 0:
-                x += 2
-            elif i == 1:
-                x -= 1
-            else:
-                x = 4
-        elif_delta = time.time() - start
-
-        msg = ("INLINE: if/else is faster than 'exec dispatch[i]'?\n"
-                   "dispatch=%.2fs, elif=%.2fs (elif is %.1f times faster)"
-               % (dispatch_delta, elif_delta, dispatch_delta/elif_delta))
-        self.assertTrue(dispatch_delta < elif_delta, msg)
-
     def test_dispatch_faster2(self):
         """Test that dispatch is faster than function if/elif/else.
 
-        In pySlip we do all placement via an 'exec' instead of if/else code.
-        The assumption is that this is FASTER.
+        pySlip uses code like this:
+            x = ...
+            y = ...
+            test = {'ab': 'x+=1;y-=1',
+                    'bc': 'x+=2;y+=3',
+                    ...
+                   }
+            exec test['ab']
 
-        That is, this:
-            dispatch = {0: 'x += 2',
-                        1: 'x -= 1',
-                        2: 'x = 4'}
-            exec dispatch[i]
-        is faster than:
-            def doit(i):
-                if i == 0:
-                    x += 2
-                elif i == 1:
-                    x -= 1
-                else:
-                    x = 4
-            doit(i)
+        Compare the above with something like:
+            def test(x, y, place, x_off, y_off):
+                if place == 'ab':
+                    x += 1
+                            y -= 1
+                elif place == 'bc':
+                    ...
+
+                return (x, y)
+
+            x = ...
+            y = ...
+            (x, y) = test(x, y, place, x_off, y_off)
         """
 
-        import random
 
-        loops = 1000000
+        LOOPS = 1000000
 
-        dispatch = {0: 'x += 2',
-                    1: 'x -= 1',
-                    2: 'x = 4'}
-        for key in dispatch:
-            dispatch[key] = compile(dispatch[key], 'string', 'exec')
-
-        start = time.time()
-        for _ in xrange(loops):
-            x = 5
-            i = 1
-            exec dispatch[i]
-        dispatch_delta = time.time() - start
-
-        def doit(i, x):
-            if i == 0:
-                x += 2
-            elif i == 1:
-                x -= 1
-            else:
-                x = 4
-            return x
+        # check exec timing
+        test = {'cc': 'x+=x_off-w2;  y+=y_off-h2',
+                'nw': 'x+=x_off;     y+=y_off',
+                'cn': 'x+=x_off-w2;  y+=y_off',
+                'ne': 'x+=x_off-w;   y+=y_off',
+                'ce': 'x+=x_off-w;   y+=y_off-h2',
+                'se': 'x+=x_off-w;   y+=y_off-h',
+                'cs': 'x+=x_off-w2;  y+=y_off-h',
+                'sw': 'x+=x_off;     y+=y_off-h',
+                'cw': 'x+=x_off;     y+=y_off-h2',
+                None: '',
+                False: '',
+                '': ''}
+        for key in test:
+            test[key] = compile(test[key], 'string', 'exec')
 
         start = time.time()
-        for _ in xrange(loops):
-            x = 5
-            i = 1
-            x = doit(i, x)
-        elif_delta = time.time() - start
+        for _ in xrange(LOOPS):
+            x = 0
+            y = 0
+            place = 'nw'
+            x_off = 1
+            y_off = 3
+            w = 100
+            w2 = w/2
+            h = 100
+            h2 = h/2
+            exec test[place]
+        exec_delta = time.time() - start
 
-        msg = ("FUNCTION: if/else is faster than 'exec dispatch[i]'?\n"
-                   "dispatch=%.2fs, elif=%.2fs (elif is %.1f times faster)"
-               % (dispatch_delta, elif_delta, dispatch_delta/elif_delta))
-        self.assertTrue(dispatch_delta < elif_delta, msg)
+        # now for function equivalent
+        def test(x, y, place, w, h, x_off, y_off):
+            w2 = w/2
+            h2 = h/2
+            if place == 'cc':
+                x+=x_off-w2;  y+=y_off-h2
+            elif place == 'nw':
+                x+=x_off;     y+=y_off
+            elif place == 'cn':
+                x+=x_off-w2;  y+=y_off
+            elif place == 'ne':
+                x+=x_off-w;   y+=y_off
+            elif place == 'ce':
+                x+=x_off-w;   y+=y_off-h2
+            elif place == 'se':
+                x+=x_off-w;   y+=y_off-h
+            elif place == 'cs':
+                x+=x_off-w2;  y+=y_off-h
+            elif place == 'sw':
+                x+=x_off;     y+=y_off-h
+            elif place == 'cw':
+                x+=x_off;     y+=y_off-h2
+         
+            return (x, y)
+
+        start = time.time()
+        for _ in xrange(LOOPS):
+            x = 0
+            y = 0
+            place = 'nw'
+            x_off = 1
+            y_off = 3
+            w = 100
+            h = 100
+            (x, y) = test(x, y, place, w, h, x_off, y_off)
+        func_delta = time.time() - start
+
+        msg = ("Function if/else is faster than 'exec dispatch[i]'?\n"
+                   "exec=%.2fs, function=%.2fs (function is %.1f times faster)"
+               % (exec_delta, func_delta, exec_delta/func_delta))
+        self.assertTrue(exec_delta < func_delta, msg)
 
     def test_copy_faster(self):
         """Test that a[:] copy is slower than copy.copy(a)."""

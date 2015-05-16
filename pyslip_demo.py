@@ -4,7 +4,16 @@
 """
 pySlip demonstration program with either GMT or OSM tiles.
 
-Usage: pyslip_demo.py [-h|--help] [(-t|--tiles) (GMT|OSM)]
+Usage: pyslip_demo.py [(-d|--debug) <level>] [-h|--help] [(-t|--tiles) (GMT|OSM)]
+
+where <level> is either a numeric debug level in the range [0, 50] or one of
+the symbolic debug level names:
+    CRITICAL 50
+    ERROR    40
+    WARNING  30
+    INFO     20
+    DEBUG    10
+    NOTSET    0
 """
 
 
@@ -19,7 +28,7 @@ except ImportError:
 # If we have log.py, well and good.  Otherwise ...
 try:
     import log
-    log = log.Log('pyslip.log', log.Log.DEBUG)
+    log = log.Log('pyslip.log', log.Log.NOTSET)
 except ImportError:
     def log(*args, **kwargs):
         pass
@@ -84,6 +93,14 @@ SelGlassyImg6 = 'graphics/selected_glassy_button_6.png'
 
 # image used for shipwrecks
 CompassRoseGraphic = 'graphics/compass_rose.png'
+
+# logging levels, symbolic to numeric mapping
+LogSym2Num = {'CRITICAL': 50,
+              'ERROR': 40,
+              'WARNING': 30,
+              'INFO': 20,
+              'DEBUG': 10,
+              'NOTSET': 0}
 
 ######
 # Various GUI layout constants
@@ -1337,7 +1354,7 @@ class AppFrame(wx.Frame):
         selection = event.selection
 
         # figure out polygon placement attribute
-        poly_placement = PolyViewData[0][1]['placement'] 
+        poly_placement = PolyViewData[0][1]['placement']
 
         if event.type == pyslip.EventSelect:
             # point select, turn any previous selection off
@@ -1619,9 +1636,6 @@ class AppFrame(wx.Frame):
 
         layer_id = event.layer_id
 
-        log('handle_select_event: event.type=%s, .mposn=%s, .vposn=%s, .selection=%s'
-                % (str(event.type), str(event.mposn), str(event.vposn), str(event.selection)))
-
         self.demo_select_dispatch.get(layer_id, self.null_handler)(event)
 
     def null_handler(self, event):
@@ -1677,6 +1691,12 @@ if __name__ == '__main__':
         tkinter_error.tkinter_error(msg)
         sys.exit(1)
 
+    def usage(msg=None):
+        if msg:
+            print(('*'*80 + '\n%s\n' + '*'*80) % msg)
+        print(__doc__)
+
+
     # plug our handler into the python system
     sys.excepthook = excepthook
 
@@ -1684,22 +1704,35 @@ if __name__ == '__main__':
     argv = sys.argv[1:]
 
     try:
-        (opts, args) = getopt.getopt(argv, 'dht:', ['debug', 'help', 'tiles='])
+        (opts, args) = getopt.getopt(argv, 'd:ht:',
+                                           ['debug=', 'help', 'tiles='])
     except getopt.error:
         usage()
         sys.exit(1)
 
     tile_source = 'GMT'
-    debug = False
+    debug = 0       # NOTSET
     for (opt, param) in opts:
         if opt in ['-d', '--debug']:
-            debug = True
+            debug = param
         elif opt in ['-h', '--help']:
             usage()
             sys.exit(0)
         elif opt in ('-t', '--tiles'):
             tile_source = param
     tile_source = tile_source.lower()
+
+    # convert any symbolic debug level to a number
+    try:
+        debug = int(debug)
+    except ValueError:
+        # possibly a symbolic debug name
+        try:
+            debug = LogSym2Num[debug.upper()]
+        except KeyError:
+            usage('Unrecognized debug name: %s' % debug)
+            sys.exit(1)
+    log.set_level(debug)
 
     # set up the appropriate tile source
     if tile_source == 'gmt':
@@ -1718,7 +1751,7 @@ if __name__ == '__main__':
     app_frame = AppFrame(tile_dir=tile_dir) #, levels=[0,1,2,3,4])
     app_frame.Show()
 
-    if debug:
+    if debug >= 40:
         import wx.lib.inspection
         wx.lib.inspection.InspectionTool().Show()
 

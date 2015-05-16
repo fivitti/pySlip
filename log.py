@@ -64,6 +64,7 @@ class Log(object):
 
         self.max_fname = max_fname
 
+        self.sym_level = 'NOTSET'      # set in call to check_level()
         self.level = self.check_level(level)
 
         # don't allow logfile to change after initially set
@@ -94,7 +95,7 @@ class Log(object):
             self.critical('='*55)
             self.critical('Log started on %s, log level=%s'
                  % (datetime.datetime.now().ctime(),
-                    Log._level_num_to_name[level]))
+                    self._level_num_to_name[level]))
             self.critical('-'*55)
 
     def check_level(self, level):
@@ -121,8 +122,19 @@ class Log(object):
         """Set logging level."""
 
         level = self.check_level(level)
+
+        # convert numeric level to symbolic
+        sym = self._level_num_to_name.get(level, None)
+        if sym is None:
+            # not recognized symbolic but it's legal, so interpret as 'XXXX+2'
+            sym_10 = 10 * (level/10)
+            sym_rem = level - sym_10
+            sym = '%s+%d' % (self._level_num_to_name[sym_10], sym_rem)
+
         self.level = level
-        self.critical('Logging level set to %s' % str(level))
+        self.sym_level = sym
+
+        self.critical('Logging level set to %02d (%s)' % (level, sym))
 
     def __call__(self, msg=None, level=None):
         """Call on the logging object.
@@ -162,7 +174,7 @@ class Log(object):
                 break
 
         # get string for log level
-        loglevel = Log._level_num_to_name[level]
+        loglevel = self._level_num_to_name[level]
 
         fname = fname[:self.max_fname]
         self.logfd.write('%02d:%02d:%02d.%06d|%8s|%*s:%-4d|%s\n'
@@ -173,27 +185,27 @@ class Log(object):
     def critical(self, msg):
         """Log a message at CRITICAL level."""
 
-        self(msg, Log.CRITICAL)
+        self(msg, self.CRITICAL)
 
     def error(self, msg):
         """Log a message at ERROR level."""
 
-        self(msg, Log.ERROR)
+        self(msg, self.ERROR)
 
     def warn(self, msg):
         """Log a message at WARN level."""
 
-        self(msg, Log.WARN)
+        self(msg, self.WARN)
 
     def info(self, msg):
         """Log a message at INFO level."""
 
-        self(msg, Log.INFO)
+        self(msg, self.INFO)
 
     def debug(self, msg):
         """Log a message at DEBUG level."""
 
-        self(msg, Log.DEBUG)
+        self(msg, self.DEBUG)
 
     def __del__(self):
         self.logfd.close()

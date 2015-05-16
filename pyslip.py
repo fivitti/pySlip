@@ -1522,8 +1522,6 @@ class PySlip(_BufferedCanvas):
         a drag we don't do a lot.  If a selection we process that.
         """
 
-        log('OnLeftUp --------------------------------------')
-
         # turn off any dragging
         self.last_drag_x = self.last_drag_y = None
 
@@ -1541,7 +1539,6 @@ class PySlip(_BufferedCanvas):
         # if any layers interested, inform of possible select
         if not self.was_dragging:
             if self.is_box_select:
-                log('OnLeftUp: box select')
                 # get canonical selection box in view coordinates
                 (ll_vx, ll_vy, tr_vx, tr_vy) = self.sel_box_canonical()
 
@@ -1580,7 +1577,6 @@ class PySlip(_BufferedCanvas):
                         delayed_paint = True
                 self.is_box_select = False
             else:
-                log('OnLeftUp: point select')
                 # possible point selection, get click point in view coords
                 clickpt_v = event.GetPositionTuple()
 
@@ -2474,8 +2470,6 @@ class PySlip(_BufferedCanvas):
         This event is raised even when nothing is selected.  In that case,
         event.layer_id, .selection and .data are None.
         """
-
-        log('RaiseEventBoxSelect: selection=%s, data=%s' % (str(selection), str(data)))
 
         event = _PySlipEvent(_myEVT_PYSLIP_BOXSELECT, self.GetId())
 

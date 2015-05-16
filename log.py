@@ -64,6 +64,8 @@ class Log(object):
 
         self.max_fname = max_fname
 
+        self.level = self.check_level(level)
+
         # don't allow logfile to change after initially set
         if not hasattr(self, 'logfile'):
             if logfile is None:
@@ -88,13 +90,39 @@ class Log(object):
                 self.logfd = open(logfile, 'w')
 
             self.logfile = logfile
-            self.level = level
 
             self.critical('='*55)
             self.critical('Log started on %s, log level=%s'
                  % (datetime.datetime.now().ctime(),
                     Log._level_num_to_name[level]))
             self.critical('-'*55)
+
+    def check_level(self, level):
+        """Check the level value for legality.
+        
+        If 'level' is invalid, raise Exception.  If valid, return value.
+        """
+
+        try:
+            level = int(level)
+        except ValueError:
+            msg = "Logging level invalid: '%s'" % str(level)
+            print(msg)
+            raise Exception(msg)
+
+        if not 0 <= level <= 50:
+            msg = "Logging level invalid: '%s'" % str(level)                                                                                       
+            print(msg)                                                                                                                             
+            raise Exception(msg)
+
+        return level
+
+    def set_level(self, level):
+        """Set logging level."""
+
+        level = self.check_level(level)
+        self.level = level
+        self.critical('Logging level set to %s' % str(level))
 
     def __call__(self, msg=None, level=None):
         """Call on the logging object.

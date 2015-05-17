@@ -139,6 +139,9 @@ class LayerControlEvent(wx.PyCommandEvent):
 
 class LayerControl(wx.Panel):
 
+    OKColour = '#ffffff40'
+    ErrorColour = '#ff000020'
+
     def __init__(self, parent, title,
                  pointradius=DefaultPointRadius, pointcolour=DefaultPointColour,
                  placement=DefaultPlacement,
@@ -239,8 +242,8 @@ class LayerControl(wx.Panel):
         row += 1
         delete_button = wx.Button(self, label='Remove')
         gbs.Add(delete_button, (row,1), border=10, flag=wx.EXPAND)
-        update_button = wx.Button(self, label='Update')
-        gbs.Add(update_button, (row,3), border=10, flag=wx.EXPAND)
+        btn_update = wx.Button(self, label='Update')
+        gbs.Add(btn_update, (row,3), border=10, flag=wx.EXPAND)
 
         sbs.Add(gbs)
         self.SetSizer(sbs)
@@ -248,7 +251,7 @@ class LayerControl(wx.Panel):
 
         self.pointcolour.Bind(wx.EVT_BUTTON, self.onPointColour)
         delete_button.Bind(wx.EVT_BUTTON, self.onDelete)
-        update_button.Bind(wx.EVT_BUTTON, self.onUpdate)
+        btn_update.Bind(wx.EVT_BUTTON, self.onUpdate)
 
     def onPointColour(self, event):
         """Change point colour."""
@@ -274,20 +277,64 @@ class LayerControl(wx.Panel):
         event = LayerControlEvent(myEVT_DELETE, self.GetId())
         self.GetEventHandler().ProcessEvent(event)
 
+    def get_numeric_value(self, control):
+        """Get numeric value of a textbox.
+
+        control  the textbox to query
+
+        Return numeric value as a float.
+        """
+
+        orig_value = control.GetValue()
+        if not orig_value:
+            value = '0'
+            control.SetValue('0')
+        else:
+            value = orig_value
+
+        try:
+            value = float(value)
+        except ValueError:
+            return (orig_value, None)
+        return (orig_value, value)
+
     def onUpdate(self, event):
         """Update object on map."""
 
-        event = LayerControlEvent(myEVT_UPDATE, self.GetId())
+        # get x/y/offset_x/offset_y and check valid
+        (orig_x, x) = self.get_numeric_value(self.x)
+        (orig_y, y) = self.get_numeric_value(self.y)
+        (orig_offset_x, offset_x) = self.get_numeric_value(self.offset_x)
+        (orig_offset_y, offset_y) = self.get_numeric_value(self.offset_y)
 
-        event.pointradius = int(self.pointradius.GetValue())
-        event.pointcolour = self.pointcolour.GetBackgroundColour()
-        event.placement = self.placement.GetValue()
-        event.x = self.x.GetValue()
-        event.y = self.y.GetValue()
-        event.offset_x = self.offset_x.GetValue()
-        event.offset_y = self.offset_y.GetValue()
+        if (x is not None and y is not None
+                and offset_x is not None and offset_y is not None):
+            event = LayerControlEvent(myEVT_UPDATE, self.GetId())
 
-        self.GetEventHandler().ProcessEvent(event)
+            event.pointradius = int(self.pointradius.GetValue())
+            event.pointcolour = self.pointcolour.GetBackgroundColour()
+            event.placement = self.placement.GetValue()
+            event.x = x
+            event.y = y
+            event.offset_x = int(offset_x)
+            event.offset_y = int(offset_y)
+
+            self.GetEventHandler().ProcessEvent(event)
+        else:
+            msg = 'These controls have bad values:\n'
+            if x is None:
+                name = ('x:' + ' '*20)[:12]
+                msg += "\t%s\t%s\n" % (name, str(orig_x))
+            if y is None:
+                name = ('y:' + ' '*20)[:12]
+                msg += "\t%s\t%s\n" % (name, str(orig_y))
+            if offset_x is None:
+                name = ('offset_x:' + ' '*20)[:12]
+                msg += "\t%s\t%s\n" % (name, str(orig_offset_x))
+            if offset_y is None:
+                name = ('offset_y:' + ' '*20)[:12]
+                msg += "\t%s\t%s\n" % (name, str(orig_offset_y))
+            wx.MessageBox(msg, 'Warning', wx.OK | wx.ICON_ERROR)
 
 ################################################################################
 # The main application frame
@@ -509,6 +556,8 @@ class AppFrame(wx.Frame):
     def pointUpdate(self, event):
         """Display updated point."""
 
+        log('pointUpdate')
+
         if self.point_layer:
             self.pyslip.DeleteLayer(self.point_layer)
 
@@ -587,22 +636,18 @@ class AppFrame(wx.Frame):
         x = event.x
         if not x:
             x = 0
-        x = int(x)
 
         y = event.y
         if not y:
             y = 0
-        y = int(y)
 
         off_x = event.offset_x
         if not off_x:
             off_x = 0
-        off_x = int(off_x)
 
         off_y = event.offset_y
         if not off_y:
             off_y = 0
-        off_y = int(off_y)
 
         # create a new point layer
         point_data = [(x, y, {'placement': placement,
@@ -640,8 +685,6 @@ class AppFrame(wx.Frame):
 
     def handle_position_event(self, event):
         """Handle a pySlip POSITION event."""
-
-        log('handle_position_event: event=%s' % str(dir(event)))
 
         posn_str = ''
         if event.mposn:

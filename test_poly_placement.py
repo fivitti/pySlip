@@ -701,6 +701,12 @@ if __name__ == '__main__':
         tkinter_error.tkinter_error(msg)
         sys.exit(1)
 
+    def usage(msg=None):
+        if msg:
+            print(('*'*80 + '\n%s\n' + '*'*80) % msg)
+        print(__doc__)
+
+
     # plug our handler into the python system
     sys.excepthook = excepthook
 

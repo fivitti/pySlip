@@ -728,8 +728,8 @@ class AppFrame(wx.Frame):
         """Handle a pySlip POSITION event."""
 
         posn_str = ''
-        if event.position:
-            (lon, lat) = event.position
+        if event.mposn:
+            (lon, lat) = event.mposn
             posn_str = ('%.*f / %.*f'
                         % (LonLatPrecision, lon, LonLatPrecision, lat))
 
@@ -778,6 +778,12 @@ if __name__ == '__main__':
         log(msg)
         tkinter_error.tkinter_error(msg)
         sys.exit(1)
+
+    def usage(msg=None):
+        if msg:
+            print(('*'*80 + '\n%s\n' + '*'*80) % msg)
+        print(__doc__)
+
 
     # plug our handler into the python system
     sys.excepthook = excepthook

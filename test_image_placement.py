@@ -53,6 +53,8 @@ DefaultAppSize = (1000, 700)
 # initial values in map-relative LayerControl
 DefaultFilename = 'graphics/shipwreck.png'
 DefaultPlacement = 'ne'
+DefaultPointColour = 'red'
+DefaultPointRadius = 3
 DefaultX = 145.0
 DefaultY = -20.0
 DefaultOffsetX = 0
@@ -61,6 +63,7 @@ DefaultOffsetY = 0
 # initial values in view-relative LayerControl
 DefaultViewFilename = 'graphics/compass_rose.png'
 DefaultViewPlacement = 'ne'
+PointRadiusChoices = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
 DefaultViewX = 0
 DefaultViewY = 0
 DefaultViewOffsetX = 0
@@ -127,17 +130,20 @@ class LayerControlEvent(wx.PyCommandEvent):
 class LayerControl(wx.Panel):
 
     def __init__(self, parent, title, filename='', placement=DefaultPlacement,
+                 pointradius=DefaultPointRadius, pointcolour=DefaultPointColour,
                  x=0, y=0, offset_x=0, offset_y=0, **kwargs):
         """Initialise a LayerControl instance.
 
-        parent      reference to parent object
-        title       text to show in static box outline
-        filename    filename of image to show
-        placement   placement string for image
-        x, y        X and Y coords
-        offset_x    X offset of image
-        offset_y    Y offset of image
-        **kwargs    keyword args for Panel
+        parent       reference to parent object
+        title        text to show in static box outline
+        filename     filename of image to show
+        placement    placement string for image
+        pointradius  radius of the image point
+        pointcolour  colour of the image point
+        x, y         X and Y coords
+        offset_x     X offset of image
+        offset_y     Y offset of image
+        **kwargs     keyword args for Panel
         """
 
         # create and initialise the base panel
@@ -146,6 +152,8 @@ class LayerControl(wx.Panel):
 
         self.v_filename = filename
         self.v_placement = placement
+        self.v_pointradius = str(pointradius)
+        self.v_pointcolour = pointcolour
         self.v_x = x
         self.v_y = y
         self.v_offset_x = offset_x
@@ -174,7 +182,24 @@ class LayerControl(wx.Panel):
                                      choices=choices, style=style)
         gbs.Add(self.placement, (row,1), border=0)
 
-        # row 2
+#        # row 2
+#        row += 1
+#        label = wx.StaticText(self, wx.ID_ANY, 'point radius: ')
+#        gbs.Add(label, (row,0), border=0,
+#                flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
+#        style=wx.CB_DROPDOWN|wx.CB_READONLY
+#        self.pointradius = wx.ComboBox(self, value=self.v_pointradius,
+#                                       choices=PointRadiusChoices, style=style)
+#        gbs.Add(self.pointradius, (row,1),
+#                border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.EXPAND))
+#        label = wx.StaticText(self, wx.ID_ANY, 'point colour: ')
+#        gbs.Add(label, (row,2), border=0,
+#        flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
+#        self.pointcolour = wx.Button(self, label='')
+#        self.pointcolour.SetBackgroundColour(self.v_pointcolour)
+#        gbs.Add(self.pointcolour, (row,3), border=0, flag=wx.EXPAND)
+
+        # row 3
         row += 1
         label = wx.StaticText(self, wx.ID_ANY, 'x: ')
         gbs.Add(label, (row,0), border=0,
@@ -188,7 +213,7 @@ class LayerControl(wx.Panel):
         self.y = wx.TextCtrl(self, value=str(self.v_y))
         gbs.Add(self.y, (row,3), border=0, flag=wx.EXPAND)
 
-        # row 3
+        # row 4
         row += 1
         label = wx.StaticText(self, wx.ID_ANY, 'offset_x: ')
         gbs.Add(label, (row,0), border=0,
@@ -202,7 +227,7 @@ class LayerControl(wx.Panel):
         self.offset_y = wx.TextCtrl(self, value=str(self.v_offset_y))
         gbs.Add(self.offset_y, (row,3), border=0, flag=wx.EXPAND)
 
-        # row 4
+        # row 5
         row += 1
         delete_button = wx.Button(self, label='Remove')
         gbs.Add(delete_button, (row,1), border=10, flag=wx.EXPAND)
@@ -214,6 +239,7 @@ class LayerControl(wx.Panel):
         sbs.Fit(self)
 
         self.filename.Bind(wx.EVT_LEFT_UP, self.onFilename)
+#        self.pointcolour.Bind(wx.EVT_BUTTON, self.onPointColour)
         delete_button.Bind(wx.EVT_BUTTON, self.onDelete)
         update_button.Bind(wx.EVT_BUTTON, self.onUpdate)
 
@@ -237,25 +263,90 @@ class LayerControl(wx.Panel):
         if filepath:
             self.filename.SetValue(filepath)
 
+#    def onPointColour(self, event):
+#        """Change text colour."""
+#
+#        colour = self.pointcolour.GetBackgroundColour()
+#        wxcolour = wx.ColourData()
+#        wxcolour.SetColour(colour)
+#
+#        dialog = wx.ColourDialog(self, data=wxcolour)
+#        dialog.GetColourData().SetChooseFull(True)
+#        new_colour = None
+#        if dialog.ShowModal() == wx.ID_OK:
+#            data = dialog.GetColourData()
+#            new_colour = data.GetColour().Get()
+#        dialog.Destroy()
+#
+#        if new_colour:
+#            self.pointcolour.SetBackgroundColour(new_colour)
+
     def onDelete(self, event):
         """Remove image from map."""
 
         event = LayerControlEvent(myEVT_DELETE, self.GetId())
         self.GetEventHandler().ProcessEvent(event)
 
+    def get_numeric_value(self, control):
+        """Get numeric value of a textbox.
+
+        control  the textbox to query
+
+        Return numeric value as a float.
+        """
+
+        orig_value = control.GetValue()
+        if not orig_value:
+            value = '0'
+            control.SetValue('0')
+        else:
+            value = orig_value
+
+        try:
+            value = float(value)
+        except ValueError:
+            return (orig_value, None)
+        return (orig_value, value)
+
     def onUpdate(self, event):
         """Update image on map."""
 
-        event = LayerControlEvent(myEVT_UPDATE, self.GetId())
+        # get x/y/offset_x/offset_y and check valid
+        (orig_x, x) = self.get_numeric_value(self.x)
+        (orig_y, y) = self.get_numeric_value(self.y)
+        (orig_offset_x, offset_x) = self.get_numeric_value(self.offset_x)
+        (orig_offset_y, offset_y) = self.get_numeric_value(self.offset_y)
 
-        event.filename = self.filename.GetValue()
-        event.placement = self.placement.GetValue()
-        event.x = self.x.GetValue()
-        event.y = self.y.GetValue()
-        event.offset_x = self.offset_x.GetValue()
-        event.offset_y = self.offset_y.GetValue()
+        if (x is not None and y is not None
+                and offset_x is not None and offset_y is not None):
+            event = LayerControlEvent(myEVT_UPDATE, self.GetId())
 
-        self.GetEventHandler().ProcessEvent(event)
+            event.filename = self.filename.GetValue()
+            event.placement = self.placement.GetValue()
+#            event.radius = int(self.pointradius.GetValue())
+#            event.colour = self.pointcolour.GetBackgroundColour()
+            event.x = self.x.GetValue()
+            event.y = self.y.GetValue()
+            event.offset_x = self.offset_x.GetValue()
+            event.offset_y = self.offset_y.GetValue()
+
+            self.GetEventHandler().ProcessEvent(event)
+        else:
+            msg = 'These controls have bad values:\n'
+            if x is None:
+                name = ('x:' + ' '*20)[:12]
+                msg += "\t%s\t%s\n" % (name, str(orig_x))
+            if y is None:
+                name = ('y:' + ' '*20)[:12]
+                msg += "\t%s\t%s\n" % (name, str(orig_y))
+            if offset_x is None:
+                name = ('offset_x:' + ' '*20)[:12]
+                msg += "\t%s\t%s\n" % (name, str(orig_offset_x))
+            if offset_y is None:
+                name = ('offset_y:' + ' '*20)[:12]
+                msg += "\t%s\t%s\n" % (name, str(orig_offset_y))
+            wx.MessageBox(msg, 'Warning', wx.OK | wx.ICON_ERROR)
+
 
 ################################################################################
 # The main application frame
@@ -517,11 +608,21 @@ class AppFrame(wx.Frame):
         except ValueError:
             off_y = 0
 
+#        radius = event.radius
+#        colour = event.colour
+#        colour = 'red'
+#        log('radius=%s, colour=%s' % (str(radius), str(colour)))
+
         image_data = [(x, y, image, {'placement': placement,
+#                                     'radius': radius,
+#                                     'colour': colour,
                                      'offset_x': off_x,
                                      'offset_y': off_y})]
+        log('image_data=%s' % str(image_data))
         self.image_layer = self.pyslip.AddImageLayer(image_data, map_rel=True,
                                                      visible=True,
+#                                                     radius=radius,
+#                                                     colour=colour,
                                                      name='<image_layer>')
 
     def imageDelete(self, event):
@@ -601,8 +702,8 @@ class AppFrame(wx.Frame):
         """Handle a pySlip POSITION event."""
 
         posn_str = ''
-        if event.position:
-            (lon, lat) = event.position
+        if event.mposn:
+            (lon, lat) = event.mposn
             posn_str = ('%.*f / %.*f' % (LonLatPrecision, lon,
                                          LonLatPrecision, lat))
 

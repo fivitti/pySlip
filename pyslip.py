@@ -693,6 +693,9 @@ class PySlip(_BufferedCanvas):
         where the image is displayed relative to the hotspot.
         """
 
+        log('AddImageLayer: data=%s, visible=%s, show_levels=%s'
+                % (str(data), str(visible), str(show_levels)))
+
         # merge global and layer defaults
         if map_rel:
             default_placement = kwargs.get('placement', self.DefaultImagePlacement)
@@ -2819,9 +2822,9 @@ class PySlip(_BufferedCanvas):
         Returns a tuple (x, y).
         """
 
-        if place == 'cc':   x+=x_off;  y+=y_off
+        if place == 'cc':   pass
         elif place == 'nw': x+=x_off;  y+=y_off
-        elif place == 'cn': y+=y_off
+        elif place == 'cn':            y+=y_off
         elif place == 'ne': x-=x_off;  y+=y_off
         elif place == 'ce': x-=x_off;
         elif place == 'se': x-=x_off;  y-=y_off
@@ -2873,15 +2876,15 @@ class PySlip(_BufferedCanvas):
         w2 = w/2
         h2 = h/2
 
-        if place == 'cc':   x+=x_off-w2;  y+=y_off-h2
+        if place == 'cc':   x+=-w2;       y+=-h2
         elif place == 'nw': x+=x_off;     y+=y_off
-        elif place == 'cn': x+=x_off-w2;  y+=y_off
-        elif place == 'ne': x+=x_off-w;   y+=y_off
-        elif place == 'ce': x+=x_off-w;   y+=y_off-h2
-        elif place == 'se': x+=x_off-w;   y+=y_off-h
-        elif place == 'cs': x+=x_off-w2;  y+=y_off-h
-        elif place == 'sw': x+=x_off;     y+=y_off-h
-        elif place == 'cw': x+=x_off;     y+=y_off-h2
+        elif place == 'cn': x+=-w2;       y+=y_off
+        elif place == 'ne': x+=-x_off-w;  y+=y_off
+        elif place == 'ce': x+=-x_off-w;  y+=-h2
+        elif place == 'se': x+=-x_off-w;  y+=-y_off-h
+        elif place == 'cs': x+=-w2;       y+=-y_off-h
+        elif place == 'sw': x+=x_off;     y+=-y_off-h
+        elif place == 'cw': x+=x_off;     y+=-h2
 
         return (x, y)
 
@@ -2985,9 +2988,9 @@ class PySlip(_BufferedCanvas):
         Returns a tuple (x, y).
         """
 
-        if place == 'cc':   pass
+        if place == 'cc':   x+=x_off;  y+=y_off
         elif place == 'nw': x+=x_off;  y+=y_off
-        elif place == 'cn': pass;      y+=y_off
+        elif place == 'cn':            y+=y_off
         elif place == 'ne': x-=x_off;  y+=y_off
         elif place == 'ce': x-=x_off
         elif place == 'se': x-=x_off;  y-=y_off
@@ -2998,29 +3001,29 @@ class PySlip(_BufferedCanvas):
         return (x, y)
 
     @staticmethod
-    def poly_view_placement(place, x, y, x_off, y_off, dcw, dch):
+    def poly_view_placement(place, x, y, x_off, y_off, w, h):
         """Perform view-relative placement for a polygon point.
 
         place         placement key string
         x, y          point relative to placement origin
         x_off, y_off  offset from point
-        dcw, dcw      width/height of the view draw context
+        w, w          width/height of the view draw context
 
         Returns a tuple (x, y).
         """
 
-        dcw2 = dcw/2
-        dch2 = dch/2
+        w2 = w/2
+        h2 = h/2
 
-        if place == 'cc':   x+=dcw2;       y+=dch2
-        elif place == 'nw': x+=x_off;      y+=y_off
-        elif place == 'cn': x+=dcw2;       y+=y_off
-        elif place == 'ne': x+=dcw-x_off;  y+=y_off
-        elif place == 'ce': x+=dcw-x_off;  y+=dch2
-        elif place == 'se': x+=dcw-x_off;  y+=dch-y_off
-        elif place == 'cs': x+=dcw2;       y+=dch-y_off
-        elif place == 'sw': x+=x_off;      y+=dch-y_off
-        elif place == 'cw': x+=x_off;      y+=dch2
+        if place == 'cc':   x+=w2;       y+=h2
+        elif place == 'nw': x+=x_off;    y+=y_off
+        elif place == 'cn': x+=w2;       y+=y_off
+        elif place == 'ne': x+=w-x_off;  y+=y_off
+        elif place == 'ce': x+=w-x_off;  y+=h2
+        elif place == 'se': x+=w-x_off;  y+=h-y_off
+        elif place == 'cs': x+=w2;       y+=h-y_off
+        elif place == 'sw': x+=x_off;    y+=h-y_off
+        elif place == 'cw': x+=x_off;    y+=h2
 
         return (x, y)
 

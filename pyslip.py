@@ -675,6 +675,8 @@ class PySlip(_BufferedCanvas):
                      or list of (x, y, fname[, attributes]) (view relative)
                      attributes is a dictionary of attributes:
                          placement  a placement string
+                         radius     object point radius
+                         colour     object point colour
                          offset_x   X offset
                          offset_y   Y offset
                          data       image user data
@@ -685,6 +687,8 @@ class PySlip(_BufferedCanvas):
         name         name of this layer
         kwargs       dictionary of extra params:
                          placement  string describing placement wrt hotspot
+                         radius     object point radius
+                         colour     object point colour
                          offset_x   hotspot X offset in pixels
                          offset_y   hotspot Y offset in pixels
                          data       image user data
@@ -693,17 +697,18 @@ class PySlip(_BufferedCanvas):
         where the image is displayed relative to the hotspot.
         """
 
-        log('AddImageLayer: data=%s, visible=%s, show_levels=%s'
-                % (str(data), str(visible), str(show_levels)))
-
         # merge global and layer defaults
         if map_rel:
             default_placement = kwargs.get('placement', self.DefaultImagePlacement)
+            default_radius = kwargs.get('radius', self.DefaultImageRadius)
+            default_colour = kwargs.get('colour', self.DefaultImageColour)
             default_offset_x = kwargs.get('offset_x', self.DefaultImageOffsetX)
             default_offset_y = kwargs.get('offset_y', self.DefaultImageOffsetY)
             default_data = kwargs.get('data', self.DefaultImageData)
         else:
             default_placement = kwargs.get('placement', self.DefaultImageViewPlacement)
+            default_radius = kwargs.get('radius', self.DefaultImageViewRadius)
+            default_colour = kwargs.get('colour', self.DefaultImageViewColour)
             default_offset_x = kwargs.get('offset_x', self.DefaultImageViewOffsetX)
             default_offset_y = kwargs.get('offset_y', self.DefaultImageViewOffsetY)
             default_data = kwargs.get('data', self.DefaultImageViewData)
@@ -730,6 +735,8 @@ class PySlip(_BufferedCanvas):
 
             # get image specific values, if any
             placement = attributes.get('placement', default_placement)
+            radius = attributes.get('radius', default_radius)
+            colour = attributes.get('colour', default_colour)
             offset_x = attributes.get('offset_x', default_offset_x)
             offset_y = attributes.get('offset_y', default_offset_y)
             udata = attributes.get('data', None)
@@ -753,8 +760,8 @@ class PySlip(_BufferedCanvas):
                        % str(placement))
                 raise Exception(msg)
 
-            draw_data.append((float(lon), float(lat), bmap, w, h,
-                              placement, offset_x, offset_y, udata))
+            draw_data.append((float(lon), float(lat), bmap, w, h, placement,
+                              offset_x, offset_y, radius, colour, udata))
 
         return self.AddLayer(self.DrawImageLayer, draw_data, map_rel,
                              visible=visible, show_levels=show_levels,
@@ -1162,20 +1169,45 @@ class PySlip(_BufferedCanvas):
         # draw images
         if map_rel:
             # draw images on the map
-            for (lon, lat, bmap, w, h, place, x_off, y_off, idata) in images:
+            # (lon, lat, bmap, w, h, placement, offset_x, offset_y, radius, colour, udata)
+            for (lon, lat, bmap, w, h, place,
+                     x_off, y_off, radius, colour, idata) in images:
                 pt = self.Geo2ViewMasked((lon, lat))
                 if pt:
                     (x, y) = pt
-                    (x, y) = self.image_map_placement(place, x, y,
-                                                      x_off, y_off, w, h)
-                    dc.DrawBitmap(bmap, x, y, False)
+                    (ix, iy) = self.image_map_placement(place, x, y,
+                                                        x_off, y_off, w, h)
+                    dc.DrawBitmap(bmap, ix, iy, False)
+
+                    # draw object point
+                    if radius:
+                        # do placement with image heights and offsets zero
+                        (px, py) = self.image_map_placement(place, x, y,
+                                                            0, 0, 0, 0)
+                        dc.SetPen(wx.Pen(colour))
+                        dc.SetBrush(wx.Brush(colour))
+                        dc.DrawCircle(px, py, radius)
         else:
             # draw images on the view
+            # (lon, lat, bmap, w, h, placement, offset_x, offset_y, radius, colour, udata)
             (dc_w, dc_h) = dc.GetSize()
-            for (x, y, bmap, w, h, place, x_off, y_off, idata) in images:
-                (x, y) = self.image_view_placement(place, x, y,
-                                                   x_off, y_off, w, h, dc_w, dc_h)
-                dc.DrawBitmap(bmap, x, y, False)
+            for (x, y, bmap, w, h, place,
+                    x_off, y_off, radius, colour, idata) in images:
+                # draw the image
+                (ix, iy) = self.image_view_placement(place, x, y,
+                                                     x_off, y_off,
+                                                     w, h, dc_w, dc_h)
+                dc.DrawBitmap(bmap, ix, iy, False)
+
+                # draw object point
+                if radius:
+                    # do placement with image heights and offsets zero
+                    (px, py) = self.image_view_placement(place, x, y,
+                                                         0, 0, 0, 0,
+                                                         dc_w, dc_h)
+                    dc.SetPen(wx.Pen(colour))
+                    dc.SetBrush(wx.Brush(colour))
+                    dc.DrawCircle(px, py, radius)
 
     def DrawTextLayer(self, dc, text, map_rel):
         """Draw a text Layer on the view.
@@ -1238,11 +1270,11 @@ class PySlip(_BufferedCanvas):
                                False, fontname)
                 dc.SetFont(font)
 
-                # draw hotpoint
+                # draw object point
                 if radius:
-                    # do placement with width, heights and offsets zero
+                    # do placement with image heights and offsets zero
                     (px, py) = self.text_view_placement(place, x, y,
-                                                        0, 0, 0, 0, 0, 0)
+                                                        0, 0, 0, 0, dc_w, dc_h)
                     dc.DrawCircle(px, py, radius)
 
                 # place the text relative to hotpoint

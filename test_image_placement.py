@@ -182,22 +182,22 @@ class LayerControl(wx.Panel):
                                      choices=choices, style=style)
         gbs.Add(self.placement, (row,1), border=0)
 
-#        # row 2
-#        row += 1
-#        label = wx.StaticText(self, wx.ID_ANY, 'point radius: ')
-#        gbs.Add(label, (row,0), border=0,
-#                flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-#        style=wx.CB_DROPDOWN|wx.CB_READONLY
-#        self.pointradius = wx.ComboBox(self, value=self.v_pointradius,
-#                                       choices=PointRadiusChoices, style=style)
-#        gbs.Add(self.pointradius, (row,1),
-#                border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.EXPAND))
-#        label = wx.StaticText(self, wx.ID_ANY, 'point colour: ')
-#        gbs.Add(label, (row,2), border=0,
-#        flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-#        self.pointcolour = wx.Button(self, label='')
-#        self.pointcolour.SetBackgroundColour(self.v_pointcolour)
-#        gbs.Add(self.pointcolour, (row,3), border=0, flag=wx.EXPAND)
+        # row 2
+        row += 1
+        label = wx.StaticText(self, wx.ID_ANY, 'point radius: ')
+        gbs.Add(label, (row,0), border=0,
+                flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
+        style=wx.CB_DROPDOWN|wx.CB_READONLY
+        self.pointradius = wx.ComboBox(self, value=self.v_pointradius,
+                                       choices=PointRadiusChoices, style=style)
+        gbs.Add(self.pointradius, (row,1),
+                border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.EXPAND))
+        label = wx.StaticText(self, wx.ID_ANY, 'point colour: ')
+        gbs.Add(label, (row,2), border=0,
+        flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
+        self.pointcolour = wx.Button(self, label='')
+        self.pointcolour.SetBackgroundColour(self.v_pointcolour)
+        gbs.Add(self.pointcolour, (row,3), border=0, flag=wx.EXPAND)
 
         # row 3
         row += 1
@@ -239,14 +239,12 @@ class LayerControl(wx.Panel):
         sbs.Fit(self)
 
         self.filename.Bind(wx.EVT_LEFT_UP, self.onFilename)
-#        self.pointcolour.Bind(wx.EVT_BUTTON, self.onPointColour)
+        self.pointcolour.Bind(wx.EVT_BUTTON, self.onPointColour)
         delete_button.Bind(wx.EVT_BUTTON, self.onDelete)
         update_button.Bind(wx.EVT_BUTTON, self.onUpdate)
 
     def onFilename(self, event):
         """Change image filename."""
-
-        log('onFilename')
 
         wildcard = ("PNG files (*.png)|*.png|"
                     "JPG files (*.jpg)|*.jpg|"
@@ -263,23 +261,23 @@ class LayerControl(wx.Panel):
         if filepath:
             self.filename.SetValue(filepath)
 
-#    def onPointColour(self, event):
-#        """Change text colour."""
-#
-#        colour = self.pointcolour.GetBackgroundColour()
-#        wxcolour = wx.ColourData()
-#        wxcolour.SetColour(colour)
-#
-#        dialog = wx.ColourDialog(self, data=wxcolour)
-#        dialog.GetColourData().SetChooseFull(True)
-#        new_colour = None
-#        if dialog.ShowModal() == wx.ID_OK:
-#            data = dialog.GetColourData()
-#            new_colour = data.GetColour().Get()
-#        dialog.Destroy()
-#
-#        if new_colour:
-#            self.pointcolour.SetBackgroundColour(new_colour)
+    def onPointColour(self, event):
+        """Change text colour."""
+
+        colour = self.pointcolour.GetBackgroundColour()
+        wxcolour = wx.ColourData()
+        wxcolour.SetColour(colour)
+
+        dialog = wx.ColourDialog(self, data=wxcolour)
+        dialog.GetColourData().SetChooseFull(True)
+        new_colour = None
+        if dialog.ShowModal() == wx.ID_OK:
+            data = dialog.GetColourData()
+            new_colour = data.GetColour().Get()
+        dialog.Destroy()
+
+        if new_colour:
+            self.pointcolour.SetBackgroundColour(new_colour)
 
     def onDelete(self, event):
         """Remove image from map."""
@@ -323,8 +321,8 @@ class LayerControl(wx.Panel):
 
             event.filename = self.filename.GetValue()
             event.placement = self.placement.GetValue()
-#            event.radius = int(self.pointradius.GetValue())
-#            event.colour = self.pointcolour.GetBackgroundColour()
+            event.radius = int(self.pointradius.GetValue())
+            event.colour = self.pointcolour.GetBackgroundColour()
             event.x = self.x.GetValue()
             event.y = self.y.GetValue()
             event.offset_x = self.offset_x.GetValue()
@@ -566,6 +564,7 @@ class AppFrame(wx.Frame):
     def imageUpdate(self, event):
         """Display updated image."""
 
+        # remove any previous layer
         if self.image_layer:
             self.pyslip.DeleteLayer(self.image_layer)
 
@@ -608,21 +607,16 @@ class AppFrame(wx.Frame):
         except ValueError:
             off_y = 0
 
-#        radius = event.radius
-#        colour = event.colour
-#        colour = 'red'
-#        log('radius=%s, colour=%s' % (str(radius), str(colour)))
+        radius = event.radius
+        colour = event.colour
 
         image_data = [(x, y, image, {'placement': placement,
-#                                     'radius': radius,
-#                                     'colour': colour,
+                                     'radius': radius,
+                                     'colour': colour,
                                      'offset_x': off_x,
                                      'offset_y': off_y})]
-        log('image_data=%s' % str(image_data))
         self.image_layer = self.pyslip.AddImageLayer(image_data, map_rel=True,
                                                      visible=True,
-#                                                     radius=radius,
-#                                                     colour=colour,
                                                      name='<image_layer>')
 
     def imageDelete(self, event):
@@ -666,8 +660,13 @@ class AppFrame(wx.Frame):
             off_y = 0
         off_y = int(off_y)
 
+        radius = event.radius
+        colour = event.colour
+
         # create a new image layer
         image_data = [(x, y, image, {'placement': placement,
+                                     'radius': radius,
+                                     'colour': colour,
                                      'offset_x': off_x,
                                      'offset_y': off_y})]
         self.image_view_layer = self.pyslip.AddImageLayer(image_data,

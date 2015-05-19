@@ -2855,13 +2855,13 @@ class PySlip(_BufferedCanvas):
         """
 
         if place == 'cc':   pass
-        elif place == 'nw': x+=x_off;  y+=y_off
-        elif place == 'cn':            y+=y_off
-        elif place == 'ne': x-=x_off;  y+=y_off
-        elif place == 'ce': x-=x_off;
-        elif place == 'se': x-=x_off;  y-=y_off
-        elif place == 'cs':            y-=y_off
-        elif place == 'sw': x+=x_off;  y-=y_off
+        elif place == 'nw': x+=x_off;   y+=y_off
+        elif place == 'cn':             y+=y_off
+        elif place == 'ne': x+=-x_off;  y+=y_off
+        elif place == 'ce': x+=-x_off;
+        elif place == 'se': x+=-x_off;  y+=-y_off
+        elif place == 'cs':             y+=-y_off
+        elif place == 'sw': x+=x_off;   y+=-y_off
         elif place == 'cw': x+=x_off;
 
         return (x, y)
@@ -3020,14 +3020,14 @@ class PySlip(_BufferedCanvas):
         Returns a tuple (x, y).
         """
 
-        if place == 'cc':   x+=x_off;  y+=y_off
-        elif place == 'nw': x+=x_off;  y+=y_off
-        elif place == 'cn':            y+=y_off
-        elif place == 'ne': x-=x_off;  y+=y_off
-        elif place == 'ce': x-=x_off
-        elif place == 'se': x-=x_off;  y-=y_off
-        elif place == 'cs':            y-=y_off
-        elif place == 'sw': x+=x_off;  y-=y_off
+        if place == 'cc':   pass
+        elif place == 'nw': x+=x_off;   y+=y_off
+        elif place == 'cn':             y+=y_off
+        elif place == 'ne': x+=-x_off;  y+=y_off
+        elif place == 'ce': x+=-x_off
+        elif place == 'se': x+=-x_off;  y+=-y_off
+        elif place == 'cs':             y+=-y_off
+        elif place == 'sw': x+=x_off;   y+=-y_off
         elif place == 'cw': x+=x_off
 
         return (x, y)

@@ -1143,15 +1143,16 @@ class PySlip(_BufferedCanvas):
                     dc.SetPen(wx.Pen(colour))
                     dc.SetBrush(wx.Brush(colour))
                     (x, y) = pt
-                    (x, y) = self.point_map_placement(place, x, y, x_off, y_off)
+                    (x, y) = self.point_placement(place, x, y, x_off, y_off)
                     dc.DrawCircle(x, y, radius)
         else:   # view
             for (x, y, place, radius, colour, x_off, y_off, udata) in data:
                 if radius:
                     dc.SetPen(wx.Pen(colour))
                     dc.SetBrush(wx.Brush(colour))
-                    (x, y) = self.point_view_placement(place, x, y, x_off, y_off,
-                                                       self.view_width, self.view_height)
+                    (x, y) = self.point_placement(place, x, y, x_off, y_off,
+                                                  self.view_width,
+                                                  self.view_height)
                     dc.DrawCircle(x, y, radius)
 
     def DrawImageLayer(self, dc, images, map_rel):
@@ -1175,15 +1176,14 @@ class PySlip(_BufferedCanvas):
                 pt = self.Geo2ViewMasked((lon, lat))
                 if pt:
                     (x, y) = pt
-                    (ix, iy) = self.image_map_placement(place, x, y,
-                                                        x_off, y_off, w, h)
+                    (ix, iy) = self.extent_placement(place, x, y,
+                                                    x_off, y_off, w, h)
                     dc.DrawBitmap(bmap, ix, iy, False)
 
                     # draw object point
                     if radius:
                         # do placement with image heights and offsets zero
-                        (px, py) = self.image_map_placement(place, x, y,
-                                                            0, 0, 0, 0)
+                        (px, py) = self.extent_placement(place, x, y, 0, 0, 0, 0)
                         dc.SetPen(wx.Pen(colour))
                         dc.SetBrush(wx.Brush(colour))
                         dc.DrawCircle(px, py, radius)
@@ -1194,17 +1194,15 @@ class PySlip(_BufferedCanvas):
             for (x, y, bmap, w, h, place,
                     x_off, y_off, radius, colour, idata) in images:
                 # draw the image
-                (ix, iy) = self.image_view_placement(place, x, y,
-                                                     x_off, y_off,
-                                                     w, h, dc_w, dc_h)
+                (ix, iy) = self.extent_placement(place, x, y,
+                                                x_off, y_off, w, h, dc_w, dc_h)
                 dc.DrawBitmap(bmap, ix, iy, False)
 
                 # draw object point
                 if radius:
                     # do placement with image heights and offsets zero
-                    (px, py) = self.image_view_placement(place, x, y,
-                                                         0, 0, 0, 0,
-                                                         dc_w, dc_h)
+                    (px, py) = self.extent_placement(place, x, y,
+                                                    0, 0, 0, 0, dc_w, dc_h)
                     dc.SetPen(wx.Pen(colour))
                     dc.SetBrush(wx.Brush(colour))
                     dc.DrawCircle(px, py, radius)
@@ -1252,7 +1250,8 @@ class PySlip(_BufferedCanvas):
 
                     # place the text relative to hotpoint
                     (w, h, _, _) = dc.GetFullTextExtent(tdata)
-                    (x, y) = self.text_map_placement(place, x, y, x_off, y_off, w, h)
+                    (x, y) = self.extent_placement(place, x, y,
+                                                  x_off, y_off, w, h)
                     dc.SetTextForeground(textcolour)
                     dc.DrawText(tdata, x, y)
         else:
@@ -1273,14 +1272,14 @@ class PySlip(_BufferedCanvas):
                 # draw object point
                 if radius:
                     # do placement with image heights and offsets zero
-                    (px, py) = self.text_view_placement(place, x, y,
-                                                        0, 0, 0, 0, dc_w, dc_h)
+                    (px, py) = self.extent_placement(place, x, y,
+                                                    0, 0, 0, 0, dc_w, dc_h)
                     dc.DrawCircle(px, py, radius)
 
                 # place the text relative to hotpoint
                 (w, h, _, _) = dc.GetFullTextExtent(tdata)  # size of text
-                (x, y) = self.text_view_placement(place, x, y, x_off, y_off,
-                                                  w, h, dc_w, dc_h)
+                (x, y) = self.extent_placement(place, x, y, x_off, y_off,
+                                              w, h, dc_w, dc_h)
                 dc.SetTextForeground(textcolour)
                 dc.DrawText(tdata, x, y)
 
@@ -1308,7 +1307,8 @@ class PySlip(_BufferedCanvas):
                     (tx, ty) = self.tiles.Geo2Tile(lonlat)
                     x = tx*self.tiles.tile_size_x - self.view_offset_x
                     y = ty*self.tiles.tile_size_y - self.view_offset_y
-                    (x, y) = self.poly_map_placement(place, x, y, x_off, y_off)
+                    #(x, y) = self.poly_map_placement(place, x, y, x_off, y_off)
+                    (x, y) = self.point_placement(place, x, y, x_off, y_off)
                     pp.append((x, y))
 
                 dc.SetPen(wx.Pen(colour, width=width))
@@ -1328,7 +1328,8 @@ class PySlip(_BufferedCanvas):
                      filled, fillcolour, x_off, y_off, udata) in data:
                 pp = []
                 for (x, y) in p:
-                    (x, y) = self.poly_view_placement(place, x, y, x_off, y_off, dc_w, dc_h)
+                    #(x, y) = self.poly_view_placement(place, x, y, x_off, y_off, dc_w, dc_h)
+                    (x, y) = self.point_placement(place, x, y, x_off, y_off, dc_w, dc_h)
                     pp.append((x, y))
 
                 dc.SetPen(wx.Pen(colour, width=width))
@@ -2036,8 +2037,8 @@ class PySlip(_BufferedCanvas):
             (ptx, pty) = pt
             for p in layer.data:
                 (x, y, place, _, _, x_off, y_off, data) = p
-                (x, y) = self.point_view_placement(place, x, y, x_off, y_off,
-                                                   self.view_width, self.view_height)
+                (x, y) = self.point_placement(place, x, y, x_off, y_off,
+                                              self.view_width, self.view_height)
                 d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
                 if d < dist:
                     dist = d
@@ -2080,8 +2081,8 @@ class PySlip(_BufferedCanvas):
         else:
             for p in layer.data:
                 (x, y, place, _, _, x_off, y_off, udata) = p
-                (x, y) = self.point_view_placement(place, x, y, x_off, y_off,
-                                                   self.view_width, self.view_height)
+                (x, y) = self.point_placement(place, x, y, x_off, y_off,
+                                              self.view_width, self.view_height)
                 if lx <= x <= rx and ty <= y <= by:
                     selection.append((x, y))
                     data.append(udata)
@@ -2264,8 +2265,8 @@ class PySlip(_BufferedCanvas):
             # view-relative
             for p in layer.data:
                 (x, y, _, place, _, _, _, _, _, x_off, y_off, udata) = p
-                (x, y) = self.point_view_placement(place, x, y, x_off, y_off,
-                                                   self.view_width, self.view_height)
+                (x, y) = self.point_placement(place, x, y, x_off, y_off,
+                                              self.view_width, self.view_height)
                 if lx <= x <= rx and ty <= y <= by:
                     selection.append((x, y))
                     data.append(udata)
@@ -2344,8 +2345,9 @@ class PySlip(_BufferedCanvas):
                 # prepare the half values, etc
                 inside = True
                 for (x, y) in poly:
-                    (x, y) = self.point_view_placement(place, x, y, x_off, y_off,
-                                                       self.view_width, self.view_height)
+                    (x, y) = self.point_placement(place, x, y, x_off, y_off,
+                                                  self.view_width,
+                                                  self.view_height)
                     if not (lx <= x <= rx and ty <= y <= by):
                         inside = False
                         break
@@ -2632,8 +2634,8 @@ class PySlip(_BufferedCanvas):
         # convert polygon and placement into list of (x,y) tuples
         view_poly = []
         for (x, y) in poly:
-            (x, y) = self.point_view_placement(place, x, y, x_off, y_off,
-                                               self.view_width, self.view_height)
+            (x, y) = self.point_placement(place, x, y, x_off, y_off,
+                                          self.view_width, self.view_height)
             view_poly.append((x, y))
 
         # decide if (ptx,pty) is inside polygon
@@ -2844,31 +2846,8 @@ class PySlip(_BufferedCanvas):
 ######
 
     @staticmethod
-    def point_map_placement(place, x, y, x_off, y_off):
-        """Perform map-relative placement for a single point.
-
-        place         placement key string
-        x, y          point relative to placement origin
-        x_off, y_off  offset from point
-
-        Returns a tuple (x, y).
-        """
-
-        if place == 'cc':   pass
-        elif place == 'nw': x+=x_off;   y+=y_off
-        elif place == 'cn':             y+=y_off
-        elif place == 'ne': x+=-x_off;  y+=y_off
-        elif place == 'ce': x+=-x_off;
-        elif place == 'se': x+=-x_off;  y+=-y_off
-        elif place == 'cs':             y+=-y_off
-        elif place == 'sw': x+=x_off;   y+=-y_off
-        elif place == 'cw': x+=x_off;
-
-        return (x, y)
-
-    @staticmethod
-    def point_view_placement(place, x, y, x_off, y_off, w, h):
-        """Perform view-relative placement for a single point.
+    def point_placement(place, x, y, x_off, y_off, w=0, h=0):
+        """Perform map- or view-relative placement for a single point.
 
         place         placement key string
         x, y          point relative to placement origin
@@ -2894,35 +2873,8 @@ class PySlip(_BufferedCanvas):
         return (x, y)
 
     @staticmethod
-    def image_map_placement(place, x, y, x_off, y_off, w, h):
-        """Perform map-relative placement for an image.
-
-        place         placement key string
-        x, y          point relative to placement origin
-        x_off, y_off  offset from point
-        w, h          width, height of the view port
-
-        Returns a tuple (x, y).
-        """
-
-        w2 = w/2
-        h2 = h/2
-
-        if place == 'cc':   x+=-w2;       y+=-h2
-        elif place == 'nw': x+=x_off;     y+=y_off
-        elif place == 'cn': x+=-w2;       y+=y_off
-        elif place == 'ne': x+=-x_off-w;  y+=y_off
-        elif place == 'ce': x+=-x_off-w;  y+=-h2
-        elif place == 'se': x+=-x_off-w;  y+=-y_off-h
-        elif place == 'cs': x+=-w2;       y+=-y_off-h
-        elif place == 'sw': x+=x_off;     y+=-y_off-h
-        elif place == 'cw': x+=x_off;     y+=-h2
-
-        return (x, y)
-
-    @staticmethod
-    def image_view_placement(place, x, y, x_off, y_off, w, h, dcw, dch):
-        """Perform view-relative placement for an image.
+    def extent_placement(place, x, y, x_off, y_off, w, h, dcw=0, dch=0):
+        """Perform map_ and view-relative placement for an extent object.
 
         place         placement key string
         x, y          point relative to placement origin
@@ -2948,64 +2900,6 @@ class PySlip(_BufferedCanvas):
         elif place == 'cs': x+=dcw2-w2;       y+=dch-h-y_off
         elif place == 'sw': x+=x_off;         y+=dch-h-y_off
         elif place == 'cw': x+=x_off;         y+=dch2-h2
-
-        return (x, y)
-
-    @staticmethod
-    def text_map_placement(place, x, y, x_off, y_off, w, h):
-        """Perform map-relative placement for a text object.
-
-        place         placement key string
-        x, y          point relative to placement origin
-        x_off, y_off  offset from point
-        w, h          width, height of the text
-
-        Returns a tuple (x, y).
-        """
-
-        w2 = w/2
-        h2 = h/2
-
-        if place == 'cc':   x+=-w2;       y+=-h2
-        elif place == 'nw': x+=x_off;     y+=y_off
-        elif place == 'cn': x+=-w2;       y+=y_off
-        elif place == 'ne': x+=-w-x_off;  y+=y_off
-        elif place == 'ce': x+=-w-x_off;  y+=-h2
-        elif place == 'se': x+=-w-x_off;  y+=-h-y_off
-        elif place == 'cs': x+=-w2;       y+=-h-y_off
-        elif place == 'sw': x+=x_off;     y+=-h-y_off
-        elif place == 'cw': x+=x_off;     y+=-h2
-
-        return (x, y)
-
-    @staticmethod
-    def text_view_placement(place, x, y, x_off, y_off, w, h, dcw, dch):
-        """Perform view-relative placement for a text object.
-
-        place         placement key string
-        x, y          point relative to placement origin
-        x_off, y_off  offset from point
-        w, h          width, height of the text
-        dcw, dcw      width/height of the view draw context
-
-        Returns a tuple (x, y).
-        """
-
-        w2 = w/2
-        h2 = h/2
-
-        dcw2 = dcw/2
-        dch2 = dch/2
-
-        if place == 'cc':   x+=dcw2-w2;      y+=dch2-h2
-        elif place == 'nw': x+=x_off;        y+=y_off
-        elif place == 'cn': x+=dcw2-w2;      y+=y_off
-        elif place == 'ne': x+=dcw-w-x_off;  y+=y_off
-        elif place == 'ce': x+=dcw-w-x_off;  y+=dch2-h2
-        elif place == 'se': x+=dcw-w-x_off;  y+=dch-h-y_off
-        elif place == 'cs': x+=dcw2-w2;      y+=dch-h-y_off
-        elif place == 'sw': x+=x_off;        y+=dch-h-y_off
-        elif place == 'cw': x+=x_off;        y+=dch2-h2
 
         return (x, y)
 

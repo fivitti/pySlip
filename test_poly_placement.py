@@ -661,8 +661,8 @@ class AppFrame(wx.Frame):
         """Handle a pySlip POSITION event."""
 
         posn_str = ''
-        if event.position:
-            (lon, lat) = event.position
+        if event.mposn:
+            (lon, lat) = event.mposn
             posn_str = ('%.*f / %.*f' % (LonLatPrecision, lon,
                                          LonLatPrecision, lat))
 

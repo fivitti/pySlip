@@ -1078,7 +1078,7 @@ class PySlip(_BufferedCanvas):
         selectable  new .selectable attribute value (True or False)
         """
 
-        # just in case we got None
+        # just in case id is None
         if id:
             layer = self.layer_mapping[id]
             layer.selectable = selectable
@@ -1177,7 +1177,7 @@ class PySlip(_BufferedCanvas):
                 if pt:
                     (x, y) = pt
                     (ix, iy) = self.extent_placement(place, x, y,
-                                                    x_off, y_off, w, h)
+                                                     x_off, y_off, w, h)
                     dc.DrawBitmap(bmap, ix, iy, False)
 
                     # draw object point
@@ -1195,14 +1195,14 @@ class PySlip(_BufferedCanvas):
                     x_off, y_off, radius, colour, idata) in images:
                 # draw the image
                 (ix, iy) = self.extent_placement(place, x, y,
-                                                x_off, y_off, w, h, dc_w, dc_h)
+                                                 x_off, y_off, w, h, dc_w, dc_h)
                 dc.DrawBitmap(bmap, ix, iy, False)
 
                 # draw object point
                 if radius:
                     # do placement with image heights and offsets zero
                     (px, py) = self.extent_placement(place, x, y,
-                                                    0, 0, 0, 0, dc_w, dc_h)
+                                                     0, 0, 0, 0, dc_w, dc_h)
                     dc.SetPen(wx.Pen(colour))
                     dc.SetBrush(wx.Brush(colour))
                     dc.DrawCircle(px, py, radius)
@@ -1251,7 +1251,7 @@ class PySlip(_BufferedCanvas):
                     # place the text relative to hotpoint
                     (w, h, _, _) = dc.GetFullTextExtent(tdata)
                     (x, y) = self.extent_placement(place, x, y,
-                                                  x_off, y_off, w, h)
+                                                   x_off, y_off, w, h)
                     dc.SetTextForeground(textcolour)
                     dc.DrawText(tdata, x, y)
         else:
@@ -1273,13 +1273,13 @@ class PySlip(_BufferedCanvas):
                 if radius:
                     # do placement with image heights and offsets zero
                     (px, py) = self.extent_placement(place, x, y,
-                                                    0, 0, 0, 0, dc_w, dc_h)
+                                                     0, 0, 0, 0, dc_w, dc_h)
                     dc.DrawCircle(px, py, radius)
 
                 # place the text relative to hotpoint
                 (w, h, _, _) = dc.GetFullTextExtent(tdata)  # size of text
                 (x, y) = self.extent_placement(place, x, y, x_off, y_off,
-                                              w, h, dc_w, dc_h)
+                                               w, h, dc_w, dc_h)
                 dc.SetTextForeground(textcolour)
                 dc.DrawText(tdata, x, y)
 
@@ -1307,7 +1307,6 @@ class PySlip(_BufferedCanvas):
                     (tx, ty) = self.tiles.Geo2Tile(lonlat)
                     x = tx*self.tiles.tile_size_x - self.view_offset_x
                     y = ty*self.tiles.tile_size_y - self.view_offset_y
-                    #(x, y) = self.poly_map_placement(place, x, y, x_off, y_off)
                     (x, y) = self.point_placement(place, x, y, x_off, y_off)
                     pp.append((x, y))
 
@@ -1328,7 +1327,6 @@ class PySlip(_BufferedCanvas):
                      filled, fillcolour, x_off, y_off, udata) in data:
                 pp = []
                 for (x, y) in p:
-                    #(x, y) = self.poly_view_placement(place, x, y, x_off, y_off, dc_w, dc_h)
                     (x, y) = self.point_placement(place, x, y, x_off, y_off, dc_w, dc_h)
                     pp.append((x, y))
 
@@ -1539,10 +1537,8 @@ class PySlip(_BufferedCanvas):
 
         click_posn = event.GetPositionTuple()
 
-#        if event.ShiftDown():
         if self.shift_down:
             self.is_box_select = True
-#            self.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
             (self.sbox_w, self.sbox_h) = (0, 0)
             (self.sbox_1_x, self.sbox_1_y) = click_posn
         else:
@@ -1669,7 +1665,6 @@ class PySlip(_BufferedCanvas):
         vposn = event.GetPositionTuple()
         gposn = self.View2Geo(vposn)
 
-#        if event.ShiftDown():
         if self.shift_down:
             # zoom out if shift key also down
             if self.ZoomToLevel(self.level - 1):
@@ -1694,7 +1689,6 @@ class PySlip(_BufferedCanvas):
 
         click_posn = event.GetPositionTuple()
 
-#        if event.ShiftDown():
         if self.shift_down:
             self.is_box_select = True
             self.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
@@ -1832,8 +1826,8 @@ class PySlip(_BufferedCanvas):
         else:
             # Map > View - determine layout in X direction
             start_x_tile = int(self.view_offset_x / self.tile_size_x)
-            stop_x_tile = (self.view_offset_x + self.view_width + self.tile_size_x - 1) / self.tile_size_x
-            stop_x_tile = int(stop_x_tile)
+            stop_x_tile = int((self.view_offset_x + self.view_width
+                               + self.tile_size_x - 1) / self.tile_size_x)
             stop_x_tile = min(self.tiles.num_tiles_x-1, stop_x_tile) + 1
             col_list = range(start_x_tile, stop_x_tile)
             x_pix_start = start_x_tile * self.tile_size_y - self.view_offset_x
@@ -1845,7 +1839,8 @@ class PySlip(_BufferedCanvas):
         else:
             # Map > View - determine layout in Y direction
             start_y_tile = int(self.view_offset_y / self.tile_size_y)
-            stop_y_tile = int((self.view_offset_y + self.view_height + self.tile_size_y - 1) / self.tile_size_y)
+            stop_y_tile = int((self.view_offset_y + self.view_height
+                               + self.tile_size_y - 1) / self.tile_size_y)
             stop_y_tile = min(self.tiles.num_tiles_y-1, stop_y_tile) + 1
             row_list = range(start_y_tile, stop_y_tile)
             y_pix_start = start_y_tile * self.tile_size_y - self.view_offset_y
@@ -1872,7 +1867,6 @@ class PySlip(_BufferedCanvas):
             penclr = wx.Colour(0, 0, 255)
             pen = wx.Pen(penclr, 1, wx.USER_DASH) 
             pen.SetDashes([1, 1, 1, 1]) 
-#            pen = wx.Pen(penclr, 1, wx.SHORT_DASH) 
             dc.SetPen(pen) 
             brushclr = wx.Colour(255, 255, 255)
             dc.SetBrush(wx.Brush(brushclr, style=wx.TRANSPARENT))
@@ -2218,7 +2212,9 @@ class PySlip(_BufferedCanvas):
             (xview, yview) = view
             for p in layer.data:
                 (x, y, _, place, _, _, _, _, _, x_off, y_off, data) = p
-                (x, y) = self.point_view_no_offset(place, x, y, self.view_width, self.view_height)
+                (x, y) = self.point_view_no_offset(place, x, y,
+                                                   self.view_width,
+                                                   self.view_height)
                 d = (x - xview)*(x - xview) + (y - yview)*(y - yview)
                 if d < dist:
                     result = ((x,y), data, None)
@@ -2615,7 +2611,7 @@ class PySlip(_BufferedCanvas):
         Returns True if point is inside the polygon.
         """
 
-# FIXME: worry aboput placement
+# FIXME: worry about placement
         return self.point_inside_polygon(geo, poly)
 
     def point_in_poly_view(self, poly, view, place, x_off, y_off):
@@ -2900,56 +2896,6 @@ class PySlip(_BufferedCanvas):
         elif place == 'cs': x+=dcw2-w2;       y+=dch-h-y_off
         elif place == 'sw': x+=x_off;         y+=dch-h-y_off
         elif place == 'cw': x+=x_off;         y+=dch2-h2
-
-        return (x, y)
-
-    @staticmethod
-    def poly_map_placement(place, x, y, x_off, y_off):
-        """Perform map-relative placement for a polygon point.
-
-        place         placement key string
-        x, y          point relative to placement origin
-        x_off, y_off  offset from point
-
-        Returns a tuple (x, y).
-        """
-
-        if place == 'cc':   pass
-        elif place == 'nw': x+=x_off;   y+=y_off
-        elif place == 'cn':             y+=y_off
-        elif place == 'ne': x+=-x_off;  y+=y_off
-        elif place == 'ce': x+=-x_off
-        elif place == 'se': x+=-x_off;  y+=-y_off
-        elif place == 'cs':             y+=-y_off
-        elif place == 'sw': x+=x_off;   y+=-y_off
-        elif place == 'cw': x+=x_off
-
-        return (x, y)
-
-    @staticmethod
-    def poly_view_placement(place, x, y, x_off, y_off, w, h):
-        """Perform view-relative placement for a polygon point.
-
-        place         placement key string
-        x, y          point relative to placement origin
-        x_off, y_off  offset from point
-        w, w          width/height of the view draw context
-
-        Returns a tuple (x, y).
-        """
-
-        w2 = w/2
-        h2 = h/2
-
-        if place == 'cc':   x+=w2;       y+=h2
-        elif place == 'nw': x+=x_off;    y+=y_off
-        elif place == 'cn': x+=w2;       y+=y_off
-        elif place == 'ne': x+=w-x_off;  y+=y_off
-        elif place == 'ce': x+=w-x_off;  y+=h2
-        elif place == 'se': x+=w-x_off;  y+=h-y_off
-        elif place == 'cs': x+=w2;       y+=h-y_off
-        elif place == 'sw': x+=x_off;    y+=h-y_off
-        elif place == 'cw': x+=x_off;    y+=h2
 
         return (x, y)
 

@@ -632,9 +632,11 @@ class AppFrame(wx.Frame):
             self.point_layer = \
                 self.pyslip.AddPointLayer(PointData, map_rel=True,
                                           color=PointDataColour, radius=3,
-                                          offset_x=0, offset_y=0, visible=True,
+                                          # offset points to exercise placement
+                                          offset_x=25, offset_y=25, visible=True,
                                           show_levels=MRPointShowLevels,
                                           delta=40,
+                                          placement='nw',   # check placement
                                           name='<pt_layer>')
         else:
             self.pyslip.DeleteLayer(self.point_layer)
@@ -732,7 +734,7 @@ class AppFrame(wx.Frame):
         if event.state:
             self.point_view_layer = \
                 self.pyslip.AddPointLayer(PointViewData, map_rel=False,
-                                          placement='se',
+                                          placement=PointViewDataPlacement,
                                           color=PointViewDataColour, radius=1,
                                           visible=True,
                                           name='<point_view_layer>')
@@ -797,6 +799,7 @@ class AppFrame(wx.Frame):
                 points = (selection,)
             self.sel_point_view_layer = \
                 self.pyslip.AddPointLayer(points, map_rel=False,
+                                          placement='se',
                                           color='#0000ff',
                                           radius=3, visible=True,
                                           name='<sel_pt_view_layer>')
@@ -1411,7 +1414,7 @@ class AppFrame(wx.Frame):
     ######
 
     def init(self):
-        global PointData, PointDataColour
+        global PointData, PointDataColour, PointViewDataPlacement
         global PointViewData, PointViewDataColour
         global ImageData
         global ImageViewData
@@ -1458,6 +1461,7 @@ class AppFrame(wx.Frame):
                          (-20,-9),(-20,-10),(-20,-11),(-20,-12),(-21,-13),
                          (-22,-14),(-23,-14),(-24,-14),(25,-14)]            # P
         PointViewDataColour = '#00ff0020'	# very transparent
+        PointViewDataPlacement = 'se'
 
         # create image data
         ImageData = [# Agnes Napier - 1855

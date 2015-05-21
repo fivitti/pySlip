@@ -1146,7 +1146,6 @@ class PySlip(_BufferedCanvas):
                     (x, y) = self.point_placement(place, x, y, x_off, y_off)
                     dc.DrawCircle(x, y, radius)
         else:   # view
-            log('DrawPointLayer: data=%s' % str(data))
             for (x, y, place, radius, colour, x_off, y_off, udata) in data:
                 if radius:
                     dc.SetPen(wx.Pen(colour))
@@ -1418,7 +1417,7 @@ class PySlip(_BufferedCanvas):
 
     def Geo2View(self, geo):
         """Convert a geo coord to view.
-        
+
         geo  tuple (xgeo, ygeo)
 
         Return a tuple (xview, yview) in view coordinates.
@@ -1858,9 +1857,9 @@ class PySlip(_BufferedCanvas):
         # draw selection rectangle, if any
         if self.sbox_1_x:
             penclr = wx.Colour(0, 0, 255)
-            pen = wx.Pen(penclr, 1, wx.USER_DASH) 
-            pen.SetDashes([1, 1, 1, 1]) 
-            dc.SetPen(pen) 
+            pen = wx.Pen(penclr, 1, wx.USER_DASH)
+            pen.SetDashes([1, 1, 1, 1])
+            dc.SetPen(pen)
             brushclr = wx.Colour(255, 255, 255)
             dc.SetBrush(wx.Brush(brushclr, style=wx.TRANSPARENT))
             dc.DrawRectangle(self.sbox_1_x, self.sbox_1_y,
@@ -1996,10 +1995,10 @@ class PySlip(_BufferedCanvas):
         We must look for the nearest point to the click.
 
         Return None (no selection) or (point, data, None) of selected point
-        where point is (xgeo,ygeo) or (xview,yview) depending on layer.map_rel.
-        'data' is the data object associated with the selected point.  The None
-        is a placeholder for the relative selection point, which is meaningless
-        for point selection.
+        where point is [(x,y,attrib)] wher X and Y are map or view relative
+        depending on layer.map_rel.  'data' is the data object associated with
+        each selected point.  The None is a placeholder for the relative
+        selection point, which is meaningless for point selection.
         """
 
 # TODO: speed this up?  Do we need to??
@@ -2015,7 +2014,7 @@ class PySlip(_BufferedCanvas):
             vposn = self.Geo2View(pt)
             (vptx, vpty) = vposn
             for p in layer.data:
-                (x, y, place, _, _, x_off, y_off, udata) = p
+                (x, y, place, radius, colour, x_off, y_off, udata) = p
                 vp = self.Geo2ViewMasked((x, y))
                 if vp:
                     (vx, vy) = vp
@@ -2024,21 +2023,31 @@ class PySlip(_BufferedCanvas):
                     d = (vx - vptx)*(vx - vptx) + (vy - vpty)*(vy - vpty)
                     if d < dist:
                         # must return geo coords of perturbed point
-                        gpt = self.View2Geo((vx, vy))
-                        result = (gpt, udata, None)
+                        (gx, gy) = self.View2Geo((vx, vy))
+                        rpt = (x, y, {'placement': place,
+                                      'radius': radius,
+                                      'colour': colour,
+                                      'offset_x': x_off,
+                                      'offset_y': y_off})
+                        result = ([rpt], udata, None)
                         dist = d
         else:
             # 'pt' is in view coordinates
             (ptx, pty) = pt
             for p in layer.data:
-                (x, y, place, _, _, x_off, y_off, data) = p
+                (x, y, place, radius, colour, x_off, y_off, data) = p
                 (vx, vy) = self.point_placement(place, x, y, x_off, y_off,
                                                 self.view_width,
                                                 self.view_height)
                 d = (vx - ptx) * (vx - ptx) + (vy - pty) * (vy - pty)
                 if d < dist:
+                    rpt = (x, y, {'placement': place,
+                                  'radius': radius,
+                                  'colour': colour,
+                                  'offset_x': x_off,
+                                  'offset_y': y_off})
+                    result = ([rpt], data, None)
                     dist = d
-                    result = ((x,y), data, None)
 
         if dist <= layer.delta:
             return result
@@ -2069,13 +2078,18 @@ class PySlip(_BufferedCanvas):
             (grx, gty) = self.Geo2View(ur)
 
             for p in layer.data:
-                (x, y, place, _, _, x_off, y_off, udata) = p
+                (x, y, place, radius, colour, x_off, y_off, udata) = p
                 (vx, vy) = self.Geo2View((x, y))
-                (pvx, pvy) = self.point_placement(place, vx, vy, x_off, y_off)
+                pv = self.point_placement(place, vx, vy, x_off, y_off)
+                (pvx, pvy) = pv
                 if glx <= pvx <= grx and gty <= pvy <= gby:
                     # must return geo coords of perturbed point
-                    gpt = self.View2Geo((pvx, pvy))
-                    selection.append(gpt)
+                    (gx, gy) = self.View2Geo(pv)
+                    selection.append((x, y, {'placement': place,
+                                             'radius': radius,
+                                             'colour': colour,
+                                             'offset_x': x_off,
+                                             'offset_y': y_off}))
                     data.append(udata)
         else:
             # unpack selection box limits
@@ -2083,12 +2097,16 @@ class PySlip(_BufferedCanvas):
             (rx, ty) = ur
 
             for p in layer.data:
-                (x, y, place, _, _, x_off, y_off, udata) = p
+                (x, y, place, radius, colour, x_off, y_off, udata) = p
                 (vx, vy) = self.point_placement(place, x, y, x_off, y_off,
                                                 self.view_width,
                                                 self.view_height)
                 if lx <= vx <= rx and ty <= vy <= by:
-                    selection.append((x, y))
+                    selection.append((x, y, {'placement': place,
+                                             'radius': radius,
+                                             'colour': colour,
+                                             'offset_x': x_off,
+                                             'offset_y': y_off}))
                     data.append(udata)
 
         if selection:
@@ -2114,28 +2132,38 @@ class PySlip(_BufferedCanvas):
         (ptx, pty) = point
         result = None
 
-        # .data: [(x, y, bmap, w, h, placement, offset_x, offset_y, data),...]
+        # .data: [(x, y, bmap, w, h, place, x_off, y_off, data),...]
         for p in layer.data:
-            (x, y, _, w, h, placement, offset_x, offset_y, _, _, data) = p
+            (x, y, bmp, w, h, place, x_off, y_off, radius, colour, udata) = p
             if layer.map_rel:
                 # map-relative, ptx, pty, x, y are geo coords
-                e = self.GeoExtent((x, y), placement, w, h, offset_x, offset_y)
+                e = self.GeoExtent((x, y), place, w, h, x_off, y_off)
                 if e:
                     (llon, rlon, tlat, blat) = e
                     if llon <= ptx <= rlon and blat <= pty <= tlat:
                         # figure out relsel point
                         (vptx, vpty) = self.Geo2ViewMasked(point)
                         (imgx, imgy) = self.Geo2ViewMasked((x, y))
+                        selection = [(x, y, bmp, {'placement': place,
+                                                    'radius': radius,
+                                                    'colour': colour,
+                                                    'offset_x': x_off,
+                                                    'offset_y': y_off})]
                         relsel = (int(vptx - imgx), int(vpty - imgy))
-                        result = ((x, y), data, relsel)
+                        result = (selection, udata, relsel)
                         break
             else:
                 # view_relative, ptx, pty, x, y are view coords
-                e = self.ViewExtent((x, y), placement, w, h, offset_x, offset_y)
+                e = self.ViewExtent((x, y), place, w, h, x_off, y_off)
                 (lv, rv, tv, bv) = e
                 if lv <= ptx <= rv and tv <= pty <= bv:
+                    selection = [(x, y, bmp, {'placement': place,
+                                                'radius': radius,
+                                                'colour': colour,
+                                                'offset_x': x_off,
+                                                'offset_y': y_off})]
                     relsel = (int(ptx - lv), int(pty - tv))
-                    result = ((x, y), data, relsel)
+                    result = (selection, udata, relsel)
                     break
 
         return result
@@ -2162,22 +2190,30 @@ class PySlip(_BufferedCanvas):
         selection = []
         data = []
         for p in layer.data:
-            (x, y, _, w, h, placement, x_off, y_off, _, _, udata) = p
+            (x, y, bmp, w, h, place, x_off, y_off, radius, colour, udata) = p
             if layer.map_rel:
                 # map-relative, ll, ur, x, y all in geo coordinates
-                e = self.GeoExtent((x, y), placement, w, h, x_off, y_off)
+                e = self.GeoExtent((x, y), place, w, h, x_off, y_off)
                 if e:
                     (li, ri, ti, bi) = e    # image extents
                     if boxlx <= li and ri <= boxrx and boxty >= ti and bi >= boxby:
-                        selection.append((x, y))
+                        selection.append((x, y, bmp, {'placement': place,
+                                                      'radius': radius,
+                                                      'colour': colour,
+                                                      'offset_x': x_off,
+                                                      'offset_y': y_off}))
                         data.append(udata)
             else:
                 # view-relative, ll, ur, x, y all in view coordinates
-                e = self.ViewExtent((x, y), placement, w, h, x_off, y_off)
+                e = self.ViewExtent((x, y), place, w, h, x_off, y_off)
                 if e:
                     (li, ri, ti, bi) = e    # image extents
                     if boxlx <= li and ri <= boxrx and boxty <= ti and bi <= boxby:
-                        selection.append((x, y))
+                        selection.append((x, y, bmp, {'placement': place,
+                                                      'radius': radius,
+                                                      'colour': colour,
+                                                      'offset_x': x_off,
+                                                      'offset_y': y_off}))
                         data.append(udata)
 
         if not selection:
@@ -2202,9 +2238,6 @@ class PySlip(_BufferedCanvas):
         delta = layer.delta
         dist = 9999999.0
 
-        log('GetTextInLayer: view=%s' % str(view))
-
-# FIXME: worry about placement
         if layer.map_rel:
             # convert mouse click geo coords to view coords
             result = self.Geo2ViewMasked(view)
@@ -2212,31 +2245,45 @@ class PySlip(_BufferedCanvas):
                 (vptx, vpty) = result
                 # check each point in the layer
                 for p in layer.data:
-                    (x, y, _, _, _, _, _, _, _, _, _, data) = p
+                    (x, y, text, place, radius, colour, tcolour,
+                            fname, fsize, x_off, y_off, data) = p
                     vpt = self.Geo2ViewMasked((x, y))
                     if vpt:
                         (vx, vy) = vpt
                         d = (vx - vptx)*(vx - vptx) + (vy - vpty)*(vy - vpty)
                         if d < dist:
-                            result = ((x,y), data, None)
+                            selection = (x, y, text, {'placement': place,
+                                                      'radius': radius,
+                                                      'colour': colour,
+                                                      'textcolour': tcolour,
+                                                      'fontname': fname,
+                                                      'fontsize': fsize,
+                                                      'offset_x': x_off,
+                                                      'offset_y': y_off})
+                            result = ([selection], data, None)
                             dist = d
         else:       # view-rel
             (xview, yview) = view
             for p in layer.data:
-                (x, y, _, place, _, _, _, _, _, x_off, y_off, data) = p
-                log('####: x=%s, y=%s, place=%s, x_off=%s, y_off=%s' % (str(x), str(y), place, str(x_off), str(y_off)))
+                (x, y, text, place, radius, colour, tcolour,
+                        fname, fsize, x_off, y_off, data) = p
                 (px, py) = self.point_view_no_offset(place, x, y,
                                                      self.view_width,
                                                      self.view_height)
                 d = (px - xview)*(px - xview) + (py - yview)*(py - yview)
-                log('####: px=%s, py=%s, d=%d, .delta=%d' % (str(px), str(py), d, delta))
                 if d < dist:
-                    log('CHOSEN!')
-                    result = ((x,y), data, None)
+                    selection = (x, y, text, {'placement': place,
+                                              'radius': radius,
+                                              'colour': colour,
+                                              'textcolour': tcolour,
+                                              'fontname': fname,
+                                              'fontsize': fsize,
+                                              'offset_x': x_off,
+                                              'offset_y': y_off})
+                    result = ([selection], data, None)
                     dist = d
 
         if dist <= delta:
-            log('GetTextInLayer: returning %s' % str(result))
             return result
         return None
 
@@ -2257,8 +2304,6 @@ class PySlip(_BufferedCanvas):
         Returns None if no selection.
         """
 
-        log('GetBoxSelTextsInLayer: ll=%s, ur=%s' % (str(ll), str(ur)))
-
         # get canonical box limits
         (lx, by) = ll
         (rx, ty) = ur
@@ -2271,18 +2316,36 @@ class PySlip(_BufferedCanvas):
         if layer.map_rel:
             # map-relative
             for p in layer.data:
-                (x, y, _, _, _, _, _, _, _, _, _, udata) = p
+                (x, y, text, place, radius, colour, tcolour,
+                        fname, fsize, x_off, y_off, udata) = p
                 if lx <= x <= rx and by <= y <= ty:
-                    selection.append((x, y))
+                    sel = (x, y, text, {'placement': place,
+                                        'radius': radius,
+                                        'colour': colour,
+                                        'textcolour': tcolour,
+                                        'fontname': fname,
+                                        'fontsize': fsize,
+                                        'offset_x': x_off,
+                                        'offset_y': y_off})
+                    selection.append(sel)
                     data.append(udata)
         else:
             # view-relative
             for p in layer.data:
-                (x, y, _, place, _, _, _, _, _, x_off, y_off, udata) = p
+                (x, y, text, place, radius, colour, tcolour,
+                        fname, fsize, x_off, y_off, udata) = p
                 (px, py) = self.point_placement(place, x, y, x_off, y_off,
                                                 self.view_width, self.view_height)
                 if lx <= px <= rx and ty <= py <= by:
-                    selection.append((x, y))
+                    sel = (x, y, text, {'placement': place,
+                                        'radius': radius,
+                                        'colour': colour,
+                                        'textcolour': tcolour,
+                                        'fontname': fname,
+                                        'fontsize': fsize,
+                                        'offset_x': x_off,
+                                        'offset_y': y_off})
+                    selection.append(sel)
                     data.append(udata)
 
         # return appropriate result
@@ -2304,18 +2367,31 @@ class PySlip(_BufferedCanvas):
 
         # (poly, place, width, colour, close, filled, fillcolour, off_x, off_y, udata)
         for p in layer.data:
-            (poly, placement, _, _, _, _, _, offset_x, offset_y, udata) = p
+            (poly, place, width, colour, close,
+                    filled, fcolour, x_off, y_off, udata) = p
             if layer.map_rel:
                 # map-relative, all points are geo coordinates
-                if self.point_in_poly_map(poly, point,
-                                          placement, offset_x, offset_y):
-                    result = (poly, udata, None)
+                if self.point_in_poly_geo(poly, point, place, x_off, y_off):
+                    sel = (poly, {'placement': place,
+                                  'width': width,
+                                  'closed': close,
+                                  'filled': filled,
+                                  'fillcolour': fcolour,
+                                  'offset_x': x_off,
+                                  'offset_y': y_off})
+                    result = ([sel], udata, None)
                     break
             else:
                 # view-relative, all points are view pixels
-                if self.point_in_poly_view(poly, point,
-                                           placement, offset_x, offset_y):
-                    result = (poly, udata, None)
+                if self.point_in_poly_view(poly, point, place, x_off, y_off):
+                    sel = (poly, {'placement': place,
+                                  'width': width,
+                                  'closed': close,
+                                  'filled': filled,
+                                  'fillcolour': fcolour,
+                                  'offset_x': x_off,
+                                  'offset_y': y_off})
+                    result = ([sel], udata, None)
                     break
 
         return result
@@ -2341,9 +2417,9 @@ class PySlip(_BufferedCanvas):
         data = []
 
         for p in layer.data:
-            (poly, place, _, _, _, _, _, x_off, y_off, udata) = p
+            (poly, place, width, colour, close,
+                    filled, fcolour, x_off, y_off, udata) = p
             if layer.map_rel:
-# FIXME: placement?
                 # map-relative, all points are geo coordinates, convert to view
                 inside = True
                 for (x, y) in poly:
@@ -2352,7 +2428,14 @@ class PySlip(_BufferedCanvas):
                         inside = False
                         break
                 if inside:
-                    selection.append(poly)
+                    sel = (poly, {'placement': place,
+                                  'width': width,
+                                  'closed': close,
+                                  'filled': filled,
+                                  'fillcolour': fcolour,
+                                  'offset_x': x_off,
+                                  'offset_y': y_off})
+                    selection.append(sel)
                     data.append(udata)
             else:
                 # view-relative, all points are view pixels
@@ -2366,11 +2449,19 @@ class PySlip(_BufferedCanvas):
                         inside = False
                         break
                 if inside:
-                    selection.append(poly)
+                    sel = (poly, {'placement': place,
+                                  'width': width,
+                                  'closed': close,
+                                  'filled': filled,
+                                  'fillcolour': fcolour,
+                                  'offset_x': x_off,
+                                  'offset_y': y_off})
+                    selection.append(sel)
                     data.append(udata)
 
         if not selection:
             return None
+
         return (selection, data, None)
 
     ######
@@ -2587,28 +2678,28 @@ class PySlip(_BufferedCanvas):
     @staticmethod
     def point_inside_polygon(point, poly):
         """Decide if point is inside polygon.
-    
+
         point  tuple of (x,y) coordnates of point in question (geo or view)
         poly   polygon in form [(x1,y1), (x2,y2), ...]
-    
+
         Returns True if point is properly inside polygon.
         May return True or False if point on edge of polygon.
-    
+
         Slightly modified version of the 'published' algorithm found on the 'net.
         Instead of indexing into the poly, create a new poly that 'wraps around'.
         Even with the extra code, it runs in 2/3 the time.
         """
-    
+
         (x, y) = point
-    
+
         # we want a *copy* of original iterable plus extra wraparound point
         l_poly = list(poly)
         l_poly.append(l_poly[0])  # ensure poly wraps around
-    
+
         inside = False
-    
+
         (p1x, p1y) = l_poly[0]
-    
+
         for (p2x, p2y) in l_poly:
             if y > min(p1y, p2y):
                 if y <= max(p1y, p2y):
@@ -2618,10 +2709,10 @@ class PySlip(_BufferedCanvas):
                         if p1x == p2x or x <= xinters:
                             inside = not inside
             (p1x, p1y) = (p2x, p2y)
-    
+
         return inside
 
-    def point_in_poly_map(self, poly, geo, placement, offset_x, offset_y):
+    def point_in_poly_geo(self, poly, geo, placement, offset_x, offset_y):
         """Decide if a point is inside a map-relative polygon.
 
         poly       an iterable of (x,y) where x,y are in geo coordinates

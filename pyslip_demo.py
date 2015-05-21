@@ -631,7 +631,7 @@ class AppFrame(wx.Frame):
         if event.state:
             self.point_layer = \
                 self.pyslip.AddPointLayer(PointData, map_rel=True,
-                                          color=PointDataColour, radius=3,
+                                          colour=PointDataColour, radius=3,
                                           # offset points to exercise placement
                                           offset_x=25, offset_y=25, visible=True,
                                           show_levels=MRPointShowLevels,
@@ -704,17 +704,22 @@ class AppFrame(wx.Frame):
                 self.pyslip.DeleteLayer(self.sel_point_layer)
             self.sel_point = selection
 
-            # get selected points into form for display layer
-            highlight = selection[:]
+            # choose different highlight colour for differetn type of selection
             selcolour = '#00ffff'
             if event.type == pyslip.EventSelect:
-                highlight = [highlight]
                 selcolour = '#0000ff'
+
+            # get selected points into form for display layer
+            highlight = []
+            for (x, y, d) in selection:
+                del d['colour']
+                del d['radius']
+                highlight.append((x, y, d))
 
             # layer with highlight of selected poijnts
             self.sel_point_layer = \
                 self.pyslip.AddPointLayer(highlight, map_rel=True,
-                                          color=selcolour,
+                                          colour=selcolour,
                                           radius=5, visible=True,
                                           show_levels=MRPointShowLevels,
                                           name='<sel_pt_layer>')
@@ -735,7 +740,7 @@ class AppFrame(wx.Frame):
             self.point_view_layer = \
                 self.pyslip.AddPointLayer(PointViewData, map_rel=False,
                                           placement=PointViewDataPlacement,
-                                          color=PointViewDataColour, radius=1,
+                                          colour=PointViewDataColour, radius=1,
                                           visible=True,
                                           name='<point_view_layer>')
         else:
@@ -794,13 +799,19 @@ class AppFrame(wx.Frame):
 
         if selection and selection != self.sel_point_view:
             self.sel_point_view = selection
-            points = selection      # assume a box select
-            if event.type == pyslip.EventSelect:
-                points = (selection,)
+
+            # get selected points into form for display layer
+            highlight = []
+            for (x, y, d) in selection:
+                del d['colour']
+                del d['radius']
+                highlight.append((x, y, d))
+
+            # assume a box selection
             self.sel_point_view_layer = \
-                self.pyslip.AddPointLayer(points, map_rel=False,
+                self.pyslip.AddPointLayer(highlight, map_rel=False,
                                           placement='se',
-                                          color='#0000ff',
+                                          colour='#0000ff',
                                           radius=3, visible=True,
                                           name='<sel_pt_view_layer>')
         else:
@@ -874,12 +885,17 @@ class AppFrame(wx.Frame):
             if self.sel_image_layer:
                 self.pyslip.DeleteLayer(self.sel_image_layer)
             self.sel_image = selection
-            points = selection
-            if event.type == pyslip.EventSelect:
-                points = (selection,)
+
+            # get selected points into form for display layer
+            points = []
+            for (x, y, f, d) in selection:
+                del d['colour']
+                del d['radius']
+                points.append((x, y, d))
+
             self.sel_image_layer = \
                 self.pyslip.AddPointLayer(points, map_rel=True,
-                                          color='#0000ff',
+                                          colour='#0000ff',
                                           radius=5, visible=True,
                                           show_levels=[3,4],
                                           name='<sel_pt_layer>')
@@ -888,7 +904,7 @@ class AppFrame(wx.Frame):
 
         return True
 
-    def imageBSelect(self, id, points=None):
+    def imageBSelect(self, id, selection=None):
         """Select event from pyslip."""
 
         # remove any previous selection
@@ -896,10 +912,17 @@ class AppFrame(wx.Frame):
             self.pyslip.DeleteLayer(self.sel_image_layer)
             self.sel_image_layer = None
 
-        if points:
+        if selection:
+            # get selected points into form for display layer
+            points = []
+            for (x, y, f, d) in selection:
+                del d['colour']
+                del d['radius']
+                points.append((x, y, d))
+
             self.sel_image_layer = \
                 self.pyslip.AddPointLayer(points, map_rel=True,
-                                          color='#e0e0e0',
+                                          colour='#e0e0e0',
                                           radius=13, visible=True,
                                           show_levels=[3,4],
                                           name='<boxsel_img_layer>')
@@ -1016,14 +1039,14 @@ class AppFrame(wx.Frame):
                 point = eval(point_place_coords[img_placement])
                 self.sel_imagepoint_view_layer = \
                     self.pyslip.AddPointLayer((point,), map_rel=False,
-                                              color='green',
+                                              colour='green',
                                               radius=5, visible=True,
                                               placement=img_placement,
                                               name='<sel_image_view_point>')
 
             # add polygon outline around image
 #            (x, y) = event.vposn
-            p_dict = {'placement': img_placement, 'width': 3, 'color': 'green', 'closed': True}
+            p_dict = {'placement': img_placement, 'width': 3, 'colour': 'green', 'closed': True}
             poly_place_coords = {'ne': '(((-CR_Width,0),(0,0),(0,CR_Height),(-CR_Width,CR_Height)),p_dict)',
                                  'ce': '(((-CR_Width,-CR_Height/2.0),(0,-CR_Height/2.0),(0,CR_Height/2.0),(-CR_Width,CR_Height/2.0)),p_dict)',
                                  'se': '(((-CR_Width,-CR_Height),(0,-CR_Height),(0,0),(-CR_Width,0)),p_dict)',
@@ -1113,12 +1136,17 @@ class AppFrame(wx.Frame):
             if self.sel_text_layer:
                 self.pyslip.DeleteLayer(self.sel_text_layer)
             self.sel_text = selection
-            points = selection
-            if event.type == pyslip.EventSelect:
-                points = (selection,)
+
+            # get selected points into form for display layer
+            points = []
+            for (x, y, t, d) in selection:
+                del d['colour']
+                del d['radius']
+                points.append((x, y, d))
+
             self.sel_text_layer = \
                 self.pyslip.AddPointLayer(points, map_rel=True,
-                                          color='#0000ff',
+                                          colour='#0000ff',
                                           radius=5, visible=True,
                                           show_levels=MRTextShowLevels,
                                           name='<sel_text_layer>')
@@ -1138,7 +1166,7 @@ class AppFrame(wx.Frame):
                                          name='<text_view_layer>',
                                          placement=TextViewDataPlace,
                                          visible=True,
-                                         fontsize=24, textcolor='#0000ff',
+                                         fontsize=24, textcolour='#0000ff',
                                          offset_x=TextViewDataOffX,
                                          offset_y=TextViewDataOffY)
         else:
@@ -1187,21 +1215,22 @@ class AppFrame(wx.Frame):
 
         selection = event.selection
 
-        log('textViewSelect: selection=%s' % str(selection))
-
         # turn off any existing selection
         if self.sel_text_view_layer:
             self.pyslip.DeleteLayer(self.sel_text_view_layer)
             self.sel_text_view_layer = None
 
         if selection:
-            points = selection
-            if event.type == pyslip.EventSelect:
-                points = (selection,)
-            log('textViewSelect: points=%s' % str(points))
+            # get selected points into form for point display layer
+            points = []
+            for (x, y, t, d) in selection:
+                del d['colour']
+                del d['radius']
+                points.append((x, y, d))
+
             self.sel_text_view_layer = \
                 self.pyslip.AddPointLayer(points, map_rel=False,
-                                          color='#80ffff',
+                                          colour='#80ffff',
                                           radius=5, visible=True,
                                           placement='cn',
                                           offset_x=0, offset_y=3,
@@ -1268,41 +1297,36 @@ class AppFrame(wx.Frame):
         it off, unless previous selection again selected.
         """
 
+        # .seletion: [(poly,attr), ...]
         selection = event.selection
 
-        if event.type == pyslip.EventSelect:
-            # turn any previous selection off
-            if self.sel_poly_layer:
-                self.pyslip.DeleteLayer(self.sel_poly_layer)
-                self.sel_poly_layer = None
+        # turn any previous selection off
+        if self.sel_poly_layer:
+            self.pyslip.DeleteLayer(self.sel_poly_layer)
+            self.sel_poly_layer = None
 
-            if selection:
-                # new selection
-                self.sel_poly_layer = \
-                    self.pyslip.AddPointLayer(selection, map_rel=True,
-                                              color='#ff00ff',
-                                              radius=5, visible=True,
-                                              show_levels=[3,4],
-                                              name='<sel_poly>')
-        else:
-            # .seletion: [((x,y),...), ...]
-            # box select
-            if self.sel_poly_layer:
-                # turn any previous selection off
-                self.pyslip.DeleteLayer(self.sel_poly_layer)
-                self.sel_poly_layer = None
+        # box OR single selection
+        if selection:
+            # get selected polygon points into form for point display layer
+            points = []
+            for (poly, d) in selection:
+                try:
+                    del d['colour']
+                except KeyError:
+                    pass
+                try:
+                    del d['radius']
+                except KeyError:
+                    pass
+                for (x, y) in poly:
+                    points.append((x, y, d))
 
-            if selection:
-                # new selection, flatten all polygon points into one iterable
-                points = []
-                for poly in selection:
-                    points.extend(poly)
-                self.sel_poly_layer = \
-                    self.pyslip.AddPointLayer(points, map_rel=True,
-                                              color='#ff00ff',
-                                              radius=5, visible=True,
-                                              show_levels=[3,4],
-                                              name='<sel_poly>')
+            self.sel_poly_layer = \
+                self.pyslip.AddPointLayer(points, map_rel=True,
+                                          colour='#ff00ff',
+                                          radius=5, visible=True,
+                                          show_levels=[3,4],
+                                          name='<sel_poly>')
 
         return True
 
@@ -1316,7 +1340,7 @@ class AppFrame(wx.Frame):
                 self.pyslip.AddPolygonLayer(PolyViewData, map_rel=False,
                                             name='<poly_view_layer>',
                                             placement='cn', visible=True,
-                                            fontsize=24, color='#0000ff')
+                                            fontsize=24, colour='#0000ff')
         else:
             self.pyslip.DeleteLayer(self.poly_view_layer)
             self.poly_view_layer = None
@@ -1357,52 +1381,37 @@ class AppFrame(wx.Frame):
                               (if None then no point(s) selected)
 
         The selection could be a single or box select.
-
-        Select a polygon to turn it on, select again to turn it off.
         """
 
         selection = event.selection
 
-        # figure out polygon placement attribute
-        poly_placement = PolyViewData[0][1]['placement']
+        # point select, turn any previous selection off
+        if self.sel_poly_view_layer:
+            self.pyslip.DeleteLayer(self.sel_poly_view_layer)
+            self.sel_poly_view_layer = None
 
-        if event.type == pyslip.EventSelect:
-            # point select, turn any previous selection off
-            if self.sel_poly_view_layer:
-                self.pyslip.DeleteLayer(self.sel_poly_view_layer)
-                self.sel_poly_view_layer = None
+        # for box OR single selection
+        if selection:
+            # get selected polygon points into form for point display layer
+            points = []
+            for (poly, d) in selection:
+                try:
+                    del d['colour']
+                except KeyError:
+                    pass
+                try:
+                    del d['radius']
+                except KeyError:
+                    pass
+                for (x, y) in poly:
+                    points.append((x, y, d))
 
-            if selection:
-                # new selection
-                self.sel_poly_view_layer = \
-                    self.pyslip.AddPointLayer(selection, map_rel=False,
-                                              placement=poly_placement,
-                                              color='#ff00ff',
-                                              radius=5, visible=True,
-                                              show_levels=[3,4],
-                                              name='<sel_view_poly>')
-        else:
-            # box select, turn any previous selection off
-            if self.sel_poly_view_layer:
-                # turn any previous selection off
-                self.pyslip.DeleteLayer(self.sel_poly_view_layer)
-                self.sel_poly_view_layer = None
-
-            if selection:
-                # new selection, flatten all polygon points into one iterable
-                points = []
-                for poly in selection:
-                    points.extend(poly)
-                if points[0] == points[-1]:
-                    points.pop()
-
-                self.sel_poly_view_layer = \
-                    self.pyslip.AddPointLayer(points, map_rel=False,
-                                              placement=poly_placement,
-                                              color='#ff0000',
-                                              radius=5, visible=True,
-                                              show_levels=[3,4],
-                                              name='<sel_view_boxpoly>')
+            self.sel_poly_view_layer = \
+                self.pyslip.AddPointLayer(points, map_rel=False,
+                                          colour='#ff00ff',
+                                          radius=5, visible=True,
+                                          show_levels=[3,4],
+                                          name='<sel_view_poly>')
 
         return True
 
@@ -1512,7 +1521,7 @@ class AppFrame(wx.Frame):
 
         text_placement = {'placement': 'se'}
         transparent_placement = {'placement': 'se', 'colour': '#00000040'}
-        capital = {'placement': 'se', 'fontsize': 14, 'color': 'red',
+        capital = {'placement': 'se', 'fontsize': 14, 'colour': 'red',
                    'textcolour': 'red'}
         TextData = [(151.20, -33.85, 'Sydney', text_placement),
                     (144.95, -37.84, 'Melbourne', {'placement': 'ce'}),
@@ -1531,19 +1540,19 @@ class AppFrame(wx.Frame):
                     (120.966667, 14.563333, 'Manila', capital),
                     (271.74, +40.11, 'Champaign', text_placement),
                     (160.0, -30.0, 'Agnes Napier - 1855',
-                        {'placement': 'cw', 'offset_x': 20, 'color': 'green'}),
+                        {'placement': 'cw', 'offset_x': 20, 'colour': 'green'}),
                     (145.0, -11.0, 'Venus - 1826',
-                        {'placement': 'sw', 'color': 'green'}),
+                        {'placement': 'sw', 'colour': 'green'}),
                     (156.0, -23.0, 'Wolverine - 1879',
-                        {'placement': 'ce', 'color': 'green'}),
+                        {'placement': 'ce', 'colour': 'green'}),
                     (150.0, -15.0, 'Thomas Day - 1884',
-                        {'color': 'green'}),
+                        {'colour': 'green'}),
                     (165.0, -19.0, 'Sybil - 1902',
-                        {'placement': 'cw', 'color': 'green'}),
+                        {'placement': 'cw', 'colour': 'green'}),
                     (158.55, -19.98, 'Prince of Denmark - 1863',
-                        {'placement': 'nw', 'offset_x': 20, 'color': 'green'}),
+                        {'placement': 'nw', 'offset_x': 20, 'colour': 'green'}),
                     (146.867525, -19.152182, 'Moltke - 1911',
-                        {'placement': 'ce', 'offset_x': 20, 'color': 'green'})
+                        {'placement': 'ce', 'offset_x': 20, 'colour': 'green'})
                    ]
         if sys.platform != 'win32':
             TextData.extend([
@@ -1558,7 +1567,7 @@ class AppFrame(wx.Frame):
                     (98.392, 7.888, 'นครภูเก็ต (Phuket)', text_placement),
                     ( 96.16, +16.80, 'ရန်ကုန် (Yangon)', capital),
                     (104.93, +11.54, ' ភ្នំពេញ (Phnom Penh)',
-                        {'placement': 'ce', 'fontsize': 12, 'color': 'red'}),
+                        {'placement': 'ce', 'fontsize': 12, 'colour': 'red'}),
                     (100.49, +13.75, 'กรุงเทพมหานคร (Bangkok)', capital),
                     ( 77.56, +34.09, 'གླེ་(Leh)', text_placement),
                     (84.991275, 24.695102, 'बोधगया (Bodh Gaya)', text_placement)])
@@ -1570,19 +1579,19 @@ class AppFrame(wx.Frame):
         TextViewDataOffY = 3
 
         PolyData = [(((150.0,10.0),(160.0,20.0),(170.0,10.0),(165.0,0.0),(155.0,0.0)),
-                      {'width': 3, 'color': 'blue', 'closed': True}),
+                      {'width': 3, 'colour': 'blue', 'closed': True}),
                     (((165.0,-35.0),(175.0,-35.0),(175.0,-45.0),(165.0,-45.0)),
-                      {'width': 10, 'color': '#00ff00c0', 'filled': True,
-                       'fillcolor': '#ffff0040'}),
+                      {'width': 10, 'colour': '#00ff00c0', 'filled': True,
+                       'fillcolour': '#ffff0040'}),
                     (((190.0,-30.0),(220.0,-50.0),(220.0,-30.0),(190.0,-50.0)),
-                      {'width': 3, 'color': 'green', 'filled': True,
-                       'fillcolor': 'yellow'}),
+                      {'width': 3, 'colour': 'green', 'filled': True,
+                       'fillcolour': 'yellow'}),
                     (((190.0,+50.0),(220.0,+65.0),(220.0,+50.0),(190.0,+65.0)),
-                      {'width': 10, 'color': '#00000040'})
+                      {'width': 10, 'colour': '#00000040'})
                    ]
 
         PolyViewData = [(((230,0),(230,40),(-230,40),(-230,0)),
-                        {'width': 3, 'color': '#00ff00ff', 'closed': True,
+                        {'width': 3, 'colour': '#00ff00ff', 'closed': True,
                          'placement': 'cn', 'offset_y': 1})]
 
         # define layer ID variables & sub-checkbox state variables

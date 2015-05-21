@@ -1146,6 +1146,7 @@ class PySlip(_BufferedCanvas):
                     (x, y) = self.point_placement(place, x, y, x_off, y_off)
                     dc.DrawCircle(x, y, radius)
         else:   # view
+            log('DrawPointLayer: data=%s' % str(data))
             for (x, y, place, radius, colour, x_off, y_off, udata) in data:
                 if radius:
                     dc.SetPen(wx.Pen(colour))
@@ -1598,6 +1599,7 @@ class PySlip(_BufferedCanvas):
                             sel = self.layerBSelHandler[l.type](l,
                                                                 (ll_vx, ll_vy),
                                                                 (tr_vx, tr_vy))
+                        log('OnLeftUp: BOX sel=%s' % str(sel))
                         self.RaiseEventBoxSelect(layer=l, selection=sel)
 
                         # user code possibly updated screen
@@ -1620,9 +1622,9 @@ class PySlip(_BufferedCanvas):
                             sel = self.layerPSelHandler[l.type](l, clickpt_g)
                         else:
                             sel = self.layerPSelHandler[l.type](l, clickpt_v)
+                        log('OnLeftUp: POINT sel=%s' % str(sel))
                         self.RaiseEventSelect(mposn=clickpt_g, vposn=clickpt_v,
                                               layer=l, selection=sel)
-
                         # user code possibly updated screen
                         delayed_paint = True
 
@@ -2200,6 +2202,8 @@ class PySlip(_BufferedCanvas):
         delta = layer.delta
         dist = 9999999.0
 
+        log('GetTextInLayer: view=%s' % str(view))
+
 # FIXME: worry about placement
         if layer.map_rel:
             # convert mouse click geo coords to view coords
@@ -2220,15 +2224,19 @@ class PySlip(_BufferedCanvas):
             (xview, yview) = view
             for p in layer.data:
                 (x, y, _, place, _, _, _, _, _, x_off, y_off, data) = p
-                (x, y) = self.point_view_no_offset(place, x, y,
-                                                   self.view_width,
-                                                   self.view_height)
-                d = (x - xview)*(x - xview) + (y - yview)*(y - yview)
+                log('####: x=%s, y=%s, place=%s, x_off=%s, y_off=%s' % (str(x), str(y), place, str(x_off), str(y_off)))
+                (px, py) = self.point_view_no_offset(place, x, y,
+                                                     self.view_width,
+                                                     self.view_height)
+                d = (px - xview)*(px - xview) + (py - yview)*(py - yview)
+                log('####: px=%s, py=%s, d=%d, .delta=%d' % (str(px), str(py), d, delta))
                 if d < dist:
+                    log('CHOSEN!')
                     result = ((x,y), data, None)
                     dist = d
 
         if dist <= delta:
+            log('GetTextInLayer: returning %s' % str(result))
             return result
         return None
 
@@ -2248,6 +2256,8 @@ class PySlip(_BufferedCanvas):
 
         Returns None if no selection.
         """
+
+        log('GetBoxSelTextsInLayer: ll=%s, ur=%s' % (str(ll), str(ur)))
 
         # get canonical box limits
         (lx, by) = ll
@@ -2269,9 +2279,9 @@ class PySlip(_BufferedCanvas):
             # view-relative
             for p in layer.data:
                 (x, y, _, place, _, _, _, _, _, x_off, y_off, udata) = p
-                (x, y) = self.point_placement(place, x, y, x_off, y_off,
-                                              self.view_width, self.view_height)
-                if lx <= x <= rx and ty <= y <= by:
+                (px, py) = self.point_placement(place, x, y, x_off, y_off,
+                                                self.view_width, self.view_height)
+                if lx <= px <= rx and ty <= py <= by:
                     selection.append((x, y))
                     data.append(udata)
 
@@ -2486,6 +2496,8 @@ class PySlip(_BufferedCanvas):
         event.layer_id and .selection are None and .mposn and .vposn are the
         mouse click positions.
         """
+
+        log('RaiseEventSelect: mposn=%s, vposn=%s, selection=%s, data=%s, relsel=%s' % (str(mposn), str(vposn), str(selection), str(data), str(relsel)))
 
         event = _PySlipEvent(_myEVT_PYSLIP_SELECT, self.GetId())
 

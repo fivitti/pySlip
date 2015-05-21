@@ -1136,9 +1136,11 @@ class AppFrame(wx.Frame):
             self.text_view_layer = \
                 self.pyslip.AddTextLayer(TextViewData, map_rel=False,
                                          name='<text_view_layer>',
-                                         placement='cn', visible=True,
+                                         placement=TextViewDataPlace,
+                                         visible=True,
                                          fontsize=24, textcolor='#0000ff',
-                                         offset_x=0, offset_y=3)
+                                         offset_x=TextViewDataOffX,
+                                         offset_y=TextViewDataOffY)
         else:
             self.pyslip.DeleteLayer(self.text_view_layer)
             self.text_view_layer = None
@@ -1185,6 +1187,8 @@ class AppFrame(wx.Frame):
 
         selection = event.selection
 
+        log('textViewSelect: selection=%s' % str(selection))
+
         # turn off any existing selection
         if self.sel_text_view_layer:
             self.pyslip.DeleteLayer(self.sel_text_view_layer)
@@ -1194,10 +1198,13 @@ class AppFrame(wx.Frame):
             points = selection
             if event.type == pyslip.EventSelect:
                 points = (selection,)
+            log('textViewSelect: points=%s' % str(points))
             self.sel_text_view_layer = \
                 self.pyslip.AddPointLayer(points, map_rel=False,
                                           color='#80ffff',
                                           radius=5, visible=True,
+                                          placement='cn',
+                                          offset_x=0, offset_y=3,
                                           show_levels=MRTextShowLevels,
                                           name='<sel_text_view_layer>')
             self.pyslip.PlaceLayerBelowLayer(self.sel_text_view_layer,
@@ -1420,6 +1427,7 @@ class AppFrame(wx.Frame):
         global ImageViewData
         global TextData # , TextDataColour
         global TextViewData
+        global TextViewDataPlace, TextViewDataOffX, TextViewDataOffY
         global PolyData
         global PolyViewData
         global CR_Width, CR_Height
@@ -1557,6 +1565,9 @@ class AppFrame(wx.Frame):
 #        TextDataColour = '#ffffff40'
 
         TextViewData = [(0, 0, '%s %s' % (DemoName, DemoVersion))]
+        TextViewDataPlace = 'cn'
+        TextViewDataOffX = 0
+        TextViewDataOffY = 3
 
         PolyData = [(((150.0,10.0),(160.0,20.0),(170.0,10.0),(165.0,0.0),(155.0,0.0)),
                       {'width': 3, 'color': 'blue', 'closed': True}),

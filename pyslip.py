@@ -1173,19 +1173,19 @@ class PySlip(_BufferedCanvas):
             # (lon, lat, bmap, w, h, placement, offset_x, offset_y, radius, colour, udata)
             for (lon, lat, bmap, w, h, place,
                      x_off, y_off, radius, colour, idata) in images:
-                pt = self.Geo2ViewMasked((lon, lat))
-                if pt:
-                    (x, y) = pt
-                    (ix, iy) = self.extent_placement(place, x, y,
-                                                     x_off, y_off, w, h)
+                ptex = self.ExtentGeo2ViewMasked(place, (lon, lat),
+                                                 x_off, y_off, w, h)
+                if ptex:
+                    (point, extent) = ptex
+                    (ix, _, iy, _) = extent
                     dc.DrawBitmap(bmap, ix, iy, False)
 
                     # draw object point
                     if radius:
                         # do placement with image heights and offsets zero
-                        (px, py) = self.extent_placement(place, x, y, 0, 0, 0, 0)
                         dc.SetPen(wx.Pen(colour))
                         dc.SetBrush(wx.Brush(colour))
+                        (px, py) = point
                         dc.DrawCircle(px, py, radius)
         else:
             # draw images on the view
@@ -1445,6 +1445,46 @@ class PySlip(_BufferedCanvas):
             return self.Geo2View(geo)
 
         return None
+
+    def ExtentGeo2ViewMasked(self, place, geo, x_off, y_off, w, h):
+        """Given an extent object convert point/extent coords to view coords.
+
+        place         placement string
+        geo           point position tuple (xgeo, ygeo)
+        x_off, y_off  X and Y offsets
+        w, h          width and height of extent in pixels
+
+        Return a tuple of point and extent origins (point, extent) where 'point'
+        is (px, py) and extent is (ex, ey) (both in view coords).  Return None
+        if point is off-view.
+        
+        Takes size of extent object into consideration.
+        """
+
+        # get point view coords
+        point = self.Geo2View(geo)
+        (px, py) = point
+
+        # extent = (left, right, top, bottom) in view coords
+        extent = self.ViewExtent(place, point, w, h, x_off, y_off)
+        (elpx, erpx, etpx, ebpx) = extent
+
+        # get edges of view in map pixel coords
+        l_offset = self.view_offset_x
+        r_offset = self.view_offset_x + self.view_width
+        t_offset = self.view_offset_y
+        b_offset = self.view_offset_y + self.view_height
+
+        # decide if point and extent are off-view
+        if (erpx < l_offset and px < l_offset
+                and elpx > r_offset and px > r_offset):
+            return None
+
+        if (ebpx > t_offset and py > t_offset
+                and etpx < b_offset and py < b_offset):
+            return None
+
+        return (point, extent)
 
     ######
     # GUI stuff
@@ -2155,7 +2195,8 @@ class PySlip(_BufferedCanvas):
                         break
             else:
                 # view_relative, ptx, pty, x, y are view coords
-                e = self.ViewExtent((x, y), place, w, h, x_off, y_off)
+                e = self.ViewExtent(place, (x, y), w, h, x_off, y_off,
+                                    self.view_width, self.view_height)
                 (lv, rv, tv, bv) = e
                 if lv <= ptx <= rv and tv <= pty <= bv:
                     selection = [(x, y, bmp, {'placement': place,
@@ -2206,7 +2247,8 @@ class PySlip(_BufferedCanvas):
                         data.append(udata)
             else:
                 # view-relative, ll, ur, x, y all in view coordinates
-                e = self.ViewExtent((x, y), place, w, h, x_off, y_off)
+                e = self.ViewExtent(place, (x, y), w, h, x_off, y_off,
+                                    self.view_width, self.view_height)
                 if e:
                     (li, ri, ti, bi) = e    # image extents
                     if boxlx <= li and ri <= boxrx and boxty <= ti and bi <= boxby:
@@ -2312,7 +2354,6 @@ class PySlip(_BufferedCanvas):
         selection = []
         data = []
 
-# FIXME: worry about placement
         if layer.map_rel:
             # map-relative
             for p in layer.data:
@@ -2727,7 +2768,6 @@ class PySlip(_BufferedCanvas):
         Returns True if point is inside the polygon.
         """
 
-# FIXME: worry about placement
         return self.point_inside_polygon(geo, poly)
 
     def point_in_poly_view(self, poly, view, place, x_off, y_off):
@@ -2771,7 +2811,6 @@ class PySlip(_BufferedCanvas):
         If object extent is totally off the map, return None.
         """
 
-# FIXME: is the below enough?
         # decide if object CAN be in view
         # check point in lower, right or lower-right quadrants
         (xgeo, ygeo) = geo
@@ -2799,11 +2838,11 @@ class PySlip(_BufferedCanvas):
 
         return (llon, rlon, tlat, blat)
 
-    def ViewExtent(self, view, place, w, h, x_off, y_off):
+    def ViewExtent(self, place, view, w, h, x_off, y_off, dcw=0, dch=0):
         """Get view extent of area.
 
-        view          tuple (xview,yview) of view coordinates of object point
         place         placement string ('cc', 'se', etc)
+        view          tuple (xview,yview) of view coordinates of object point
         w, h          area width and height (pixels)
         x_off, y_off  x and y offset (pixels)
 
@@ -2820,8 +2859,8 @@ class PySlip(_BufferedCanvas):
 
         # top left corner
         (x, y) = view
-        (left, top) = self.extent_placement(place, x, y, x_off, y_off, w, h,
-                                            self.view_width, self.view_height)
+        (left, top) = self.extent_placement(place, x, y, x_off, y_off,
+                                            w, h, dcw, dch)
 
         # bottom right corner
         right = left + w
@@ -2984,7 +3023,7 @@ class PySlip(_BufferedCanvas):
 
     @staticmethod
     def extent_placement(place, x, y, x_off, y_off, w, h, dcw=0, dch=0):
-        """Perform map_ and view-relative placement for an extent object.
+        """Perform map- and view-relative placement for an extent object.
 
         place         placement key string
         x, y          point relative to placement origin

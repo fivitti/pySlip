@@ -1621,7 +1621,7 @@ class PySlip(_BufferedCanvas):
                             sel = self.layerPSelHandler[l.type](l, clickpt_g)
                         else:
                             sel = self.layerPSelHandler[l.type](l, clickpt_v)
-                        log('OnLeftUp: POINT sel=%s' % str(sel))
+                        log('OnLeftUp: SINGLE sel=%s' % str(sel))
                         self.RaiseEventSelect(mposn=clickpt_g, vposn=clickpt_v,
                                               layer=l, selection=sel)
                         # user code possibly updated screen
@@ -2135,6 +2135,7 @@ class PySlip(_BufferedCanvas):
         # .data: [(x, y, bmap, w, h, place, x_off, y_off, data),...]
         for p in layer.data:
             (x, y, bmp, w, h, place, x_off, y_off, radius, colour, udata) = p
+
             if layer.map_rel:
                 # map-relative, ptx, pty, x, y are geo coords
                 e = self.GeoExtent((x, y), place, w, h, x_off, y_off)
@@ -2142,13 +2143,13 @@ class PySlip(_BufferedCanvas):
                     (llon, rlon, tlat, blat) = e
                     if llon <= ptx <= rlon and blat <= pty <= tlat:
                         # figure out relsel point
+                        selection = [(x, y, bmp, {'placement': place,
+                                                  'radius': radius,
+                                                  'colour': colour,
+                                                  'offset_x': x_off,
+                                                  'offset_y': y_off})]
                         (vptx, vpty) = self.Geo2ViewMasked(point)
                         (imgx, imgy) = self.Geo2ViewMasked((x, y))
-                        selection = [(x, y, bmp, {'placement': place,
-                                                    'radius': radius,
-                                                    'colour': colour,
-                                                    'offset_x': x_off,
-                                                    'offset_y': y_off})]
                         relsel = (int(vptx - imgx), int(vpty - imgy))
                         result = (selection, udata, relsel)
                         break
@@ -2158,10 +2159,10 @@ class PySlip(_BufferedCanvas):
                 (lv, rv, tv, bv) = e
                 if lv <= ptx <= rv and tv <= pty <= bv:
                     selection = [(x, y, bmp, {'placement': place,
-                                                'radius': radius,
-                                                'colour': colour,
-                                                'offset_x': x_off,
-                                                'offset_y': y_off})]
+                                              'radius': radius,
+                                              'colour': colour,
+                                              'offset_x': x_off,
+                                              'offset_y': y_off})]
                     relsel = (int(ptx - lv), int(pty - tv))
                     result = (selection, udata, relsel)
                     break
@@ -2267,9 +2268,10 @@ class PySlip(_BufferedCanvas):
             for p in layer.data:
                 (x, y, text, place, radius, colour, tcolour,
                         fname, fsize, x_off, y_off, data) = p
-                (px, py) = self.point_view_no_offset(place, x, y,
-                                                     self.view_width,
-                                                     self.view_height)
+#                (px, py) = self.point_view_no_offset(place, x, y,
+#                                                     self.view_width,
+#                                                     self.view_height)
+                (px, py) = self.point_placement(place, x, y, 0, 0, self.view_width, self.view_height)
                 d = (px - xview)*(px - xview) + (py - yview)*(py - yview)
                 if d < dist:
                     selection = (x, y, text, {'placement': place,

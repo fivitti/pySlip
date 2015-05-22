@@ -1140,8 +1140,10 @@ class AppFrame(wx.Frame):
             # get selected points into form for display layer
             points = []
             for (x, y, t, d) in selection:
-                del d['colour']
+                del d['colour']     # remove point attributes, want different
                 del d['radius']
+                del d['offset_x']   # remove offsets, we want point not text
+                del d['offset_y']
                 points.append((x, y, d))
 
             self.sel_text_layer = \
@@ -1224,8 +1226,10 @@ class AppFrame(wx.Frame):
             # get selected points into form for point display layer
             points = []
             for (x, y, t, d) in selection:
-                del d['colour']
+                del d['colour']     # want to override colour, radius
                 del d['radius']
+                del d['offset_x']   # remove offsets, we want point not text
+                del d['offset_y']
                 points.append((x, y, d))
 
             self.sel_text_view_layer = \

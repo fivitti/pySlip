@@ -2268,10 +2268,8 @@ class PySlip(_BufferedCanvas):
             for p in layer.data:
                 (x, y, text, place, radius, colour, tcolour,
                         fname, fsize, x_off, y_off, data) = p
-#                (px, py) = self.point_view_no_offset(place, x, y,
-#                                                     self.view_width,
-#                                                     self.view_height)
-                (px, py) = self.point_placement(place, x, y, 0, 0, self.view_width, self.view_height)
+                (px, py) = self.point_placement(place, x, y, 0, 0,
+                                                self.view_width, self.view_height)
                 d = (px - xview)*(px - xview) + (py - yview)*(py - yview)
                 if d < dist:
                     selection = (x, y, text, {'placement': place,
@@ -2822,8 +2820,8 @@ class PySlip(_BufferedCanvas):
 
         # top left corner
         (x, y) = view
-        (left, top) = self.point_view_perturb(place, x, y, x_off, y_off, w, h,
-                                              self.view_width, self.view_height)
+        (left, top) = self.extent_placement(place, x, y, x_off, y_off, w, h,
+                                            self.view_width, self.view_height)
 
         # bottom right corner
         right = left + w
@@ -3012,93 +3010,6 @@ class PySlip(_BufferedCanvas):
         elif place == 'cs': x+=dcw2-w2;       y+=dch-h-y_off
         elif place == 'sw': x+=x_off;         y+=dch-h-y_off
         elif place == 'cw': x+=x_off;         y+=dch2-h2
-
-        return (x, y)
-
-    @staticmethod
-    def point_map_perturb(place, x, y, x_off, y_off, w, h):
-        """Perform map-relative placement for a point.
-        Used in Extent code.
-
-        place         placement key string
-        x, y          point relative to placement origin
-        x_off, y_off  offset from point
-        w, h          extent width and height
-
-        Returns a tuple (x, y).
-        """
-
-        w2 = w/2
-        h2 = h/2
-
-        if place == 'cc':   x+=x_off-w2;      y+=y_off-h2
-        elif place == 'nw': x+=x_off;         y+=y_off
-        elif place == 'cn': x+=x_off-w2;      y+=y_off
-        elif place == 'ne': x+=x_off-w;       y+=y_off
-        elif place == 'ce': x+=x_off-w;       y+=y_off-h2
-        elif place == 'se': x+=x_off-w;       y+=y_off-h
-        elif place == 'cs': x+=x_off-w2;      y+=y_off-h
-        elif place == 'sw': x+=x_off;         y+=y_off-h
-        elif place == 'cw': x+=x_off;         y+=y_off-h2
-
-        return (x, y)
-
-    @staticmethod
-    def point_view_perturb(place, x, y, x_off, y_off, w, h, dcw, dch):
-        """Perform map-relative placement for a point.
-        Used in Extent code.
-
-        place         placement key string
-        x, y          point relative to placement origin
-        x_off, y_off  offset from point
-        w, h          extent width and height
-        dcw, dch      view port width & height
-
-        Returns a tuple (x, y).
-        """
-
-        w2 = w/2
-        h2 = h/2
-
-        dcw2 = dcw/2
-        dch2 = dch/2
-
-        if place == 'cc':   x+=dcw2-w2;      y+=dch2-h2
-        elif place == 'nw': x+=x_off;        y+=y_off
-        elif place == 'cn': x+=dcw2-w2;      y+=y_off
-        elif place == 'ne': x+=dcw-x_off-w;  y+=y_off
-        elif place == 'ce': x+=dcw-x_off-w;  y+=dch2-h2
-        elif place == 'se': x+=dcw-x_off-w;  y+=dch-y_off-h
-        elif place == 'cs': x+=dcw2-w2;      y+=dch-y_off-h
-        elif place == 'sw': x+=x_off;        y+=dch-y_off-h
-        elif place == 'cw': x+=x_off;        y+=dch2-h2
-
-        return (x, y)
-
-    @staticmethod
-    def point_view_no_offset(place, x, y, dcw, dch):
-        """Perform view-relative placement for a point WITHOUT OFFSETS.
-        Used in Extent code.
-
-        place         placement key string
-        x, y          point relative to placement origin
-        dcw, dch      view port width & height
-
-        Returns a tuple (x, y).
-        """
-
-        dcw2 = dcw/2
-        dch2 = dch/2
-
-        if place == 'cc':   x+=dcw2;  y+=dch2
-        elif place == 'nw': pass
-        elif place == 'cn': x+=dcw2
-        elif place == 'ne': x+=dcw
-        elif place == 'ce': x+=dcw;   y+=dch2
-        elif place == 'se': x+=dcw;   y+=dch
-        elif place == 'cs': x+=dcw2;  y+=dch
-        elif place == 'sw':           y+=dch
-        elif place == 'cw':           y+=dch2
 
         return (x, y)
 

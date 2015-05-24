@@ -69,5 +69,5 @@ def tkinter_error(msg, title=None):
 
 if __name__ == '__main__':
     tkinter_error('A short message:\n\tHello, world!\n\n'
-                  'Some Unicode (広島 กขฃ) and extended characters (\v\a\b).',
+                  'Some Unicode (広島, ภูเก็ต) and extended characters (\v\a\b).',
                   title='Test Error Message')

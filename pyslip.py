@@ -504,6 +504,9 @@ class PySlip(_BufferedCanvas):
         # default cursor
         self.default_cursor = wx.CURSOR_DEFAULT
 
+        # cache values
+        self.last_setfont = None        # last font and size (font, size)
+
         # state of the SHIFT key
         self.shift_down = False
 
@@ -1135,25 +1138,19 @@ class PySlip(_BufferedCanvas):
         # allow transparent colours
         dc = wx.GCDC(dc)
 
-        # draw points on map/view
+        # get correct pex function
+        pex = self.PexPointView
         if map_rel:
-            for (x, y, place, radius, colour, x_off, y_off, udata) in data:
-                pt = self.Geo2ViewMasked((x, y))
-                if pt and radius:  # don't draw if not on screen or zero radius
-                    dc.SetPen(wx.Pen(colour))
-                    dc.SetBrush(wx.Brush(colour))
-                    (x, y) = pt
-                    (x, y) = self.point_placement(place, x, y, x_off, y_off)
-                    dc.DrawCircle(x, y, radius)
-        else:   # view
-            for (x, y, place, radius, colour, x_off, y_off, udata) in data:
-                if radius:
-                    dc.SetPen(wx.Pen(colour))
-                    dc.SetBrush(wx.Brush(colour))
-                    (x, y) = self.point_placement(place, x, y, x_off, y_off,
-                                                  self.view_width,
-                                                  self.view_height)
-                    dc.DrawCircle(x, y, radius)
+            pex = self.PexPoint
+
+        # draw points on map/view
+        for (x, y, place, radius, colour, x_off, y_off, udata) in data:
+            (pt, ex) = pex(place, (x,y), x_off, y_off, radius)
+            if ex and radius:  # don't draw if not on screen or zero radius
+                dc.SetPen(wx.Pen(colour))
+                dc.SetBrush(wx.Brush(colour))
+                (x, _, y, _) = ex
+                dc.DrawCircle(x+radius, y+radius, radius)
 
     def DrawImageLayer(self, dc, images, map_rel):
         """Draw an image Layer on the view.
@@ -1167,45 +1164,24 @@ class PySlip(_BufferedCanvas):
         # allow transparent colours
         dc = wx.GCDC(dc)
 
-        # draw images
+        # get correct pex function
+        pex = self.PexExtentView
         if map_rel:
-            # draw images on the map
-            # (lon, lat, bmap, w, h, placement, offset_x, offset_y, radius, colour, udata)
-            for (lon, lat, bmap, w, h, place,
-                     x_off, y_off, radius, colour, idata) in images:
-                ptex = self.ExtentGeo2ViewMasked(place, (lon, lat),
-                                                 x_off, y_off, w, h)
-                if ptex:
-                    (point, extent) = ptex
-                    (ix, _, iy, _) = extent
-                    dc.DrawBitmap(bmap, ix, iy, False)
+            pex = self.PexExtent
 
-                    # draw object point
-                    if radius:
-                        # do placement with image heights and offsets zero
-                        dc.SetPen(wx.Pen(colour))
-                        dc.SetBrush(wx.Brush(colour))
-                        (px, py) = point
-                        dc.DrawCircle(px, py, radius)
-        else:
-            # draw images on the view
-            # (lon, lat, bmap, w, h, placement, offset_x, offset_y, radius, colour, udata)
-            (dc_w, dc_h) = dc.GetSize()
-            for (x, y, bmap, w, h, place,
-                    x_off, y_off, radius, colour, idata) in images:
-                # draw the image
-                (ix, iy) = self.extent_placement(place, x, y,
-                                                 x_off, y_off, w, h, dc_w, dc_h)
+        # draw the images
+        for (lon, lat, bmap, w, h, place,
+                 x_off, y_off, radius, colour, idata) in images:
+            (pt, ex) = pex(place, (lon, lat), x_off, y_off, w, h)
+            if ex:
+                (ix, _, iy, _) = ex
                 dc.DrawBitmap(bmap, ix, iy, False)
 
-                # draw object point
-                if radius:
-                    # do placement with image heights and offsets zero
-                    (px, py) = self.extent_placement(place, x, y,
-                                                     0, 0, 0, 0, dc_w, dc_h)
-                    dc.SetPen(wx.Pen(colour))
-                    dc.SetBrush(wx.Brush(colour))
-                    dc.DrawCircle(px, py, radius)
+            if pt and radius:
+                dc.SetPen(wx.Pen(colour))
+                dc.SetBrush(wx.Brush(colour))
+                (px, py) = pt
+                dc.DrawCircle(px, py, radius)
 
     def DrawTextLayer(self, dc, text, map_rel):
         """Draw a text Layer on the view.
@@ -1217,71 +1193,41 @@ class PySlip(_BufferedCanvas):
         map_rel  points relative to map if True, else relative to view
         """
 
-        if text is None:
-            return
+#        if text is None:
+#            return
 
         # we need the size of the DC
         dc = wx.GCDC(dc)		# allow transparent colours
-        (dc_w, dc_h) = dc.GetSize()
+
+        # get correct pex function for mode (map/view)
+        pex = self.PexExtentView
+        if map_rel:
+            pex = self.PexExtent
 
         # draw text on map/view
-        if map_rel:
-            # draw text on the map
-            for t in text:
-                (lon, lat, tdata, place, radius, colour, textcolour,
-                     fontname, fontsize, x_off, y_off, data) = t
-
-                # convert geo position to view (returns None if off-view)
-                pt = self.Geo2ViewMasked((lon, lat))
-                if pt:
-                    (x, y) = pt
-
-                    # set font characteristics
-                    dc.SetPen(wx.Pen(colour))
-                    dc.SetBrush(wx.Brush(colour))
-                    dc.SetTextForeground(colour)
-                    font = wx.Font(fontsize, wx.SWISS, wx.NORMAL, wx.NORMAL,
-                                   False, fontname)
-                    dc.SetFont(font)
-
-                    # draw hotpoint circle
-                    if radius:
-                        dc.DrawCircle(x, y, radius)
-
-                    # place the text relative to hotpoint
-                    (w, h, _, _) = dc.GetFullTextExtent(tdata)
-                    (x, y) = self.extent_placement(place, x, y,
-                                                   x_off, y_off, w, h)
-                    dc.SetTextForeground(textcolour)
-                    dc.DrawText(tdata, x, y)
-        else:
-            # draw text on the view
-            for t in text:
-                # for each text element, get unpacked data
-                (x, y, tdata, place, radius, colour, textcolour,
-                     fontname, fontsize, x_off, y_off, data) = t
-
-                # set font characteristics
-                dc.SetPen(wx.Pen(colour))
-                dc.SetBrush(wx.Brush(colour))
-                dc.SetTextForeground(colour)
+        for (lon, lat, tdata, place, radius, colour,
+                textcolour, fontname, fontsize, x_off, y_off, data) in text:
+            # set font characteristics so we calculate text width/height
+            dc.SetTextForeground(textcolour)
+            if self.last_setfont != (fontname, fontsize):
                 font = wx.Font(fontsize, wx.SWISS, wx.NORMAL, wx.NORMAL,
                                False, fontname)
                 dc.SetFont(font)
+                self.last_setfont = (fontname, fontsize)
 
-                # draw object point
-                if radius:
-                    # do placement with image heights and offsets zero
-                    (px, py) = self.extent_placement(place, x, y,
-                                                     0, 0, 0, 0, dc_w, dc_h)
-                    dc.DrawCircle(px, py, radius)
+            (w, h, _, _) = dc.GetFullTextExtent(tdata)
 
-                # place the text relative to hotpoint
-                (w, h, _, _) = dc.GetFullTextExtent(tdata)  # size of text
-                (x, y) = self.extent_placement(place, x, y, x_off, y_off,
-                                               w, h, dc_w, dc_h)
-                dc.SetTextForeground(textcolour)
-                dc.DrawText(tdata, x, y)
+            # get point + extent information (each can be None if off-view)
+            (pt, ex) = pex(place, (lon, lat), x_off, y_off, w, h)
+            if ex:
+                (lx, _, ty, _) = ex
+                dc.DrawText(tdata, lx, ty)
+
+            if pt and radius:
+                (x, y) = pt
+                dc.SetPen(wx.Pen(colour))
+                dc.SetBrush(wx.Brush(colour))
+                dc.DrawCircle(x, y, radius)
 
     def DrawPolygonLayer(self, dc, data, map_rel):
         """Draw a polygon layer.
@@ -1297,19 +1243,16 @@ class PySlip(_BufferedCanvas):
         # allow transparent colours
         dc = wx.GCDC(dc)
 
-        # draw polygons on map/view
+        # get the correct pex function for mode (map/view)
+        pex = self.PexPolyView
         if map_rel:
-            for (p, place, width, colour, closed,
+            pex = self.PexPoly
+
+        # draw polygons
+        for (p, place, width, colour, closed,
                  filled, fillcolour, x_off, y_off, udata) in data:
-                # gather all polygon points as view coords
-                pp = []
-                for lonlat in p:
-                    (tx, ty) = self.tiles.Geo2Tile(lonlat)
-                    x = tx*self.tiles.tile_size_x - self.view_offset_x
-                    y = ty*self.tiles.tile_size_y - self.view_offset_y
-                    (x, y) = self.point_placement(place, x, y, x_off, y_off)
-                    pp.append((x, y))
-
+            (poly, extent) = pex(place, p, x_off, y_off)
+            if poly:
                 dc.SetPen(wx.Pen(colour, width=width))
 
                 if filled:
@@ -1318,29 +1261,9 @@ class PySlip(_BufferedCanvas):
                     dc.SetBrush(wx.TRANSPARENT_BRUSH)
 
                 if closed:
-                    dc.DrawPolygon(pp)
+                    dc.DrawPolygon(poly)
                 else:
-                    dc.DrawLines(pp)
-        else:   # view
-            (dc_w, dc_h) = dc.GetSize()
-            for (p, place, width, colour, closed,
-                     filled, fillcolour, x_off, y_off, udata) in data:
-                pp = []
-                for (x, y) in p:
-                    (x, y) = self.point_placement(place, x, y, x_off, y_off, dc_w, dc_h)
-                    pp.append((x, y))
-
-                dc.SetPen(wx.Pen(colour, width=width))
-
-                if filled:
-                    dc.SetBrush(wx.Brush(fillcolour))
-                else:
-                    dc.SetBrush(wx.TRANSPARENT_BRUSH)
-
-                if closed:
-                    dc.DrawPolygon(pp)
-                else:
-                    dc.DrawLines(pp)
+                    dc.DrawLines(poly)
 
     ######
     # Positioning methods
@@ -1446,7 +1369,90 @@ class PySlip(_BufferedCanvas):
 
         return None
 
-    def ExtentGeo2ViewMasked(self, place, geo, x_off, y_off, w, h):
+    ######
+    # PEX - Point & EXtension.
+    #
+    # These functions encapsulate the code that finds the extent of an object.
+    # They all return a tuple (point, extent) where 'point' is the placement
+    # point of an object (or list of points for a polygon) and an 'extent'
+    # tuple (lx, rx, ty, by) [left, right, top, bottom].
+    ######
+
+    def PexPoint(self, place, geo, x_off, y_off, radius):
+        """Given a point object (geo coords) get point/extent in view coords.
+
+        place         placement string
+        geo           point position tuple (xgeo, ygeo)
+        x_off, y_off  X and Y offsets
+
+        Return a tuple of point and extent origins (point, extent) where 'point'
+        is (px, py) and extent is (elx, erx, ety, eby) (both in view coords).
+        Return None for either or both if off-view.
+
+        The 'extent' here is the extent of the point+radius.
+        """
+
+        # get point view coords
+        (xview, yview) = self.Geo2View(geo)
+        point = self.point_placement(place, xview, yview, x_off, y_off)
+        (px, py) = point
+
+        # extent = (left, right, top, bottom) in view coords
+        elx = px - radius
+        erx = px + radius
+        ety = py - radius
+        eby = py + radius
+        extent = (elx, erx, ety, eby)
+
+        # decide if point and extent are off-view
+        if px < 0 or px > self.view_width or py < 0 or py > self.view_height:
+            point = None
+
+        if erx < 0 or elx > self.view_width or eby < 0 or ety > self.view_height:
+            # no extent if ALL of extent is off-view
+            extent = None
+
+        return (point, extent)
+
+    def PexPointView(self, place, view, x_off, y_off, radius):
+        """Given a point object (view coords) get point/extent in view coords.
+
+        place         placement string
+        view          point position tuple (xview, yview)
+        x_off, y_off  X and Y offsets
+
+        Return a tuple of point and extent origins (point, extent) where 'point'
+        is (px, py) and extent is (elx, erx, ety, eby) (both in view coords).
+        Return None for either or both if off-view.
+
+        The 'extent' here is the extent of the point+radius.
+        """
+
+        # get point view coords and perturb point to placement
+        (xview, yview) = view
+        point = self.point_placement(place, xview, yview, x_off, y_off,
+                                     self.view_width, self.view_height)
+        (px, py) = point
+
+        # extent = (left, right, top, bottom) in view coords
+        elx = px - radius
+        erx = px + radius
+        ety = py - radius
+        eby = py + radius
+        extent = (elx, erx, ety, eby)
+
+        # decide if point and extent are off-view
+        if (px < 0 or px > self.view_width
+                or py < 0 or py > self.view_height):
+            view = None
+
+        if erx < 0 or elx > self.view_width or eby < 0 or ety > self.view_height:
+            # no extent if ALL of extent is off-view
+            extent = None
+
+        return (point, extent)
+
+    def PexExtent(self, place, geo, x_off, y_off, w, h):
         """Given an extent object convert point/extent coords to view coords.
 
         place         placement string
@@ -1455,36 +1461,147 @@ class PySlip(_BufferedCanvas):
         w, h          width and height of extent in pixels
 
         Return a tuple of point and extent origins (point, extent) where 'point'
-        is (px, py) and extent is (ex, ey) (both in view coords).  Return None
-        if point is off-view.
-        
-        Takes size of extent object into consideration.
+        is (px, py) and extent is (elx, erx, ety, eby) (both in view coords).
+        Return None if point is off-view.
+
+        An extent object can be either an image object or a text object.
         """
+
+        log('PexExtent: place=%s, geo=%s, x_off=%s, y_off=%s, w=%s, h=%s' % (place, str(geo), str(x_off), str(y_off), str(w), str(h)))
 
         # get point view coords
         point = self.Geo2View(geo)
         (px, py) = point
+        log('PexExtent: point (view)=%s' % str(point))
 
         # extent = (left, right, top, bottom) in view coords
         extent = self.ViewExtent(place, point, w, h, x_off, y_off)
-        (elpx, erpx, etpx, ebpx) = extent
-
-        # get edges of view in map pixel coords
-        l_offset = self.view_offset_x
-        r_offset = self.view_offset_x + self.view_width
-        t_offset = self.view_offset_y
-        b_offset = self.view_offset_y + self.view_height
+        (elx, erx, ety, eby) = extent
+        log('PexExtent: extent=%s' % str(extent))
 
         # decide if point and extent are off-view
-        if (erpx < l_offset and px < l_offset
-                and elpx > r_offset and px > r_offset):
-            return None
+        if px < 0 or px > self.view_width or py < 0 or py > self.view_height:
+            point = None
 
-        if (ebpx > t_offset and py > t_offset
-                and etpx < b_offset and py < b_offset):
-            return None
+        if erx < 0 or elx > self.view_width or eby < 0 or ety > self.view_height:
+            # no extent if ALL of extent is off-view
+            extent = None
 
         return (point, extent)
+
+    def PexExtentView(self, place, view, x_off, y_off, w, h):
+        """Given a view object convert point/extent coords to view coords.
+
+        place         placement string
+        view          point position tuple (xview, yview)
+        x_off, y_off  X and Y offsets
+        w, h          width and height of extent in pixels
+
+        Return a tuple of point and extent origins (point, extent) where 'point'
+        is (px, py) and extent is (elx, erx, ety, eby) (both in view coords).
+        Either point or extent is None if object off-view.
+
+        Takes size of extent object into consideration.
+        """
+
+        # get point view coords (X and Y)
+        (px, py) = view
+        log('PexExtentView: view=%s' % str(view))
+
+        # extent = (left, right, top, bottom) in view coords
+        extent = self.ViewExtent(place, view, w, h, x_off, y_off,
+                                 self.view_width, self.view_height)
+        (elx, erx, ety, eby) = extent
+        log('PexExtentView: extent=%s' % str(extent))
+
+        # decide if point and extent are off-view
+        if px < 0 or px > self.view_width or py < 0 or py > self.view_height:
+            view = None
+
+        if erx < 0 or elx > self.view_width or eby < 0 or ety > self.view_height:
+            # no extent if ALL of extent is off-view
+            extent = None
+
+        log('PexExtentView: returning %s' % str((view, extent)))
+        return (view, extent)
+
+    def PexPoly(self, place, poly, x_off, y_off):
+        """Given a polygon object (geo coords) get point/extent in view coords.
+
+        place         placement string
+        poly          list of point position tuples (xgeo, ygeo)
+        x_off, y_off  X and Y offsets
+
+        Return a tuple of point and extent origins (point, extent) where 'point'
+        is a list of (px, py) and extent is (elx, erx, ety, eby) (both in view
+        coords).  Return None for either or both if off-view.
+        """
+
+        # get polygon points in perturbed view coordinates
+        view = []
+        for geo in poly:
+            (xview, yview) = self.Geo2View(geo)
+            point = self.point_placement(place, xview, yview, x_off, y_off)
+            view.append(point)
+
+        # get extent - max/min x and y
+        # extent = (left, right, top, bottom) in view coords
+        elx = min(view, key=lambda x: x[0])[0]
+        erx = max(view, key=lambda x: x[0])[0]
+        ety = min(view, key=lambda x: x[1])[1]
+        eby = max(view, key=lambda x: x[1])[1]
+        extent = (elx, erx, ety, eby)
+
+        # decide if polygon or extent are off-view
+        res_pt = None
+        res_ex = None
+        for (px, py) in view:
+            if ((px >= 0 and px < self.view_width)
+                    and (py >= 0 and py < self.view_height)):
+                res_pt = view
+                res_ex = extent
+                break
+
+        return (res_pt, res_ex)
+
+    def PexPolyView(self, place, poly, x_off, y_off):
+        """Given a polygon object (view coords) get point/extent in view coords.
+
+        place         placement string
+        poly          list of point position tuples (xview, yview)
+        x_off, y_off  X and Y offsets
+
+        Return a tuple of point and extent origins (point, extent) where 'point'
+        is a list of (px, py) and extent is (elx, erx, ety, eby) (both in view
+        coords).  Return None for either or both if off-view.
+        """
+
+        # get polygon points in view coordinates
+        view = []
+        for (xview, yview) in poly:
+            point = self.point_placement(place, xview, yview, x_off, y_off,
+                                         self.view_width, self.view_height)
+            view.append(point)
+
+        # get extent - max/min x and y
+        # extent = (left, right, top, bottom) in view coords
+        elx = min(view, key=lambda x: x[0])[0]
+        erx = max(view, key=lambda x: x[0])[0]
+        ety = min(view, key=lambda x: x[1])[1]
+        eby = max(view, key=lambda x: x[1])[1]
+        extent = (elx, erx, ety, eby)
+
+        # decide if polygon or extent are off-view
+        res_pt = None
+        res_ex = None
+        for (px, py) in view:
+            if ((px >= 0 and px < self.view_width)
+                    and (py >= 0 and py < self.view_height)):
+                res_pt = view
+                res_ex = extent
+                break
+
+        return (res_pt, res_ex)
 
     ######
     # GUI stuff
@@ -2035,7 +2152,7 @@ class PySlip(_BufferedCanvas):
         We must look for the nearest point to the click.
 
         Return None (no selection) or (point, data, None) of selected point
-        where point is [(x,y,attrib)] wher X and Y are map or view relative
+        where point is [(x,y,attrib)] where X and Y are map or view relative
         depending on layer.map_rel.  'data' is the data object associated with
         each selected point.  The None is a placeholder for the relative
         selection point, which is meaningless for point selection.
@@ -2049,49 +2166,31 @@ class PySlip(_BufferedCanvas):
         delta = layer.delta
         dist = 9999999.0        # more than possible
 
+        # get correct pex function and click point in correct coords
+        pex = self.PexPointView
+        clickpt = pt
         if layer.map_rel:
-            # 'pt' is in geo coordinates
-            vposn = self.Geo2View(pt)
-            (vptx, vpty) = vposn
-            for p in layer.data:
-                (x, y, place, radius, colour, x_off, y_off, udata) = p
-                vp = self.Geo2ViewMasked((x, y))
-                if vp:
-                    (vx, vy) = vp
-                    (vx, vy) = self.point_placement(place, vx, vy,
-                                                    x_off, y_off)
-                    d = (vx - vptx)*(vx - vptx) + (vy - vpty)*(vy - vpty)
-                    if d < dist:
-                        # must return geo coords of perturbed point
-                        (gx, gy) = self.View2Geo((vx, vy))
-                        rpt = (x, y, {'placement': place,
-                                      'radius': radius,
-                                      'colour': colour,
-                                      'offset_x': x_off,
-                                      'offset_y': y_off})
-                        result = ([rpt], udata, None)
-                        dist = d
-        else:
-            # 'pt' is in view coordinates
-            (ptx, pty) = pt
-            for p in layer.data:
-                (x, y, place, radius, colour, x_off, y_off, data) = p
-                (vx, vy) = self.point_placement(place, x, y, x_off, y_off,
-                                                self.view_width,
-                                                self.view_height)
-                d = (vx - ptx) * (vx - ptx) + (vy - pty) * (vy - pty)
+            pex = self.PexPoint
+            clickpt = self.Geo2View(pt)
+
+        # get selected point on map/view
+        (xclick, yclick) = clickpt
+        for (x, y, place, radius, colour, x_off, y_off, udata) in layer.data:
+            (vp, _) = pex(place, (x,y), x_off, y_off, radius)
+            if vp:
+                (vx, vy) = vp
+                d = (vx - xclick)*(vx - xclick) + (vy - yclick)*(vy - yclick)
                 if d < dist:
                     rpt = (x, y, {'placement': place,
                                   'radius': radius,
                                   'colour': colour,
                                   'offset_x': x_off,
                                   'offset_y': y_off})
-                    result = ([rpt], data, None)
+                    result = ([rpt], udata, None)
                     dist = d
 
         if dist <= layer.delta:
             return result
-
         return None
 
     def GetBoxSelPointsInLayer(self, layer, ll, ur):
@@ -2112,36 +2211,21 @@ class PySlip(_BufferedCanvas):
         selection = []
         data = []
 
+        # get correct pex function and box limits in view coords
+        pex = self.PexPointView
+        (blx, bby) = ll
+        (brx, bty) = ur
         if layer.map_rel:
-            # convert box geo coordinates to view coordinates
-            (glx, gby) = self.Geo2View(ll)
-            (grx, gty) = self.Geo2View(ur)
+            pex = self.PexPoint
+            (blx, bby) = self.Geo2View(ll)
+            (brx, bty) = self.Geo2View(ur)
 
-            for p in layer.data:
-                (x, y, place, radius, colour, x_off, y_off, udata) = p
-                (vx, vy) = self.Geo2View((x, y))
-                pv = self.point_placement(place, vx, vy, x_off, y_off)
-                (pvx, pvy) = pv
-                if glx <= pvx <= grx and gty <= pvy <= gby:
-                    # must return geo coords of perturbed point
-                    (gx, gy) = self.View2Geo(pv)
-                    selection.append((x, y, {'placement': place,
-                                             'radius': radius,
-                                             'colour': colour,
-                                             'offset_x': x_off,
-                                             'offset_y': y_off}))
-                    data.append(udata)
-        else:
-            # unpack selection box limits
-            (lx, by) = ll
-            (rx, ty) = ur
-
-            for p in layer.data:
-                (x, y, place, radius, colour, x_off, y_off, udata) = p
-                (vx, vy) = self.point_placement(place, x, y, x_off, y_off,
-                                                self.view_width,
-                                                self.view_height)
-                if lx <= vx <= rx and ty <= vy <= by:
+        # get points selection
+        for (x, y, place, radius, colour, x_off, y_off, udata) in layer.data:
+            (vp, _) = pex(place, (x,y), x_off, y_off, radius)
+            if vp:
+                (vpx, vpy) = vp
+                if blx <= vpx <= brx and bby >= vpy >= bty:
                     selection.append((x, y, {'placement': place,
                                              'radius': radius,
                                              'colour': colour,
@@ -2172,39 +2256,27 @@ class PySlip(_BufferedCanvas):
         (ptx, pty) = point
         result = None
 
-        # .data: [(x, y, bmap, w, h, place, x_off, y_off, data),...]
-        for p in layer.data:
-            (x, y, bmp, w, h, place, x_off, y_off, radius, colour, udata) = p
+        # get correct pex function and click point into view coords
+        clickpt = point
+        pex = self.PexExtentView
+        if layer.map_rel:
+            clickpt = self.Geo2View(point)
+            pex = self.PexExtent
+        (xclick, yclick) = clickpt
 
-            if layer.map_rel:
-                # map-relative, ptx, pty, x, y are geo coords
-                e = self.GeoExtent((x, y), place, w, h, x_off, y_off)
-                if e:
-                    (llon, rlon, tlat, blat) = e
-                    if llon <= ptx <= rlon and blat <= pty <= tlat:
-                        # figure out relsel point
-                        selection = [(x, y, bmp, {'placement': place,
-                                                  'radius': radius,
-                                                  'colour': colour,
-                                                  'offset_x': x_off,
-                                                  'offset_y': y_off})]
-                        (vptx, vpty) = self.Geo2ViewMasked(point)
-                        (imgx, imgy) = self.Geo2ViewMasked((x, y))
-                        relsel = (int(vptx - imgx), int(vpty - imgy))
-                        result = (selection, udata, relsel)
-                        break
-            else:
-                # view_relative, ptx, pty, x, y are view coords
-                e = self.ViewExtent(place, (x, y), w, h, x_off, y_off,
-                                    self.view_width, self.view_height)
-                (lv, rv, tv, bv) = e
-                if lv <= ptx <= rv and tv <= pty <= bv:
+        # select image
+        for (x, y, bmp, w, h, place,
+                x_off, y_off, radius, colour, udata) in layer.data:
+            (_, e) = pex(place, (x,y), x_off, y_off, w, h)
+            if e:
+                (lx, rx, ty, by) = e
+                if lx <= xclick <= rx and ty <= yclick <= by:
                     selection = [(x, y, bmp, {'placement': place,
                                               'radius': radius,
                                               'colour': colour,
                                               'offset_x': x_off,
                                               'offset_y': y_off})]
-                    relsel = (int(ptx - lv), int(pty - tv))
+                    relsel = (int(xclick - lx), int(yclick - ty))
                     result = (selection, udata, relsel)
                     break
 
@@ -2224,95 +2296,68 @@ class PySlip(_BufferedCanvas):
         If nothing is selected return None.
         """
 
-        # unpack selection box limits
-        (boxlx, boxby) = ll
-        (boxrx, boxty) = ur
+        # get correct pex function and box limits in view coords
+        pex = self.PexExtentView
+        if layer.map_rel:
+            pex = self.PexExtent
+            ll = self.Geo2View(ll)
+            ur = self.Geo2View(ur)
+        (vboxlx, vboxby) = ll
+        (vboxrx, vboxty) = ur
 
-        # now construct list of images inside box
+        # select images in map/view
         selection = []
         data = []
-        for p in layer.data:
-            (x, y, bmp, w, h, place, x_off, y_off, radius, colour, udata) = p
-            if layer.map_rel:
-                # map-relative, ll, ur, x, y all in geo coordinates
-                e = self.GeoExtent((x, y), place, w, h, x_off, y_off)
-                if e:
-                    (li, ri, ti, bi) = e    # image extents
-                    if boxlx <= li and ri <= boxrx and boxty >= ti and bi >= boxby:
-                        selection.append((x, y, bmp, {'placement': place,
-                                                      'radius': radius,
-                                                      'colour': colour,
-                                                      'offset_x': x_off,
-                                                      'offset_y': y_off}))
-                        data.append(udata)
-            else:
-                # view-relative, ll, ur, x, y all in view coordinates
-                e = self.ViewExtent(place, (x, y), w, h, x_off, y_off,
-                                    self.view_width, self.view_height)
-                if e:
-                    (li, ri, ti, bi) = e    # image extents
-                    if boxlx <= li and ri <= boxrx and boxty <= ti and bi <= boxby:
-                        selection.append((x, y, bmp, {'placement': place,
-                                                      'radius': radius,
-                                                      'colour': colour,
-                                                      'offset_x': x_off,
-                                                      'offset_y': y_off}))
-                        data.append(udata)
+        for (x, y, bmp, w, h, place,
+                x_off, y_off, radius, colour, udata) in layer.data:
+            (_, e) = pex(place, (x,y), x_off, y_off, w, h)
+            if e:
+                (li, ri, ti, bi) = e    # image extents (view coords)
+                if (vboxlx <= li and ri <= vboxrx
+                        and vboxty <= ti and bi <= vboxby):
+                    selection.append((x, y, bmp, {'placement': place,
+                                                  'radius': radius,
+                                                  'colour': colour,
+                                                  'offset_x': x_off,
+                                                  'offset_y': y_off}))
+                    data.append(udata)
 
         if not selection:
             return None
         return (selection, data, None)
 
-    def GetTextInLayer(self, layer, view):
+    def GetTextInLayer(self, layer, point):
         """Determine if clicked location selects a text object in layer data.
 
         layer  layer object we are looking in
-        view   click location tuple (view or geo coordinates)
+        point  click location tuple (view or geo coordinates)
 
         Return ((x,y), data, None) for the selected text object, or None if
         no selection.  The x and y coordinates are view/geo depending on
         the layer.map_rel value.
 
-        Just search for text 'hotspot' - just like point select.
-        Later make text sensitive (need text extent data).
+        ONLY SELECTS ON POINT, NOT EXTENT.
         """
 
         result = None
         delta = layer.delta
         dist = 9999999.0
 
+        # get correct pex function and mouse click in view coords
+        pex = self.PexPointView
+        clickpt = point
         if layer.map_rel:
-            # convert mouse click geo coords to view coords
-            result = self.Geo2ViewMasked(view)
-            if result:
-                (vptx, vpty) = result
-                # check each point in the layer
-                for p in layer.data:
-                    (x, y, text, place, radius, colour, tcolour,
-                            fname, fsize, x_off, y_off, data) = p
-                    vpt = self.Geo2ViewMasked((x, y))
-                    if vpt:
-                        (vx, vy) = vpt
-                        d = (vx - vptx)*(vx - vptx) + (vy - vpty)*(vy - vpty)
-                        if d < dist:
-                            selection = (x, y, text, {'placement': place,
-                                                      'radius': radius,
-                                                      'colour': colour,
-                                                      'textcolour': tcolour,
-                                                      'fontname': fname,
-                                                      'fontsize': fsize,
-                                                      'offset_x': x_off,
-                                                      'offset_y': y_off})
-                            result = ([selection], data, None)
-                            dist = d
-        else:       # view-rel
-            (xview, yview) = view
-            for p in layer.data:
-                (x, y, text, place, radius, colour, tcolour,
-                        fname, fsize, x_off, y_off, data) = p
-                (px, py) = self.point_placement(place, x, y, 0, 0,
-                                                self.view_width, self.view_height)
-                d = (px - xview)*(px - xview) + (py - yview)*(py - yview)
+            pex = self.PexPoint
+            clickpt = self.Geo2View(point)
+        (xclick, yclick) = clickpt
+
+        # select text in map/view layer
+        for (x, y, text, place, radius, colour,                                                                                                              
+                 tcolour, fname, fsize, x_off, y_off, data)in layer.data:
+            (vp, ex) = pex(place, (x,y), x_off, y_off, radius)
+            if vp:
+                (vx, vy) = vp
+                d = (vx - xclick)**2 + (vy - yclick)**2
                 if d < dist:
                     selection = (x, y, text, {'placement': place,
                                               'radius': radius,
@@ -2344,40 +2389,29 @@ class PySlip(_BufferedCanvas):
         of userdata objects associated with the selected text objects.
 
         Returns None if no selection.
+
+        ONLY SELECTS ON POINT, NOT EXTENT.
         """
 
-        # get canonical box limits
-        (lx, by) = ll
-        (rx, ty) = ur
-
-        # get a list of points inside the selection box
         selection = []
         data = []
 
+        # get correct pex function and box limits in view coords
+        pex = self.PexPointView
         if layer.map_rel:
-            # map-relative
-            for p in layer.data:
-                (x, y, text, place, radius, colour, tcolour,
-                        fname, fsize, x_off, y_off, udata) = p
-                if lx <= x <= rx and by <= y <= ty:
-                    sel = (x, y, text, {'placement': place,
-                                        'radius': radius,
-                                        'colour': colour,
-                                        'textcolour': tcolour,
-                                        'fontname': fname,
-                                        'fontsize': fsize,
-                                        'offset_x': x_off,
-                                        'offset_y': y_off})
-                    selection.append(sel)
-                    data.append(udata)
-        else:
-            # view-relative
-            for p in layer.data:
-                (x, y, text, place, radius, colour, tcolour,
-                        fname, fsize, x_off, y_off, udata) = p
-                (px, py) = self.point_placement(place, x, y, x_off, y_off,
-                                                self.view_width, self.view_height)
-                if lx <= px <= rx and ty <= py <= by:
+            pex = self.PexPoint
+            ll = self.Geo2View(ll)
+            ur = self.Geo2View(ur)
+        (lx, by) = ll                                                                                                                                        
+        (rx, ty) = ur
+
+        # get texts inside box
+        for (x, y, text, place, radius, colour,
+                tcolour, fname, fsize, x_off, y_off, udata) in layer.data:
+            (vp, ex) = pex(place, (x,y), x_off, y_off, radius)
+            if vp:
+                (x, y) = vp
+                if lx <= x <= rx and ty <= y <= by:
                     sel = (x, y, text, {'placement': place,
                                         'radius': radius,
                                         'colour': colour,
@@ -2389,7 +2423,6 @@ class PySlip(_BufferedCanvas):
                     selection.append(sel)
                     data.append(udata)
 
-        # return appropriate result
         if selection:
             return (selection, data, None)
         return None
@@ -2406,34 +2439,24 @@ class PySlip(_BufferedCanvas):
 
         result = None
 
-        # (poly, place, width, colour, close, filled, fillcolour, off_x, off_y, udata)
-        for p in layer.data:
-            (poly, place, width, colour, close,
-                    filled, fcolour, x_off, y_off, udata) = p
-            if layer.map_rel:
-                # map-relative, all points are geo coordinates
-                if self.point_in_poly_geo(poly, point, place, x_off, y_off):
-                    sel = (poly, {'placement': place,
-                                  'width': width,
-                                  'closed': close,
-                                  'filled': filled,
-                                  'fillcolour': fcolour,
-                                  'offset_x': x_off,
-                                  'offset_y': y_off})
-                    result = ([sel], udata, None)
-                    break
-            else:
-                # view-relative, all points are view pixels
-                if self.point_in_poly_view(poly, point, place, x_off, y_off):
-                    sel = (poly, {'placement': place,
-                                  'width': width,
-                                  'closed': close,
-                                  'filled': filled,
-                                  'fillcolour': fcolour,
-                                  'offset_x': x_off,
-                                  'offset_y': y_off})
-                    result = ([sel], udata, None)
-                    break
+        # get correct 'point in polygon' routine
+        pip = self.point_in_poly_view
+        if layer.map_rel:
+            pip = self.point_in_poly_geo
+
+        # check polyons in layer, choose first point is inside
+        for (poly, place, width, colour, close,
+                 filled, fcolour, x_off, y_off, udata)in layer.data:
+            if pip(poly, point, place, x_off, y_off):
+                sel = (poly, {'placement': place,
+                              'width': width,
+                              'closed': close,
+                              'filled': filled,
+                              'fillcolour': fcolour,
+                              'offset_x': x_off,
+                              'offset_y': y_off})
+                result = ([sel], udata, None)
+                break
 
         return result
 
@@ -2449,47 +2472,25 @@ class PySlip(_BufferedCanvas):
         associated with each polygon selected.
         """
 
-        # get canonical box limits
-        (lx, by) = p1
-        (rx, ty) = p2
-
-        # step through all polygons, find ones inside box select
         selection = []
         data = []
 
-        for p in layer.data:
-            (poly, place, width, colour, close,
-                    filled, fcolour, x_off, y_off, udata) = p
-            if layer.map_rel:
-                # map-relative, all points are geo coordinates, convert to view
-                inside = True
-                for (x, y) in poly:
-                    # map-rel poly, points in geo coords
-                    if not (lx <= x <= rx and by <= y <= ty):
-                        inside = False
-                        break
-                if inside:
-                    sel = (poly, {'placement': place,
-                                  'width': width,
-                                  'closed': close,
-                                  'filled': filled,
-                                  'fillcolour': fcolour,
-                                  'offset_x': x_off,
-                                  'offset_y': y_off})
-                    selection.append(sel)
-                    data.append(udata)
-            else:
-                # view-relative, all points are view pixels
-                # prepare the half values, etc
-                inside = True
-                for (x, y) in poly:
-                    (x, y) = self.point_placement(place, x, y, x_off, y_off,
-                                                  self.view_width,
-                                                  self.view_height)
-                    if not (lx <= x <= rx and ty <= y <= by):
-                        inside = False
-                        break
-                if inside:
+        # get correct pex function and box limits in view coords
+        pex = self.PexPolyView
+        if layer.map_rel:
+            pex = self.PexPoly
+            p1 = self.Geo2View(p1)
+            p2 = self.Geo2View(p2)
+        (lx, by) = p1
+        (rx, ty) = p2
+
+        # check polygons in layer
+        for (poly, place, width, colour, close,
+                filled, fcolour, x_off, y_off, udata) in layer.data:
+            (pt, ex) = pex(place, poly, x_off, y_off)
+            if ex:
+                (plx, prx, pty, pby) = ex
+                if lx <= plx and prx <= rx and ty <= pty and pby <= by:
                     sel = (poly, {'placement': place,
                                   'width': width,
                                   'closed': close,
@@ -2502,7 +2503,6 @@ class PySlip(_BufferedCanvas):
 
         if not selection:
             return None
-
         return (selection, data, None)
 
     ######
@@ -3001,7 +3001,7 @@ class PySlip(_BufferedCanvas):
         place         placement key string
         x, y          point relative to placement origin
         x_off, y_off  offset from point
-        dcw, dch      width, height of the view draw context
+        dcw, dch      width, height of the view draw context (0 if map-rel)
 
         Returns a tuple (x, y).
         """

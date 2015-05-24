@@ -1228,16 +1228,13 @@ class AppFrame(wx.Frame):
             for (x, y, t, d) in selection:
                 del d['colour']     # want to override colour, radius
                 del d['radius']
-                del d['offset_x']   # remove offsets, we want point not text
-                del d['offset_y']
                 points.append((x, y, d))
 
+            log('#### points=%s' % str(points))
             self.sel_text_view_layer = \
                 self.pyslip.AddPointLayer(points, map_rel=False,
-                                          colour='#80ffff',
+                                          colour='black',
                                           radius=5, visible=True,
-                                          placement='cn',
-                                          offset_x=0, offset_y=3,
                                           show_levels=MRTextShowLevels,
                                           name='<sel_text_view_layer>')
             self.pyslip.PlaceLayerBelowLayer(self.sel_text_view_layer,
@@ -1447,11 +1444,10 @@ class AppFrame(wx.Frame):
 
         # create PointData
         PointData = []
-        count = 0
         for lon in range(-70, 290+1, 5):
             for lat in range(-65, 65+1, 5):
-                PointData.append((lon, lat, {'data': count}))
-                count += 1
+                udata = 'point(%s,%s)' % (str(lon), str(lat))
+                PointData.append((lon, lat, {'data': udata}))
         PointDataColour = '#ff000080'	# semi-transparent
 
         # create PointViewData - a point-rendition of 'PYSLIP'

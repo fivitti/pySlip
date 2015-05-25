@@ -52,14 +52,15 @@ Cities = [((0.0, 51.4778), 'Greenwich, United Kingdom'),
           ((5.33, 60.389444), 'Bergen, Norway'),
           ((151.209444, -33.865), 'Sydney, Australia'),
           ((-77.036667, 38.895111), 'Washington DC, USA'),
-          ((132.455278, 34.385278), 'Hiroshima (広島市), Japan'),
+          ((132.4547112, 34.3948052), 'Hiroshima (広島市), Japan'),
           ((-8.008889, 31.63), 'Marrakech (مراكش), Morocco'),
           ((18.95, 69.65), 'Tromsø, Norway'),
           ((-70.933333, -53.166667), 'Punta Arenas, Chile'),
           ((168.3475, -46.413056), 'Invercargill, New Zealand'),
           ((-147.723056, 64.843611), 'Fairbanks AK, USA'),
           ((103.851959, 1.290270), 'Singapore'),
-          ((-3.205601, 55.955279), "Maxwell's Birthplace"),
+          ((-3.2054825, 55.955252), "Maxwell's Birthplace"),
+          ((7.6059321, 50.3644457), "Deutsches Eck, Koblenz, Germany"),
          ]
 
 # sizes of various spacers

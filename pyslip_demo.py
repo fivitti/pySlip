@@ -1126,8 +1126,8 @@ class AppFrame(wx.Frame):
 
         selection = event.selection
 
-        if self.sel_text:
-            # turn selected point(s) off
+        if self.sel_text_layer:
+            # turn previously selected point(s) off
             self.sel_text = None
             self.pyslip.DeleteLayer(self.sel_text_layer)
             self.sel_text_layer = None
@@ -1160,7 +1160,7 @@ class AppFrame(wx.Frame):
 ##### view-relative text layer
 
     def textViewOnOff(self, event):
-        """Handle OnOff event for map-relative text layer control."""
+        """Handle OnOff event for view-relative text layer control."""
 
         if event.state:
             self.text_view_layer = \
@@ -1179,7 +1179,7 @@ class AppFrame(wx.Frame):
                 self.sel_text_view_layer = None
 
     def textViewShowOnOff(self, event):
-        """Handle ShowOnOff event for text layer control."""
+        """Handle ShowOnOff event for view text layer control."""
 
         if event.state:
             self.pyslip.ShowLayer(self.text_view_layer)
@@ -1191,7 +1191,7 @@ class AppFrame(wx.Frame):
                 self.pyslip.HideLayer(self.sel_text_view_layer)
 
     def textViewSelectOnOff(self, event):
-        """Handle SelectOnOff event for text layer control."""
+        """Handle SelectOnOff event for view text layer control."""
 
         layer = self.text_view_layer
         if event.state:
@@ -1230,7 +1230,6 @@ class AppFrame(wx.Frame):
                 del d['radius']
                 points.append((x, y, d))
 
-            log('#### points=%s' % str(points))
             self.sel_text_view_layer = \
                 self.pyslip.AddPointLayer(points, map_rel=False,
                                           colour='black',

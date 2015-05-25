@@ -505,7 +505,7 @@ class PySlip(_BufferedCanvas):
         self.default_cursor = wx.CURSOR_DEFAULT
 
         # cache values
-        self.last_setfont = None        # last font and size (font, size)
+#        self.last_setfont = None        # last font and size (font, size)
 
         # state of the SHIFT key
         self.shift_down = False
@@ -1193,9 +1193,6 @@ class PySlip(_BufferedCanvas):
         map_rel  points relative to map if True, else relative to view
         """
 
-#        if text is None:
-#            return
-
         # we need the size of the DC
         dc = wx.GCDC(dc)		# allow transparent colours
 
@@ -1205,15 +1202,17 @@ class PySlip(_BufferedCanvas):
             pex = self.PexExtent
 
         # draw text on map/view
+        last_setfont = None
         for (lon, lat, tdata, place, radius, colour,
                 textcolour, fontname, fontsize, x_off, y_off, data) in text:
+
             # set font characteristics so we calculate text width/height
             dc.SetTextForeground(textcolour)
-            if self.last_setfont != (fontname, fontsize):
+            if last_setfont != (fontname, fontsize):
                 font = wx.Font(fontsize, wx.SWISS, wx.NORMAL, wx.NORMAL,
                                False, fontname)
                 dc.SetFont(font)
-                self.last_setfont = (fontname, fontsize)
+                last_setfont = (fontname, fontsize)
 
             (w, h, _, _) = dc.GetFullTextExtent(tdata)
 
@@ -1467,17 +1466,13 @@ class PySlip(_BufferedCanvas):
         An extent object can be either an image object or a text object.
         """
 
-        log('PexExtent: place=%s, geo=%s, x_off=%s, y_off=%s, w=%s, h=%s' % (place, str(geo), str(x_off), str(y_off), str(w), str(h)))
-
         # get point view coords
         point = self.Geo2View(geo)
         (px, py) = point
-        log('PexExtent: point (view)=%s' % str(point))
 
         # extent = (left, right, top, bottom) in view coords
         extent = self.ViewExtent(place, point, w, h, x_off, y_off)
         (elx, erx, ety, eby) = extent
-        log('PexExtent: extent=%s' % str(extent))
 
         # decide if point and extent are off-view
         if px < 0 or px > self.view_width or py < 0 or py > self.view_height:
@@ -1506,13 +1501,11 @@ class PySlip(_BufferedCanvas):
 
         # get point view coords (X and Y)
         (px, py) = view
-        log('PexExtentView: view=%s' % str(view))
 
         # extent = (left, right, top, bottom) in view coords
         extent = self.ViewExtent(place, view, w, h, x_off, y_off,
                                  self.view_width, self.view_height)
         (elx, erx, ety, eby) = extent
-        log('PexExtentView: extent=%s' % str(extent))
 
         # decide if point and extent are off-view
         if px < 0 or px > self.view_width or py < 0 or py > self.view_height:
@@ -1522,7 +1515,6 @@ class PySlip(_BufferedCanvas):
             # no extent if ALL of extent is off-view
             extent = None
 
-        log('PexExtentView: returning %s' % str((view, extent)))
         return (view, extent)
 
     def PexPoly(self, place, poly, x_off, y_off):
@@ -1711,6 +1703,8 @@ class PySlip(_BufferedCanvas):
         a drag we don't do a lot.  If a selection we process that.
         """
 
+        log('OnLeftUp: entered')
+
         # turn off any dragging
         self.last_drag_x = self.last_drag_y = None
 
@@ -1762,6 +1756,8 @@ class PySlip(_BufferedCanvas):
                         delayed_paint = True
                 self.is_box_select = False
             else:
+                log('OnLeftUp: single selection?')
+
                 # possible point selection, get click point in view coords
                 clickpt_v = event.GetPositionTuple()
 
@@ -2353,11 +2349,11 @@ class PySlip(_BufferedCanvas):
 
         # select text in map/view layer
         for (x, y, text, place, radius, colour,                                                                                                              
-                 tcolour, fname, fsize, x_off, y_off, data)in layer.data:
-            (vp, ex) = pex(place, (x,y), x_off, y_off, radius)
+                 tcolour, fname, fsize, x_off, y_off, data) in layer.data:
+            (vp, ex) = pex(place, (x,y), 0, 0, radius)
             if vp:
-                (vx, vy) = vp
-                d = (vx - xclick)**2 + (vy - yclick)**2
+                (px, py) = vp
+                d = (px - xclick)**2 + (py - yclick)**2
                 if d < dist:
                     selection = (x, y, text, {'placement': place,
                                               'radius': radius,
@@ -2410,8 +2406,8 @@ class PySlip(_BufferedCanvas):
                 tcolour, fname, fsize, x_off, y_off, udata) in layer.data:
             (vp, ex) = pex(place, (x,y), x_off, y_off, radius)
             if vp:
-                (x, y) = vp
-                if lx <= x <= rx and ty <= y <= by:
+                (px, py) = vp
+                if lx <= px <= rx and ty <= py <= by:
                     sel = (x, y, text, {'placement': place,
                                         'radius': radius,
                                         'colour': colour,

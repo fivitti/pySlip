@@ -18,6 +18,7 @@ the symbolic debug level names:
 
 
 import os
+import copy
 import tkinter_error
 try:
     import wx
@@ -55,7 +56,8 @@ InitViewLevel = 4
 # a selection of cities, position from WikiPedia, etc
 #InitViewPosition = (0.0, 51.48)             # Greenwich, England
 #InitViewPosition = (5.33, 60.389444)        # Bergen, Norway
-InitViewPosition = (151.209444, -33.859972) # Sydney, Australia
+InitViewPosition = (153.033333, -27.466667)  # Brisbane, Australia
+#InitViewPosition = (151.209444, -33.859972) # Sydney, Australia
 #InitViewPosition = (-77.036667, 38.895111)  # Washington, DC, USA
 #InitViewPosition = (132.455278, 34.385278)  # Hiroshima, Japan
 #InitViewPosition = (-8.008889, 31.63)       # Marrakech (مراكش), Morocco
@@ -695,24 +697,27 @@ class AppFrame(wx.Frame):
 
         if selection == self.sel_point:
             # same point(s) selected again, turn point(s) off
-            self.sel_point = None
             self.pyslip.DeleteLayer(self.sel_point_layer)
             self.sel_point_layer = None
+            self.sel_point = None
         elif selection:
-            # some other point(s) selected
+            # some other point(s) selected, delete previous selection, if any
             if self.sel_point_layer:
                 self.pyslip.DeleteLayer(self.sel_point_layer)
-            self.sel_point = selection
 
-            # choose different highlight colour for differetn type of selection
+            # remember selection (need copy as highlight modifies attributes)
+            self.sel_point = copy.deepcopy(selection)
+
+            # choose different highlight colour for different type of selection
             selcolour = '#00ffff'
             if event.type == pyslip.EventSelect:
                 selcolour = '#0000ff'
 
             # get selected points into form for display layer
+            # delete 'colour' and 'radius' attributes as we want different values
             highlight = []
             for (x, y, d) in selection:
-                del d['colour']
+                del d['colour']     # AddLayer...() ensures keys exist
                 del d['radius']
                 highlight.append((x, y, d))
 

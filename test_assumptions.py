@@ -193,7 +193,7 @@ class TestAssumptions(unittest.TestCase):
         self.assertTrue(exec_delta > func_delta, msg)
 
     def test_copy_faster(self):
-        """Test that a[:] copy is slower than copy.copy(a)."""
+        """Test that a[:] copy is slower than copy.deepcopy(a)."""
 
         import copy
 
@@ -203,7 +203,7 @@ class TestAssumptions(unittest.TestCase):
 
         start = time.time()
         for _ in xrange(loops):
-            b = copy.copy(a)
+            b = copy.deepcopy(a)
         copy_delta = time.time() - start
 
         start = time.time()
@@ -211,7 +211,8 @@ class TestAssumptions(unittest.TestCase):
             b = a[:]
         clone_delta = time.time() - start
 
-        msg = ('Copy() is faster than clone[:]?\ncopy=%.2fs, clone=%.2fs'
+        msg = ('copy.deepcopy() is faster than clone[:]?\n'
+                   'copy=%.2fs, clone=%.2fs'
                % (copy_delta, clone_delta))
         self.assertTrue(clone_delta < copy_delta, msg)
 
@@ -230,7 +231,7 @@ class TestAssumptions(unittest.TestCase):
         data_obj = DataObj(one=1, two=2, three=3, four=4, five=5,
                            six=6, seven=7, eight=8, nine=9, ten=10)
 
-        loops = 100000#0
+        loops = 100000
 
         # time tuple object
         start = time.time()

@@ -26,6 +26,7 @@ except ImportError:
     msg = 'Sorry, you must install wxPython'
     tkinter_error.tkinter_error(msg)
 
+
 # If we have log.py, well and good.  Otherwise ...
 try:
     import log

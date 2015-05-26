@@ -35,6 +35,7 @@ import traceback
 from PIL import Image
 import wx
 
+
 # if we don't have log.py, don't crash
 try:
     import log

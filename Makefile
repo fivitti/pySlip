@@ -4,6 +4,8 @@
 
 run:
 	python pyslip_demo.py -t gmt
+	#python -Qwarnall pyslip_demo.py -t gmt
+	#python -3 pyslip_demo.py -t gmt
 
 test:
 	python test_assumptions.py

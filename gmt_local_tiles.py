@@ -15,6 +15,7 @@ import wx
 import tiles
 import pycacheback
 
+
 # if we don't have log.py, don't crash
 try:
     import log

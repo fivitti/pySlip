@@ -2446,10 +2446,6 @@ class PySlip(_BufferedCanvas):
                  filled, fcolour, x_off, y_off, udata)in layer.data:
             if pip(poly, point, place, x_off, y_off):
                 sel = (poly, {'placement': place,
-                              'width': width,
-                              'closed': close,
-                              'filled': filled,
-                              'fillcolour': fcolour,
                               'offset_x': x_off,
                               'offset_y': y_off})
                 result = ([sel], udata, None)
@@ -2489,10 +2485,6 @@ class PySlip(_BufferedCanvas):
                 (plx, prx, pty, pby) = ex
                 if lx <= plx and prx <= rx and ty <= pty and pby <= by:
                     sel = (poly, {'placement': place,
-                                  'width': width,
-                                  'closed': close,
-                                  'filled': filled,
-                                  'fillcolour': fcolour,
                                   'offset_x': x_off,
                                   'offset_y': y_off})
                     selection.append(sel)
@@ -2658,7 +2650,6 @@ class PySlip(_BufferedCanvas):
 
         event.type = EventBoxSelect
         event.layer_id = layer.id
-        event.selection = selection
         event.selection = None
         event.data = None
         event.relsel = None

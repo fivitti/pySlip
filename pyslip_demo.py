@@ -1383,13 +1383,14 @@ class AppFrame(wx.Frame):
 
         event  the event that contains these attributes:
                    type       the type of point selection: single or box
-                   selection  [list of] tuple (xgeo,ygeo) of selected point
-                              (if None then no point(s) selected)
+                   selection  tuple (sel, udata, None) defining the selected
+                              polygon (if None then no point(s) selected)
 
         The selection could be a single or box select.
         """
 
         selection = event.selection
+        log('####: selection=%s' % str(selection))
 
         # point select, turn any previous selection off
         if self.sel_poly_view_layer:

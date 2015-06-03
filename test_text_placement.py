@@ -559,7 +559,7 @@ class AppFrame(wx.Frame):
 
         # create widgets
         text_obj = LayerControl(parent, 'Text, view-relative',
-                                text=DefaultText,
+                                text=DefaultViewText,
                                 font=DefaultFont,
                                 fontsize=DefaultFontSize,
                                 textcolour=DefaultTextColour,

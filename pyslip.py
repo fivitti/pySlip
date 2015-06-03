@@ -1500,6 +1500,11 @@ class PySlip(_BufferedCanvas):
         Takes size of extent object into consideration.
         """
 
+        # get point view coords and perturb point to placement origin
+        (xview, yview) = view
+        point = self.point_placement(place, xview, yview, 0, 0,
+                                     self.view_width, self.view_height)
+
         # get point view coords (X and Y)
         (px, py) = view
 
@@ -1516,7 +1521,7 @@ class PySlip(_BufferedCanvas):
             # no extent if ALL of extent is off-view
             extent = None
 
-        return (view, extent)
+        return (point, extent)
 
     def PexPoly(self, place, poly, x_off, y_off):
         """Given a polygon object (geo coords) get point/extent in view coords.

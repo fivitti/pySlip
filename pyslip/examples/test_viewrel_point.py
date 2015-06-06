@@ -26,7 +26,7 @@ PointViewDataNW = [( 0, 0), ( 2, 0), ( 4, 0), ( 6, 0), ( 8, 0),
                    ( 0,10), ( 2, 2), ( 4, 4), ( 6, 6), ( 8, 8),
                    (10,10), (12,12), (14,14), (16,16), (18,18),
                    (20,20)
-                  ] 
+                  ]
 
 PointViewDataCN = [(  0,  0), ( -2,  2), ( -4,  4), ( -6,  6),
                    ( -8,  8), (-10, 10), (  2,  2), (  4,  4),
@@ -111,16 +111,16 @@ class TestFrame(wx.Frame):
         # create the tile source object
         self.tile_src = Tiles(tile_dir)
 
-        # build the GUI                                                                                                             
-        box = wx.BoxSizer(wx.HORIZONTAL)                                                                                            
-        self.panel.SetSizer(box)                                                                                                    
-        self.pyslip = pyslip.PySlip(self.panel, tile_src=self.tile_src,                                                             
-                                    min_level=MinTileLevel)                                                                         
-        box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)                                                                
-        self.panel.SetSizer(box)                                                                                                    
-        self.panel.Layout()                                                                                                         
-        self.Centre()                                                                                                               
-        self.Show(True)              
+        # build the GUI
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel.SetSizer(box)
+        self.pyslip = pyslip.PySlip(self.panel, tile_src=self.tile_src,
+                                    min_level=MinTileLevel)
+        box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
+        self.panel.SetSizer(box)
+        self.panel.Layout()
+        self.Centre()
+        self.Show(True)
 
         # add test point layers
         self.pyslip.AddPointLayer(PointViewDataNW, placement='nw',
@@ -178,11 +178,11 @@ if __name__ == '__main__':
     import getopt
     import traceback
 
-    # print some usage information                                                                                                  
-    def usage(msg=None):                                                                                                            
-        if msg:                                                                                                                     
-            print(msg+'\n')                                                                                                         
-        print(__doc__)        # module docstring used       
+    # print some usage information
+    def usage(msg=None):
+        if msg:
+            print(msg+'\n')
+        print(__doc__)        # module docstring used
 
     # our own handler for uncaught exceptions
     def excepthook(type, value, tb):
@@ -196,36 +196,36 @@ if __name__ == '__main__':
     # plug our handler into the python system
     sys.excepthook = excepthook
 
-    # decide which tiles to use, default is GMT                                                                                     
-    argv = sys.argv[1:]                                                                                                             
-    
-    try:                                                                                                                            
-        (opts, args) = getopt.getopt(argv, 'ht:', ['help', 'tiles='])                                                               
-    except getopt.error:                                                                                                            
-        usage()                                                                                                                     
-        sys.exit(1)                                                                                                                 
-    
-    tile_source = 'GMT'                                                                                                             
-    for (opt, param) in opts:                                                                                                       
-        if opt in ['-h', '--help']:                                                                                                 
-            usage()                                                                                                                 
-            sys.exit(0)                                                                                                             
-        elif opt in ('-t', '--tiles'):                                                                                              
-            tile_source = param                                                                                                     
-    tile_source = tile_source.lower()                                                                                               
-    
-    # set up the appropriate tile source                                                                                            
-    if tile_source == 'gmt':                                                                                                        
-        from gmt_local_tiles import GMTTiles as Tiles                                                                               
-        tile_dir = 'gmt_tiles'                                                                                                      
-    elif tile_source == 'osm':                                                                                                      
-        from osm_tiles import OSMTiles as Tiles                                                                                     
-        tile_dir = 'osm_tiles'                                                                                                      
-    else:                                                                                                                           
-        usage('Bad tile source: %s' % tile_source)                                                                                  
-        sys.exit(3)                                                                                                                 
-    
-    
+    # decide which tiles to use, default is GMT
+    argv = sys.argv[1:]
+
+    try:
+        (opts, args) = getopt.getopt(argv, 'ht:', ['help', 'tiles='])
+    except getopt.error:
+        usage()
+        sys.exit(1)
+
+    tile_source = 'GMT'
+    for (opt, param) in opts:
+        if opt in ['-h', '--help']:
+            usage()
+            sys.exit(0)
+        elif opt in ('-t', '--tiles'):
+            tile_source = param
+    tile_source = tile_source.lower()
+
+    # set up the appropriate tile source
+    if tile_source == 'gmt':
+        from pyslip.gmt_local_tiles import GMTTiles as Tiles
+        tile_dir = 'gmt_tiles'
+    elif tile_source == 'osm':
+        from pyslip.osm_tiles import OSMTiles as Tiles
+        tile_dir = 'osm_tiles'
+    else:
+        usage('Bad tile source: %s' % tile_source)
+        sys.exit(3)
+
+
     # start wxPython app
     app = wx.App()
     TestFrame(tile_dir).Show()

@@ -65,7 +65,7 @@ class TestAssumptions(unittest.TestCase):
             new_poly = poly[:]
         """
 
-        loops = 10000000
+        loops = 100000
 
         # create the old list
         old_list = [1, 2, 3, 4, 5, 6]
@@ -197,7 +197,7 @@ class TestAssumptions(unittest.TestCase):
 
         import copy
 
-        loops = 1000000
+        loops = 100000
 
         a = [1,2,3,4,5,6,7,8,9,0]   # fake a Z-order list
 

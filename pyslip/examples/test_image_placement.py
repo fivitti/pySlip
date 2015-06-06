@@ -10,7 +10,7 @@ Usage: test_image_placement.py [-h|--help] [-d] [(-t|--tiles) (GMT|OSM)]
 
 
 import os
-import tkinter_error
+import pyslip.tkinter_error as tkinter_error
 try:
     import wx
 except ImportError:
@@ -19,7 +19,7 @@ except ImportError:
 
 # If we have log.py, well and good.  Otherwise ...
 try:
-    import log
+    import pyslip.log as log
     log = log.Log('pyslip.log', log.Log.DEBUG)
 except ImportError:
     def log(*args, **kwargs):
@@ -719,7 +719,6 @@ if __name__ == '__main__':
     import sys
     import getopt
     import traceback
-    import tkinter_error
 
 #vvvvvvvvvvvvvvvvvvvvv test code - can go away once __init__.py works
     DefaultTilesets = 'tilesets'
@@ -772,10 +771,10 @@ if __name__ == '__main__':
 
     # set up the appropriate tile source
     if tile_source == 'gmt':
-        from gmt_local_tiles import GMTTiles as Tiles
+        from pyslip.gmt_local_tiles import GMTTiles as Tiles
         tile_dir = 'gmt_tiles'
     elif tile_source == 'osm':
-        from osm_tiles import OSMTiles as Tiles
+        from pyslip.osm_tiles import OSMTiles as Tiles
         tile_dir = 'osm_tiles'
     else:
         usage('Bad tile source: %s' % tile_source)

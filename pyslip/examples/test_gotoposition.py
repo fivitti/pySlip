@@ -15,11 +15,11 @@ between the two markers shows errors in the Geo2Tile() & Tile2GEO() functions.
 import os
 import wx
 import pyslip
-from osm_tiles import OSMTiles as Tiles
+from pyslip.osm_tiles import OSMTiles as Tiles
 
 # If we have log.py, well and good.  Otherwise ...
 try:
-    import log
+    import pyslip.log as log
     log = log.Log('pyslip.log', log.Log.DEBUG)
 except ImportError:
     def log(*args, **kwargs):
@@ -310,7 +310,7 @@ class AppFrame(wx.Frame):
 if __name__ == '__main__':
     import sys
     import traceback
-    import tkinter_error
+    import pyslip.tkinter_error as tkinter_error
 
     # our own handler for uncaught exceptions
     def excepthook(type, value, tb):

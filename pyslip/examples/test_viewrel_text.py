@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Test PySlip map-relative polygons.
+"""Test PySlip view-relative text.
 
-Usage: test_maprel_poly.py [-h] [-t (OSM|GMT)]
+Usage: test_maprel_image.py [-h] [-t (OSM|GMT)]
 """
 
 
@@ -19,32 +19,18 @@ DefaultAppSize = (600, 400)
 
 MinTileLevel = 0
 InitViewLevel = 2
-InitViewPosition = (152.0, -8.0)
+InitViewPosition = (133.87, -23.7)      # Alice Springs
 
-# create polygon data
-OpenPoly = ((145,5),(135,5),(135,-5),(145,-5))
-ClosedPoly = ((170,5),(160,5),(160,-5),(170,-5))
-FilledPoly = ((170,-20),(160,-20),(160,-10),(170,-10))
-ClosedFilledPoly = ((145,-20),(135,-20),(135,-10),(145,-10))
-
-PolyMapData = [[OpenPoly, {'width': 2}],
-               [ClosedPoly, {'width': 10, 'color': '#00ff0040',
-                             'closed': True}],
-               [FilledPoly, {'colour': 'blue',
-                             'filled': True,
-                             'fillcolour': '#00ff0022'}],
-               [ClosedFilledPoly, {'colour': 'black',
-                                   'closed': True,
-                                   'filled': True,
-                                   'fillcolour': 'yellow'}]]
-
-TextMapData = [(135, 5, 'open', {'placement': 'ce', 'radius': 0}),
-               (170, 5, 'closed', {'placement': 'cw', 'radius': 0}),
-               (170, -10, 'open but filled (translucent)',
-                   {'placement': 'cw', 'radius': 0}),
-               (135, -10, 'closed & filled (solid)',
-                   {'placement': 'ce', 'radius': 0}),
-              ]
+TextViewData = [(  0,   0, 'cc', {'placement':'cc','fontsize':50,'textcolour':'#ff000020'}),
+                (  0,  10, 'cn', {'placement':'cn','fontsize':45,'textcolour':'#00ff0020'}),
+                (-10,  10, 'ne', {'placement':'ne','fontsize':40,'textcolour':'#0000ff20'}),
+                (-10,   0, 'ce', {'placement':'ce','fontsize':35,'textcolour':'#ff000080'}),
+                (-10, -10, 'se', {'placement':'se','fontsize':30,'textcolour':'#00ff0080'}),
+                (  0, -10, 'cs', {'placement':'cs','fontsize':25,'textcolour':'#0000ff80'}),
+                ( 10, -10, 'sw', {'placement':'sw','fontsize':20,'textcolour':'#ff0000ff'}),
+                ( 10,   0, 'cw', {'placement':'cw','fontsize':15,'textcolour':'#00ff00ff'}),
+                ( 10,  10, 'nw', {'placement':'nw','fontsize':10,'textcolour':'#0000ffff'}),
+               ]
 
 
 ################################################################################
@@ -54,8 +40,7 @@ TextMapData = [(135, 5, 'open', {'placement': 'ce', 'radius': 0}),
 class TestFrame(wx.Frame):
     def __init__(self, tile_dir):
         wx.Frame.__init__(self, None, size=DefaultAppSize,
-                          title=('PySlip %s - map-relative polygon test'
-                                 % pyslip.__version__))
+                          title='PySlip view-relative text test')
         self.SetMinSize(DefaultAppSize)
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.panel.SetBackgroundColour(wx.WHITE)
@@ -78,13 +63,12 @@ class TestFrame(wx.Frame):
         # set initial view position
         self.pyslip.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
 
-        # add test text layer
-        self.poly_layer = self.pyslip.AddPolygonLayer(PolyMapData,
-                                                      map_rel=True,
-                                                      name='<poly_map_layer>',
-                                                      size=DefaultAppSize)
-        self.text_layer = self.pyslip.AddTextLayer(TextMapData, map_rel=True,
-                                                   name='<text_map_layer>')
+        # add test test layer
+        self.text_layer = self.pyslip.AddTextLayer(TextViewData,
+                                                   map_rel=False,
+                                                   name='<text_view_layer>',
+                                                   offset_x=20, offset_y=20,
+                                                   fontsize=20, colour='red')
 
 ################################################################################
 
@@ -131,10 +115,10 @@ if __name__ == '__main__':
 
     # set up the appropriate tile source
     if tile_source == 'gmt':
-        from gmt_local_tiles import GMTTiles as Tiles
+        from pyslip.gmt_local_tiles import GMTTiles as Tiles
         tile_dir = 'gmt_tiles'
     elif tile_source == 'osm':
-        from osm_tiles import OSMTiles as Tiles
+        from pyslip.osm_tiles import OSMTiles as Tiles
         tile_dir = 'osm_tiles'
     else:
         usage('Bad tile source: %s' % tile_source)
@@ -142,6 +126,6 @@ if __name__ == '__main__':
 
     # start wxPython app
     app = wx.App()
-    TestFrame(tile_dir=tile_dir).Show()
+    TestFrame(tile_dir).Show()
     app.MainLoop()
 

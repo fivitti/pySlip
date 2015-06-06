@@ -32,7 +32,7 @@ try:
 except ImportError:
     import pickle
 import traceback
-from PIL import Image
+#from PIL import Image
 import wx
 
 

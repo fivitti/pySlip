@@ -19,17 +19,21 @@ the symbolic debug level names:
 
 import os
 import copy
-import tkinter_error
+try:
+    from pyslip.tkinter_error import tkinter_error
+except ImportError:
+    print('*'*60 + '\nSorry, you must install pySlip first\n' + '*'*60)
+    raise
 try:
     import wx
 except ImportError:
     msg = 'Sorry, you must install wxPython'
-    tkinter_error.tkinter_error(msg)
+    tkinter_error(msg)
 
 
 # If we have log.py, well and good.  Otherwise ...
 try:
-    import log
+    import pyslip.log as log
     log = log.Log('pyslip.log', log.Log.NOTSET)
 except ImportError:
     def log(*args, **kwargs):
@@ -1709,7 +1713,6 @@ if __name__ == '__main__':
     import sys
     import getopt
     import traceback
-    import tkinter_error
 
     # our own handler for uncaught exceptions
     def excepthook(type, value, tb):
@@ -1718,7 +1721,7 @@ if __name__ == '__main__':
         msg += ''.join(traceback.format_exception(type, value, tb))
         msg += '=' * 80 + '\n'
         log(msg)
-        tkinter_error.tkinter_error(msg)
+        tkinter_error(msg)
         sys.exit(1)
 
     def usage(msg=None):
@@ -1766,10 +1769,10 @@ if __name__ == '__main__':
 
     # set up the appropriate tile source
     if tile_source == 'gmt':
-        from gmt_local_tiles import GMTTiles as Tiles
+        from pyslip.gmt_local_tiles import GMTTiles as Tiles
         tile_dir = 'gmt_tiles'
     elif tile_source == 'osm':
-        from osm_tiles import OSMTiles as Tiles
+        from pyslip.osm_tiles import OSMTiles as Tiles
         tile_dir = 'osm_tiles'
     else:
         usage('Bad tile source: %s' % tile_source)

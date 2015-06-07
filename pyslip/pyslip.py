@@ -32,20 +32,16 @@ try:
 except ImportError:
     import pickle
 import traceback
-#from PIL import Image
 import wx
-
 
 # if we don't have log.py, don't crash
 try:
-    import log
+    import pyslip.log as log
     log = log.Log('pyslip.log', log.Log.DEBUG)
 except ImportError:
     def log(*args, **kwargs):
         pass
 
-
-__version__ = '3.0'
 
 # type of SELECT events
 (EventLevel, EventPosition, EventSelect, EventBoxSelect,

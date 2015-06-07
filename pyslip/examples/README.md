@@ -26,5 +26,5 @@ Other things here:
 
 |Directory|What it is|
 |---------|----------|
-|gmt_tiles| pre-generated GMT tiles |
+|gmt_tiles.tar gz| pre-generated GMT tiles |
 |graphics| graphics files used by the programs here |

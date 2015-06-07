@@ -21,4 +21,5 @@ setup(name='pyslip',
                    'Programming Language :: Python :: 2 :: Only'],
       keywords='python wxpython slipmap map',
       download_url='https://github.com/rzzzwilson/pySlip/releases/tag/3.0.1',
+      include_package_data=True,
       zip_safe=False)

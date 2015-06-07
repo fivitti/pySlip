@@ -1,0 +1,4 @@
+include pyslip/examples/README.md
+include pyslip/examples/*.py
+include pyslip/examples/gmt_tiles/*/*
+include pyslip/examples/graphics/*

@@ -720,15 +720,6 @@ if __name__ == '__main__':
     import getopt
     import traceback
 
-#vvvvvvvvvvvvvvvvvvvvv test code - can go away once __init__.py works
-    DefaultTilesets = 'tilesets'
-    CurrentPath = os.path.dirname(os.path.abspath(__file__))
-
-    sys.path.append(os.path.join(CurrentPath, DefaultTilesets))
-
-    log(str(sys.path))
-#^^^^^^^^^^^^^^^^^^^^^ test code - can go away once __init__.py works
-
     # our own handler for uncaught exceptions
     def excepthook(type, value, tb):
         msg = '\n' + '=' * 80

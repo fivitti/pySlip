@@ -10,7 +10,7 @@ display a map that was very large - many hundreds of thousands of pixels in
 width.  I searched around for a GUI solution that would work rather like Google
 maps: tiled, layers, etc.  I couldn't find anything that didn't assume
 browser+map server.  So I wrote my own wxPython widget.  This worked well for
-cartesian self-generated maps and is being extended to handle non-cartesian
+cartesian self-generated maps and has been extended to handle non-cartesian
 maps and tiles sourced from places like OpenStreetMap.
 
 It's a poor thing, but solves my problem.  I'm placing it here in the hope that

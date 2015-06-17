@@ -20,7 +20,7 @@ from wx.lib.embeddedimage import PyEmbeddedImage
 
 
 # where the pre-generated GMT tiles are
-TilesDir = '/Users/r-w/pyslip/tiles'
+TilesDir = './gmt_tiles'
 
 DefaultAppSize = (512, 512)
 DemoName = 'GMT Tiles Cache Test'

@@ -413,7 +413,7 @@ class PySlip(_BufferedCanvas):
     DefaultPolyViewData = None
 
     # layer type values
-    (TypePoint, TypeImage, TypeText, TypePoly) = range(4)
+    (TypePoint, TypeImage, TypeText, TypePolygon, TypePolyline) = range(5)
 
 
     def __init__(self, parent, tile_src=None, start_level=None,
@@ -512,13 +512,13 @@ class PySlip(_BufferedCanvas):
         self.layerPSelHandler = {self.TypePoint: self.GetPointInLayer,
                                  self.TypeImage: self.GetImageInLayer,
                                  self.TypeText: self.GetTextInLayer,
-                                 self.TypePoly: self.GetPolygonInLayer}
+                                 self.TypePolygon: self.GetPolygonInLayer}
 
         # for box select
         self.layerBSelHandler = {self.TypePoint: self.GetBoxSelPointsInLayer,
                                  self.TypeImage: self.GetBoxSelImagesInLayer,
                                  self.TypeText: self.GetBoxSelTextsInLayer,
-                                 self.TypePoly: self.GetBoxSelPolygonsInLayer}
+                                 self.TypePolygon: self.GetBoxSelPolygonsInLayer}
 
         # bind event handlers
         self.Bind(wx.EVT_MOTION, self.OnMove)
@@ -931,7 +931,7 @@ class PySlip(_BufferedCanvas):
                 attributes = {}
             else:
                 msg = ('Polygon data must be iterable of tuples: '
-                       '(poly, [attributes])\n'
+                       '(polygon, [attributes])\n'
                        'Got: %s' % str(d))
                 raise Exception(msg)
 
@@ -969,7 +969,94 @@ class PySlip(_BufferedCanvas):
         return self.AddLayer(self.DrawPolygonLayer, draw_data, map_rel,
                              visible=visible, show_levels=show_levels,
                              selectable=selectable, name=name,
-                             type=self.TypePoly)
+                             type=self.TypePolygon)
+
+    def AddPolylineLayer(self, data, map_rel=True, visible=True,
+                        show_levels=None, selectable=False,
+                        name='<polyline>', **kwargs):
+        """Add a layer of polyline data to the map.
+
+        data         iterable of polyline tuples:
+                         (<iter>[, attributes])
+                     where <iter> is another iterable of (x, y) tuples and
+                     attributes is a dictionary of polyline attributes:
+                         placement   a placement string (view-relative only)
+                         width       width of polyline edge lines
+                         colour      colour of edge lines
+                         offset_x    X offset
+                         offset_y    Y offset
+                         data        polyline user data object
+        map_rel      points drawn relative to map if True, else view relative
+        visible      True if the layer is to be immediately visible
+        show_levels  list of levels at which layer is auto-shown (or None)
+        selectable   True if select operates on this layer
+        name         name of this layer
+        kwargs       extra keyword args, layer-specific:
+                         placement   placement string (view-rel only)
+                         width       width of polyline in pixels
+                         colour      colour of polyline edge lines
+                         offset_x    X offset
+                         offset_y    Y offset
+                         data        polygon user data object
+        """
+
+        # merge global and layer defaults
+        if map_rel:
+            default_placement = kwargs.get('placement',
+                                           self.DefaultPolyPlacement)
+            default_width = kwargs.get('width', self.DefaultPolyWidth)
+            default_colour = self.get_i18n_kw(kwargs, ('colour', 'color'),
+                                              self.DefaultPolyColour)
+            default_offset_x = kwargs.get('offset_x', self.DefaultPolyOffsetX)
+            default_offset_y = kwargs.get('offset_y', self.DefaultPolyOffsetY)
+            default_data = kwargs.get('data', self.DefaultPolyData)
+        else:
+            default_placement = kwargs.get('placement',
+                                           self.DefaultPolyViewPlacement)
+            default_width = kwargs.get('width', self.DefaultPolyViewWidth)
+            default_colour = self.get_i18n_kw(kwargs, ('colour', 'color'),
+                                              self.DefaultPolyViewColour)
+            default_offset_x = kwargs.get('offset_x', self.DefaultPolyViewOffsetX)
+            default_offset_y = kwargs.get('offset_y', self.DefaultPolyViewOffsetY)
+            default_data = kwargs.get('data', self.DefaultPolyViewData)
+
+        # create draw_data iterable
+        draw_data = []
+        for d in data:
+            if len(d) == 2:
+                (p, attributes) = d
+            elif len(d) == 1:
+                p = d
+                attributes = {}
+            else:
+                msg = ('Polyline data must be iterable of tuples: '
+                       '(polyline, [attributes])\n'
+                       'Got: %s' % str(d))
+                raise Exception(msg)
+
+            # get polygon attributes
+            placement = attributes.get('placement', default_placement)
+            width = attributes.get('width', default_width)
+            colour = self.get_i18n_kw(attributes, ('colour', 'color'),
+                                      default_colour)
+            offset_x = attributes.get('offset_x', default_offset_x)
+            offset_y = attributes.get('offset_y', default_offset_y)
+            udata = attributes.get('data', default_data)
+
+            # check values that can be wrong
+            placement = placement.lower()
+            if placement not in self.valid_placements:
+                msg = ("Polyline placement value is invalid, got '%s'"
+                       % str(placement))
+                raise Exception(msg)
+
+            draw_data.append((p, placement, width, colour,
+                              offset_x, offset_y, udata))
+
+        return self.AddLayer(self.DrawPolylineLayer, draw_data, map_rel,
+                             visible=visible, show_levels=show_levels,
+                             selectable=selectable, name=name,
+                             type=self.TypePolyline)
 
     def AddLayer(self, painter, data, map_rel, visible, show_levels,
                  selectable, name, type):
@@ -1261,6 +1348,34 @@ class PySlip(_BufferedCanvas):
                 else:
                     dc.DrawLines(poly)
 
+    def DrawPolylineLayer(self, dc, data, map_rel):
+        """Draw a polyline layer.
+
+        dc       the device context to draw on
+        data     an iterable of polyline tuples:
+                     (p, placement, width, colour, offset_x, offset_y, udata)
+                 where p is an iterable of points: (x, y)
+        map_rel  points relative to map if True, else relative to view
+        """
+
+        # allow transparent colours
+        dc = wx.GCDC(dc)
+
+        # get the correct pex function for mode (map/view)
+        pex = self.PexPolyView
+        if map_rel:
+            pex = self.PexPoly
+
+        # draw polyglines
+        for (p, place, width, colour, x_off, y_off, udata) in data:
+            (poly, extent) = pex(place, p, x_off, y_off)
+            if poly:
+                dc.SetPen(wx.Pen(colour, width=width))
+
+                dc.SetBrush(wx.TRANSPARENT_BRUSH)
+
+                dc.DrawLines(poly)
+
     ######
     # Positioning methods
     ######
@@ -1520,7 +1635,7 @@ class PySlip(_BufferedCanvas):
         return (point, extent)
 
     def PexPoly(self, place, poly, x_off, y_off):
-        """Given a polygon object (geo coords) get point/extent in view coords.
+        """Given a polygon/line obj (geo coords) get point/extent in view coords.
 
         place         placement string
         poly          list of point position tuples (xgeo, ygeo)
@@ -1531,7 +1646,7 @@ class PySlip(_BufferedCanvas):
         coords).  Return None for either or both if off-view.
         """
 
-        # get polygon points in perturbed view coordinates
+        # get polygon/line points in perturbed view coordinates
         view = []
         for geo in poly:
             (xview, yview) = self.Geo2View(geo)
@@ -1559,7 +1674,7 @@ class PySlip(_BufferedCanvas):
         return (res_pt, res_ex)
 
     def PexPolyView(self, place, poly, x_off, y_off):
-        """Given a polygon object (view coords) get point/extent in view coords.
+        """Given a polygon/line obj (view coords) get point/extent in view coords.
 
         place         placement string
         poly          list of point position tuples (xview, yview)
@@ -1570,7 +1685,7 @@ class PySlip(_BufferedCanvas):
         coords).  Return None for either or both if off-view.
         """
 
-        # get polygon points in view coordinates
+        # get polygon/line points in view coordinates
         view = []
         for (xview, yview) in poly:
             point = self.point_placement(place, xview, yview, x_off, y_off,
@@ -1585,7 +1700,7 @@ class PySlip(_BufferedCanvas):
         eby = max(view, key=lambda x: x[1])[1]
         extent = (elx, erx, ety, eby)
 
-        # decide if polygon or extent are off-view
+        # decide if polygon/line or extent are off-view
         res_pt = None
         res_ex = None
         for (px, py) in view:

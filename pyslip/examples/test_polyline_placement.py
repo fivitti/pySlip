@@ -2,10 +2,10 @@
 # -*- coding= utf-8 -*-
 
 """
-Program to test polygon map-relative and view-relative placement.
+Program to test polyline map-relative and view-relative placement.
 Select what to show and experiment with placement parameters.
 
-Usage: test_poly_placement.py [-h|--help] [-d] [(-t|--tiles) (GMT|OSM)]
+Usage: test_polyline_placement.py [-h|--help] [-d] [(-t|--tiles) (GMT|OSM)]
 """
 
 
@@ -33,7 +33,7 @@ import pyslip
 ######
 
 # demo name/version
-DemoName = 'Test polygon placement, pySlip %s' % pyslip.__version__
+DemoName = 'Test polyline placement, pySlip %s' % pyslip.__version__
 DemoVersion = '1.0'
 
 # initial values
@@ -53,9 +53,6 @@ DefaultAppSize = (1000, 700)
 # general defaults
 DefaultWidth = 5
 DefaultColour = 'red'
-DefaultClosed = False
-DefaultFilled = False
-DefaultFillColour = 'yellow'
 
 # initial values in map-relative LayerControl
 DefaultPlacement = 'ne'
@@ -71,7 +68,7 @@ DefaultViewY = 0
 DefaultViewOffsetX = 0
 DefaultViewOffsetY = 0
 
-# polygon map- and view-relative data
+# polyline map- and view-relative data
 PolyPoints = [(140.0,-17.5), (144.0,-19.0), (142.5,-15.0), (147.5,-15.0),
               (146.0,-19.0), (150.0,-17.5), (150.0,-22.5), (146.0,-21.0),
               (147.5,-25.0), (142.5,-25.0), (144.0,-21.0), (140.0,-22.5)]
@@ -142,9 +139,7 @@ class LayerControl(wx.Panel):
 
     def __init__(self, parent, title,
                  placement=DefaultPlacement, width=DefaultWidth,
-                 closed=DefaultClosed, filled=DefaultFilled,
-                 colour=DefaultColour, fillcolour=DefaultFillColour,
-                 offset_x=0, offset_y=0, **kwargs):
+                 colour=DefaultColour, offset_x=0, offset_y=0, **kwargs):
         """Initialise a LayerControl instance.
 
         parent       reference to parent object
@@ -152,9 +147,6 @@ class LayerControl(wx.Panel):
         placement    placement string for object
         width        width in pixels of the drawn polygon
         colour       sets the colour of the polygon outline
-        closed       True if the polygon is to be forcibly closed
-        filled       True if the polygon is to be filled
-        fillcolour   the colour to fill the polygon with (if filled is True)
         offset_x     X offset of object
         offset_y     Y offset of object
         **kwargs     keyword args for Panel
@@ -164,9 +156,6 @@ class LayerControl(wx.Panel):
         self.v_placement = placement
         self.v_width = width
         self.v_colour = colour
-        self.v_closed = closed
-        self.v_filled = filled
-        self.v_fillcolour = fillcolour
         self.v_offset_x = offset_x
         self.v_offset_y = offset_y
 
@@ -210,30 +199,7 @@ class LayerControl(wx.Panel):
         self.polycolour.SetBackgroundColour(self.v_colour)
         gbs.Add(self.polycolour, (row,1), border=0, flag=wx.EXPAND)
 
-        label = wx.StaticText(self, wx.ID_ANY, 'fillcolour: ')
-        gbs.Add(label, (row,2), border=0,
-                flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.fillcolour = wx.Button(self, label='')
-        self.fillcolour.SetBackgroundColour(self.v_fillcolour)
-        gbs.Add(self.fillcolour, (row,3), border=0, flag=wx.EXPAND)
-
         # row 2
-        row += 1
-        label = wx.StaticText(self, wx.ID_ANY, 'closed: ')
-        gbs.Add(label, (row,0), border=0,
-                flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.closed = wx.CheckBox(self, label='')
-        self.closed.SetValue(self.v_closed)
-        gbs.Add(self.closed, (row,1), border=0)
-
-        label = wx.StaticText(self, wx.ID_ANY, 'filled: ')
-        gbs.Add(label, (row,2), border=0,
-                flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
-        self.filled = wx.CheckBox(self, label='')
-        self.filled.SetValue(self.v_filled)
-        gbs.Add(self.filled, (row,3), border=0)
-
-        # row 3
         row += 1
         label = wx.StaticText(self, wx.ID_ANY, 'offset_x: ')
         gbs.Add(label, (row,0), border=0,
@@ -247,7 +213,7 @@ class LayerControl(wx.Panel):
         self.offset_y = wx.TextCtrl(self, value=str(self.v_offset_y))
         gbs.Add(self.offset_y, (row,3), border=0, flag=wx.EXPAND)
 
-        # row 4
+        # row 3
         row += 1
         delete_button = wx.Button(self, label='Remove')
         gbs.Add(delete_button, (row,1), border=10, flag=wx.EXPAND)
@@ -259,12 +225,11 @@ class LayerControl(wx.Panel):
         sbs.Fit(self)
 
         self.polycolour.Bind(wx.EVT_BUTTON, self.onPolyColour)
-        self.fillcolour.Bind(wx.EVT_BUTTON, self.onFillColour)
         delete_button.Bind(wx.EVT_BUTTON, self.onDelete)
         update_button.Bind(wx.EVT_BUTTON, self.onUpdate)
 
     def onPolyColour(self, event):
-        """Change polygon colour."""
+        """Change polyline colour."""
 
         colour = self.polycolour.GetBackgroundColour()
         wxcolour = wx.ColourData()
@@ -281,24 +246,6 @@ class LayerControl(wx.Panel):
         if new_colour:
             self.polycolour.SetBackgroundColour(new_colour)
 
-    def onFillColour(self, event):
-        """Change polygon fill colour."""
-
-        colour = self.fillcolour.GetBackgroundColour()
-        wxcolour = wx.ColourData()
-        wxcolour.SetColour(colour)
-
-        dialog = wx.ColourDialog(self, data=wxcolour)
-        dialog.GetColourData().SetChooseFull(True)
-        new_colour = None
-        if dialog.ShowModal() == wx.ID_OK:
-            data = dialog.GetColourData()
-            new_colour = data.GetColour().Get()
-        dialog.Destroy()
-
-        if new_colour:
-            self.fillcolour.SetBackgroundColour(new_colour)
-
     def onDelete(self, event):
         """Remove object from map."""
 
@@ -313,9 +260,6 @@ class LayerControl(wx.Panel):
         event.placement = self.placement.GetValue()
         event.width = int(self.width.GetValue())
         event.colour = self.polycolour.GetBackgroundColour()
-        event.fillcolour = self.fillcolour.GetBackgroundColour()
-        event.closed = self.closed.GetValue()
-        event.filled = self.filled.GetValue()
         event.offset_x = self.offset_x.GetValue()
         event.offset_y = self.offset_y.GetValue()
 
@@ -507,9 +451,6 @@ class AppFrame(wx.Frame):
                                 placement=DefaultPlacement,
                                 width=str(DefaultWidth),
                                 colour=DefaultColour,
-                                closed=DefaultClosed,
-                                filled=DefaultFilled,
-                                fillcolour=DefaultFillColour,
                                 offset_x=DefaultOffsetX,
                                 offset_y=DefaultOffsetY)
 
@@ -528,9 +469,6 @@ class AppFrame(wx.Frame):
                                  placement=DefaultPlacement,
                                  width=str(DefaultWidth),
                                  colour=DefaultColour,
-                                 closed=DefaultClosed,
-                                 filled=DefaultFilled,
-                                 fillcolour=DefaultFillColour,
                                  offset_x=DefaultViewOffsetX,
                                  offset_y=DefaultViewOffsetY)
 
@@ -555,9 +493,6 @@ class AppFrame(wx.Frame):
 
         width = event.width
         colour = event.colour
-        closed = event.closed
-        filled = event.filled
-        fillcolour = event.fillcolour
 
         off_x = event.offset_x
         if not off_x:
@@ -578,9 +513,6 @@ class AppFrame(wx.Frame):
         poly_data = [(PolyPoints, {'placement': placement,
                                    'width': width,
                                    'colour': colour,
-                                   'closed': closed,
-                                   'filled': filled,
-                                   'fillcolour': fillcolour,
                                    'offset_x': off_x,
                                    'offset_y': off_y})]
         self.poly_layer = self.pyslip.AddPolygonLayer(poly_data, map_rel=True,
@@ -609,9 +541,6 @@ class AppFrame(wx.Frame):
 
         width = event.width
         colour = event.colour
-        closed = event.closed
-        filled = event.filled
-        fillcolour = event.fillcolour
 
         off_x = event.offset_x
         if not off_x:
@@ -627,9 +556,6 @@ class AppFrame(wx.Frame):
         poly_data = [(PolyViewPoints, {'placement': placement,
                                        'width': width,
                                        'colour': colour,
-                                       'closed': closed,
-                                       'filled': filled,
-                                       'fillcolour': fillcolour,
                                        'offset_x': off_x,
                                        'offset_y': off_y})]
         self.poly_view_layer = self.pyslip.AddPolygonLayer(poly_data,

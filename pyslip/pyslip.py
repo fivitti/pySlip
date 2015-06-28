@@ -391,26 +391,42 @@ class PySlip(_BufferedCanvas):
     DefaultTextViewData = None
 
     # default polygon attributes - map view
-    DefaultPolyPlacement = 'cc'
-    DefaultPolyWidth = 1
-    DefaultPolyColour = wx.RED
-    DefaultPolyClose = False
-    DefaultPolyFilled = False
-    DefaultPolyFillcolour = 'blue'
-    DefaultPolyOffsetX = 0
-    DefaultPolyOffsetY = 0
-    DefaultPolyData = None
+    DefaultPolygonPlacement = 'cc'
+    DefaultPolygonWidth = 1
+    DefaultPolygonColour = wx.RED
+    DefaultPolygonClose = False
+    DefaultPolygonFilled = False
+    DefaultPolygonFillcolour = 'blue'
+    DefaultPolygonOffsetX = 0
+    DefaultPolygonOffsetY = 0
+    DefaultPolygonData = None
 
     # default polygon attributes - view relative
-    DefaultPolyViewPlacement = 'nw'
-    DefaultPolyViewWidth = 1
-    DefaultPolyViewColour = wx.RED
-    DefaultPolyViewClose = False
-    DefaultPolyViewFilled = False
-    DefaultPolyViewFillcolour = 'blue'
-    DefaultPolyViewOffsetX = 0
-    DefaultPolyViewOffsetY = 0
-    DefaultPolyViewData = None
+    DefaultPolygonViewPlacement = 'nw'
+    DefaultPolygonViewWidth = 1
+    DefaultPolygonViewColour = wx.RED
+    DefaultPolygonViewClose = False
+    DefaultPolygonViewFilled = False
+    DefaultPolygonViewFillcolour = 'blue'
+    DefaultPolygonViewOffsetX = 0
+    DefaultPolygonViewOffsetY = 0
+    DefaultPolygonViewData = None
+
+    # default polyline attributes - view relative
+    DefaultPolylineViewPlacement = 'nw'
+    DefaultPolylineViewWidth = 1
+    DefaultPolylineViewColour = wx.RED
+    DefaultPolylineViewOffsetX = 0
+    DefaultPolylineViewOffsetY = 0
+    DefaultPolylineViewData = None
+
+    # default polyline attributes - map view
+    DefaultPolylinePlacement = 'cc'
+    DefaultPolylineWidth = 1
+    DefaultPolylineColour = wx.RED
+    DefaultPolylineOffsetX = 0
+    DefaultPolylineOffsetY = 0
+    DefaultPolylineData = None
 
     # layer type values
     (TypePoint, TypeImage, TypeText, TypePolygon, TypePolyline) = range(5)
@@ -512,13 +528,15 @@ class PySlip(_BufferedCanvas):
         self.layerPSelHandler = {self.TypePoint: self.GetPointInLayer,
                                  self.TypeImage: self.GetImageInLayer,
                                  self.TypeText: self.GetTextInLayer,
-                                 self.TypePolygon: self.GetPolygonInLayer}
+                                 self.TypePolygon: self.GetPolygonInLayer,
+                                 self.TypePolyline: self.GetPolylineInLayer}
 
         # for box select
         self.layerBSelHandler = {self.TypePoint: self.GetBoxSelPointsInLayer,
                                  self.TypeImage: self.GetBoxSelImagesInLayer,
                                  self.TypeText: self.GetBoxSelTextsInLayer,
-                                 self.TypePolygon: self.GetBoxSelPolygonsInLayer}
+                                 self.TypePolygon: self.GetBoxSelPolygonsInLayer,
+                                 self.TypePolyline: self.GetBoxSelPolylinesInLayer}
 
         # bind event handlers
         self.Bind(wx.EVT_MOTION, self.OnMove)
@@ -894,32 +912,32 @@ class PySlip(_BufferedCanvas):
         # merge global and layer defaults
         if map_rel:
             default_placement = kwargs.get('placement',
-                                           self.DefaultPolyPlacement)
-            default_width = kwargs.get('width', self.DefaultPolyWidth)
+                                           self.DefaultPolygonPlacement)
+            default_width = kwargs.get('width', self.DefaultPolygonWidth)
             default_colour = self.get_i18n_kw(kwargs, ('colour', 'color'),
-                                              self.DefaultPolyColour)
-            default_close = kwargs.get('closed', self.DefaultPolyClose)
-            default_filled = kwargs.get('filled', self.DefaultPolyFilled)
+                                              self.DefaultPolygonColour)
+            default_close = kwargs.get('closed', self.DefaultPolygonClose)
+            default_filled = kwargs.get('filled', self.DefaultPolygonFilled)
             default_fillcolour = self.get_i18n_kw(kwargs,
                                                   ('fillcolour', 'fillcolor'),
-                                                  self.DefaultPolyFillcolour)
-            default_offset_x = kwargs.get('offset_x', self.DefaultPolyOffsetX)
-            default_offset_y = kwargs.get('offset_y', self.DefaultPolyOffsetY)
-            default_data = kwargs.get('data', self.DefaultPolyData)
+                                                  self.DefaultPolygonFillcolour)
+            default_offset_x = kwargs.get('offset_x', self.DefaultPolygonOffsetX)
+            default_offset_y = kwargs.get('offset_y', self.DefaultPolygonOffsetY)
+            default_data = kwargs.get('data', self.DefaultPolygonData)
         else:
             default_placement = kwargs.get('placement',
-                                           self.DefaultPolyViewPlacement)
-            default_width = kwargs.get('width', self.DefaultPolyViewWidth)
+                                           self.DefaultPolygonViewPlacement)
+            default_width = kwargs.get('width', self.DefaultPolygonViewWidth)
             default_colour = self.get_i18n_kw(kwargs, ('colour', 'color'),
-                                              self.DefaultPolyViewColour)
-            default_close = kwargs.get('closed', self.DefaultPolyViewClose)
-            default_filled = kwargs.get('filled', self.DefaultPolyViewFilled)
+                                              self.DefaultPolygonViewColour)
+            default_close = kwargs.get('closed', self.DefaultPolygonViewClose)
+            default_filled = kwargs.get('filled', self.DefaultPolygonViewFilled)
             default_fillcolour = self.get_i18n_kw(kwargs,
                                                   ('fillcolour', 'fillcolor'),
-                                                  self.DefaultPolyViewFillcolour)
-            default_offset_x = kwargs.get('offset_x', self.DefaultPolyViewOffsetX)
-            default_offset_y = kwargs.get('offset_y', self.DefaultPolyViewOffsetY)
-            default_data = kwargs.get('data', self.DefaultPolyViewData)
+                                                  self.DefaultPolygonViewFillcolour)
+            default_offset_x = kwargs.get('offset_x', self.DefaultPolygonViewOffsetX)
+            default_offset_y = kwargs.get('offset_y', self.DefaultPolygonViewOffsetY)
+            default_data = kwargs.get('data', self.DefaultPolygonViewData)
 
         # create draw_data iterable
         draw_data = []
@@ -1003,22 +1021,22 @@ class PySlip(_BufferedCanvas):
         # merge global and layer defaults
         if map_rel:
             default_placement = kwargs.get('placement',
-                                           self.DefaultPolyPlacement)
-            default_width = kwargs.get('width', self.DefaultPolyWidth)
+                                           self.DefaultPolygonPlacement)
+            default_width = kwargs.get('width', self.DefaultPolygonWidth)
             default_colour = self.get_i18n_kw(kwargs, ('colour', 'color'),
-                                              self.DefaultPolyColour)
-            default_offset_x = kwargs.get('offset_x', self.DefaultPolyOffsetX)
-            default_offset_y = kwargs.get('offset_y', self.DefaultPolyOffsetY)
-            default_data = kwargs.get('data', self.DefaultPolyData)
+                                              self.DefaultPolygonColour)
+            default_offset_x = kwargs.get('offset_x', self.DefaultPolygonOffsetX)
+            default_offset_y = kwargs.get('offset_y', self.DefaultPolygonOffsetY)
+            default_data = kwargs.get('data', self.DefaultPolygonData)
         else:
             default_placement = kwargs.get('placement',
-                                           self.DefaultPolyViewPlacement)
-            default_width = kwargs.get('width', self.DefaultPolyViewWidth)
+                                           self.DefaultPolygonViewPlacement)
+            default_width = kwargs.get('width', self.DefaultPolygonViewWidth)
             default_colour = self.get_i18n_kw(kwargs, ('colour', 'color'),
-                                              self.DefaultPolyViewColour)
-            default_offset_x = kwargs.get('offset_x', self.DefaultPolyViewOffsetX)
-            default_offset_y = kwargs.get('offset_y', self.DefaultPolyViewOffsetY)
-            default_data = kwargs.get('data', self.DefaultPolyViewData)
+                                              self.DefaultPolygonViewColour)
+            default_offset_x = kwargs.get('offset_x', self.DefaultPolygonViewOffsetX)
+            default_offset_y = kwargs.get('offset_y', self.DefaultPolygonViewOffsetY)
+            default_data = kwargs.get('data', self.DefaultPolygonViewData)
 
         # create draw_data iterable
         draw_data = []
@@ -1327,9 +1345,9 @@ class PySlip(_BufferedCanvas):
         dc = wx.GCDC(dc)
 
         # get the correct pex function for mode (map/view)
-        pex = self.PexPolyView
+        pex = self.PexPolygonView
         if map_rel:
-            pex = self.PexPoly
+            pex = self.PexPolygon
 
         # draw polygons
         for (p, place, width, colour, closed,
@@ -1362,9 +1380,9 @@ class PySlip(_BufferedCanvas):
         dc = wx.GCDC(dc)
 
         # get the correct pex function for mode (map/view)
-        pex = self.PexPolyView
+        pex = self.PexPolygonView
         if map_rel:
-            pex = self.PexPoly
+            pex = self.PexPolygon
 
         # draw polyglines
         for (p, place, width, colour, x_off, y_off, udata) in data:
@@ -1634,7 +1652,7 @@ class PySlip(_BufferedCanvas):
 
         return (point, extent)
 
-    def PexPoly(self, place, poly, x_off, y_off):
+    def PexPolygon(self, place, poly, x_off, y_off):
         """Given a polygon/line obj (geo coords) get point/extent in view coords.
 
         place         placement string
@@ -1673,7 +1691,7 @@ class PySlip(_BufferedCanvas):
 
         return (res_pt, res_ex)
 
-    def PexPolyView(self, place, poly, x_off, y_off):
+    def PexPolygonView(self, place, poly, x_off, y_off):
         """Given a polygon/line obj (view coords) get point/extent in view coords.
 
         place         placement string
@@ -2465,7 +2483,7 @@ class PySlip(_BufferedCanvas):
         (xclick, yclick) = clickpt
 
         # select text in map/view layer
-        for (x, y, text, place, radius, colour,                                                                                                              
+        for (x, y, text, place, radius, colour,
                  tcolour, fname, fsize, x_off, y_off, data) in layer.data:
             (vp, ex) = pex(place, (x,y), 0, 0, radius)
             if vp:
@@ -2515,7 +2533,7 @@ class PySlip(_BufferedCanvas):
             pex = self.PexPoint
             ll = self.Geo2View(ll)
             ur = self.Geo2View(ur)
-        (lx, by) = ll                                                                                                                                        
+        (lx, by) = ll
         (rx, ty) = ur
 
         # get texts inside box
@@ -2553,13 +2571,13 @@ class PySlip(_BufferedCanvas):
         result = None
 
         # get correct 'point in polygon' routine
-        pip = self.point_in_poly_view
+        pip = self.point_in_polygon_view
         if layer.map_rel:
-            pip = self.point_in_poly_geo
+            pip = self.point_in_polygon_geo
 
         # check polyons in layer, choose first point is inside
         for (poly, place, width, colour, close,
-                 filled, fcolour, x_off, y_off, udata)in layer.data:
+                 filled, fcolour, x_off, y_off, udata) in layer.data:
             if pip(poly, point, place, x_off, y_off):
                 sel = (poly, {'placement': place,
                               'offset_x': x_off,
@@ -2577,7 +2595,7 @@ class PySlip(_BufferedCanvas):
         p2     top-right corner point of selection box (geo or view)
 
         Return a tuple (selection, data, None) where 'selection' is a list of
-        iterables of vertex positions and 'data' is  list of data objects
+        iterables of vertex positions and 'data' is a list of data objects
         associated with each polygon selected.
         """
 
@@ -2585,9 +2603,9 @@ class PySlip(_BufferedCanvas):
         data = []
 
         # get correct pex function and box limits in view coords
-        pex = self.PexPolyView
+        pex = self.PexPolygonView
         if layer.map_rel:
-            pex = self.PexPoly
+            pex = self.PexPolygon
             p1 = self.Geo2View(p1)
             p2 = self.Geo2View(p2)
         (lx, by) = p1
@@ -2596,6 +2614,74 @@ class PySlip(_BufferedCanvas):
         # check polygons in layer
         for (poly, place, width, colour, close,
                 filled, fcolour, x_off, y_off, udata) in layer.data:
+            (pt, ex) = pex(place, poly, x_off, y_off)
+            if ex:
+                (plx, prx, pty, pby) = ex
+                if lx <= plx and prx <= rx and ty <= pty and pby <= by:
+                    sel = (poly, {'placement': place,
+                                  'offset_x': x_off,
+                                  'offset_y': y_off})
+                    selection.append(sel)
+                    data.append(udata)
+
+        if not selection:
+            return None
+        return (selection, data, None)
+
+    def GetPolylineInLayer(self, layer, point):
+        """Get first polyline object clicked in layer data.
+
+        layer  layer object we are looking in
+        point  tuple of click position (xgeo,ygeo) or (xview,yview)
+
+        Returns an iterable: ((x,y), udata) of the first polyline selected.
+        Returns None if no polyline selected.
+        """
+
+        result = None
+
+        # get correct 'point in polyline' routine
+        pip = self.point_near_polyline_view
+        if layer.map_rel:
+            pip = self.point_near_polyline_geo
+
+        # check polyons in layer, choose first where point is close enough
+        for (poly, place, width, colour, x_off, y_off, udata) in layer.data:
+            if pip(poly, point, place, x_off, y_off):
+                sel = (poly, {'placement': place,
+                              'offset_x': x_off,
+                              'offset_y': y_off})
+                result = ([sel], udata, None)
+                break
+
+        return result
+
+    def GetBoxSelPolylinesInLayer(self, layer, p1, p2):
+        """Get list of polylines inside box p1-p2 in given layer.
+
+        layer  reference to layer object we are working on
+        p1     bottom-left corner point of selection box (geo or view)
+        p2     top-right corner point of selection box (geo or view)
+
+        Return a tuple (selection, data, None) where 'selection' is a list of
+        iterables of vertex positions and 'data' is a list of data objects
+        associated with each polyline selected.
+        """
+
+        selection = []
+        data = []
+
+        # get correct pex function and box limits in view coords
+        pex = self.PexPolylineView
+        if layer.map_rel:
+            pex = self.PexPolyline
+            p1 = self.Geo2View(p1)
+            p2 = self.Geo2View(p2)
+        (lx, by) = p1
+        (rx, ty) = p2
+
+        # check polygons in layer
+        for (poly, place, width, colour, x_off, y_off, udata) in layer.data:
             (pt, ex) = pex(place, poly, x_off, y_off)
             if ex:
                 (plx, prx, pty, pby) = ex
@@ -2857,7 +2943,7 @@ class PySlip(_BufferedCanvas):
 
         return inside
 
-    def point_in_poly_geo(self, poly, geo, placement, offset_x, offset_y):
+    def point_in_polygon_geo(self, poly, geo, placement, offset_x, offset_y):
         """Decide if a point is inside a map-relative polygon.
 
         poly       an iterable of (x,y) where x,y are in geo coordinates
@@ -2874,7 +2960,7 @@ class PySlip(_BufferedCanvas):
 
         return self.point_inside_polygon(geo, poly)
 
-    def point_in_poly_view(self, poly, view, place, x_off, y_off):
+    def point_in_polygon_view(self, poly, view, place, x_off, y_off):
         """Decide if a point is inside a view-relative polygon.
 
         poly      an iterable of (x,y) where x,y are in view (pixel) coordinates
@@ -2896,6 +2982,92 @@ class PySlip(_BufferedCanvas):
 
         # decide if (ptx,pty) is inside polygon
         return self.point_inside_polygon(view, view_poly)
+
+    def point_near_polyline_geo(self, poly, geo, placement, offset_x, offset_y):
+        """Decide if a point is near a map-relative polyline.
+
+        poly       an iterable of (x,y) where x,y are in geo coordinates
+        geo        tuple (xgeo, ygeo) of point position
+        placement  a placement string
+        offset_x   X offset in pixels
+        offset_y   Y offset in pixels
+
+        The 'geo' point, while in geo coordinates, must be a click point
+        within the view.
+
+        Returns True if point is near the polyline.
+        """
+
+        return self.point_near_polyline(geo, poly)
+
+    def point_near_polyline_view(self, poly, view, place, x_off, y_off):
+        """Decide if a point is near a view-relative polyline.
+
+        poly      an iterable of (x,y) where x,y are in view (pixel) coordinates
+        ptx       point X coordinate (view)
+        pty       point Y coordinate (view)
+        place     a placement string
+        offset_x  X offset in pixels
+        offset_y  Y offset in pixels
+
+        Returns True if point is near the polyline.
+        """
+
+        # convert polyline and placement into list of (x,y) tuples
+        view_poly = []
+        for (x, y) in poly:
+            (x, y) = self.point_placement(place, x, y, x_off, y_off,
+                                          self.view_width, self.view_height)
+            view_poly.append((x, y))
+
+        # decide if (ptx,pty) is inside polyline
+        return self.point_near_polyline(view, view_poly)
+
+    def point_near_polyline(self, point, polyline, delta=50):
+        """Decide if point is within 'delta' of the given polyline.
+
+        point     point (x, y)
+        polyline  iterable of (x, y) point tuples
+        delta     maximum distance before 'not close enough'
+
+        Returns True if point within delta distance of the polyline.
+        """
+
+        last_pp = polyline[0]
+        for pp in polyline[1:]:
+            if self.point_segment_distance(point, last_pp, pp) <= delta:
+                return True
+            last_pp = pp
+
+        return False
+
+    def point_segment_distance(self, point, s1, s2):
+        """Get distance from a point to segment (s1, s2).
+
+        point   tuple (x, y)
+        s1, s2  tuples (x, y) of segment endpoints
+
+        Returns the distance squared.
+        """
+
+        (ptx, pty) = point
+        (s1x, s1y) = s1
+        (s2x, s2y) = s2
+
+        px = s2x - s1x
+        py = s2y - s1y
+
+        u = ((ptx - s1x)*px + (pty - s1y)*py) / float(px**2 + py**2)
+
+        if u > 1:
+            u = 1
+        elif u < 0:
+            u = 0
+
+        dx = s1x + u*px - ptx
+        dy = s1y + u*py - pty
+
+        return dx**2 + dy**2
 
     def GeoExtent(self, geo, place, w, h, x_off, y_off):
         """Get geo extent of area.

@@ -2675,9 +2675,11 @@ class PySlip(_BufferedCanvas):
         data = []
 
         # get correct pex function and box limits in view coords
-        pex = self.PexPolylineView
+        #pex = self.PexPolylineView
+        pex = self.PexPolygonView
         if layer.map_rel:
-            pex = self.PexPolyline
+            #pex = self.PexPolyline
+            pex = self.PexPolygon
             p1 = self.Geo2View(p1)
             p2 = self.Geo2View(p2)
         (lx, by) = p1
@@ -3021,8 +3023,8 @@ class PySlip(_BufferedCanvas):
         to the point.  Returns None if no segment close enough.
         """
 
-        log('point_near_polyline_view: poly=%s, view=%s, place=%s, offset_x=%s, offset_y=%s'
-                % (str(poly), str(view), place, str(offset_x), str(offset_y)))
+        log('point_near_polyline_view: poly=%s, view=%s, place=%s, x_off=%s, y_off=%s'
+                % (str(poly), str(view), place, str(x_off), str(y_off)))
 
         # convert polyline and placement into list of (x,y) tuples
         view_poly = []
@@ -3048,6 +3050,7 @@ class PySlip(_BufferedCanvas):
         last_pp = polyline[0]
         for pp in polyline[1:]:
             if self.point_segment_distance(point, last_pp, pp) <= delta:
+                log('point_near_polyline: returning %s' % str((last_pp, pp)))
                 return (last_pp, pp)
             last_pp = pp
 

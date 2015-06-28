@@ -1598,10 +1598,10 @@ class AppFrame(wx.Frame):
 
         if event.state:
             self.polyline_view_layer = \
-                self.pyslip.AddPolygonLayer(PolylineViewData, map_rel=False,
-                                            name='<polyline_view_layer>',
-                                            placement='cn', visible=True,
-                                            fontsize=24, colour='#0000ff')
+                self.pyslip.AddPolylineLayer(PolylineViewData, map_rel=False,
+                                             name='<polyline_view_layer>',
+                                             placement='cn', visible=True,
+                                             fontsize=24, colour='#0000ff')
         else:
             self.pyslip.DeleteLayer(self.polyline_view_layer)
             self.polyline_view_layer = None
@@ -1609,18 +1609,21 @@ class AppFrame(wx.Frame):
                 self.pyslip.DeleteLayer(self.sel_polyline_view_layer)
                 self.sel_polyline_view_layer = None
                 self.sel_polyline_view_point = None
+            if self.sel_polyline_view_layer2:
+                self.pyslip.DeleteLayer(self.sel_polyline_view_layer2)
+                self.sel_polyline_view_layer2 = None
 
     def polylineViewShowOnOff(self, event):
         """Handle ShowOnOff event for polyline layer control."""
 
         if event.state:
             self.pyslip.ShowLayer(self.polyline_view_layer)
-            if self.sel_polyline_view_layer:
-                self.pyslip.ShowLayer(self.sel_polyline_view_layer)
+            if self.sel_polyline_view_layer2:
+                self.pyslip.ShowLayer(self.sel_polyline_view_layer2)
         else:
             self.pyslip.HideLayer(self.polyline_view_layer)
-            if self.sel_polyline_view_layer:
-                self.pyslip.HideLayer(self.sel_polyline_view_layer)
+            if self.sel_polyline_view_layer2:
+                self.pyslip.HideLayer(self.sel_polyline_view_layer2)
 
     def polylineViewSelectOnOff(self, event):
         """Handle SelectOnOff event for polyline layer control."""
@@ -1645,15 +1648,28 @@ class AppFrame(wx.Frame):
         """
 
         selection = event.selection
-        log('####: selection=%s' % str(selection))
+        relsel = event.relsel
+        log('####: selection=%s, relsel=%s' % (str(selection), str(relsel)))
 
         # point select, turn any previous selection off
         if self.sel_polyline_view_layer:
             self.pyslip.DeleteLayer(self.sel_polyline_view_layer)
             self.sel_polyline_view_layer = None
+        if self.sel_polyline_view_layer2:
+            self.pyslip.DeleteLayer(self.sel_polyline_view_layer2)
+            self.sel_polyline_view_layer2 = None
 
         # for box OR single selection
         if selection:
+            # first,, display selected segment
+            if relsel:
+                self.sel_polyline_view_layer2 = \
+                    self.pyslip.AddPointLayer(relsel, map_rel=False,
+                                              colour='#00ff00',
+                                              radius=5, visible=True,
+                                              show_levels=[3,4],
+                                              name='<sel_view_poly2>')
+
             # get selected polygon points into form for point display layer
             points = []
             for (poly, d) in selection:
@@ -1900,6 +1916,7 @@ class AppFrame(wx.Frame):
 
         self.polyline_view_layer = None
         self.sel_polyline_view_layer = None
+        self.sel_polyline_view_layer2 = None
         self.sel_polyline = None
 
         # get width and height of the compass rose image

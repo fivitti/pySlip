@@ -61,7 +61,8 @@ InitViewLevel = 4
 # a selection of cities, position from WikiPedia, etc
 #InitViewPosition = (0.0, 51.48)             # Greenwich, England
 #InitViewPosition = (5.33, 60.389444)        # Bergen, Norway
-InitViewPosition = (153.033333, -27.466667)  # Brisbane, Australia
+#InitViewPosition = (153.033333, -27.466667)  # Brisbane, Australia
+InitViewPosition = (98.3786761, 7.8627326)   # Phuket (), Thailand
 #InitViewPosition = (151.209444, -33.859972) # Sydney, Australia
 #InitViewPosition = (-77.036667, 38.895111)  # Washington, DC, USA
 #InitViewPosition = (132.455278, 34.385278)  # Hiroshima, Japan
@@ -115,7 +116,7 @@ LogSym2Num = {'CRITICAL': 50,
 
 # sizes of various spacers
 HSpacerSize = (0,1)         # horizontal in application screen
-VSpacerSize = (1,1)         # vertical in control pane
+VSpacerSize = (0,0)         # vertical in control pane
 
 # border width when packing GUI elements
 PackBorder = 0
@@ -145,8 +146,8 @@ class ROTextCtrl(wx.TextCtrl):
 class AppStaticBox(wx.StaticBox):
 
     def __init__(self, parent, label, *args, **kwargs):
-        if label:
-            label = '  ' + label + '  '
+#        if label:
+#            label = '  ' + label + '  '
         if 'style' not in kwargs:
             kwargs['style'] = wx.NO_BORDER
         wx.StaticBox.__init__(self, parent, wx.ID_ANY, label, *args, **kwargs)
@@ -355,7 +356,7 @@ class AppFrame(wx.Frame):
 
         # add the map level in use widget
         level = self.make_gui_level(parent)
-        controls.Add(level, proportion=0, flag=wx.EXPAND|wx.ALL)
+#        controls.Add(level, proportion=0, flag=wx.EXPAND|wx.ALL)
 
         # vertical spacer
         controls.AddSpacer(VSpacerSize)
@@ -419,6 +420,20 @@ class AppFrame(wx.Frame):
         # controls for view-relative polygon layer
         poly_view = self.make_gui_poly_view(parent)
         controls.Add(poly_view, proportion=0, flag=wx.EXPAND|wx.ALL)
+
+        # vertical spacer
+        controls.AddSpacer(VSpacerSize)
+
+        # controls for map-relative polygon layer
+        polyline = self.make_gui_polyline(parent)
+        controls.Add(polyline, proportion=0, flag=wx.EXPAND|wx.ALL)
+
+        # vertical spacer
+        controls.AddSpacer(VSpacerSize)
+
+        # controls for view-relative polygon layer
+        polyline_view = self.make_gui_polyline_view(parent)
+        controls.Add(polyline_view, proportion=0, flag=wx.EXPAND|wx.ALL)
 
         return controls
 
@@ -623,6 +638,46 @@ class AppFrame(wx.Frame):
         poly_view_obj.Bind(EVT_ONOFF, self.polyViewOnOff)
         poly_view_obj.Bind(EVT_SHOWONOFF, self.polyViewShowOnOff)
         poly_view_obj.Bind(EVT_SELECTONOFF, self.polyViewSelectOnOff)
+
+        return poly_view_obj
+
+    def make_gui_polyline(self, parent):
+        """Build the map-relative polyline part of the controls part of GUI.
+
+        parent  reference to parent
+
+        Returns reference to containing sizer object.
+        """
+
+        # create widgets
+        poly_obj = LayerControl(parent,
+                                'Polyline, map relative %s'
+                                     % str(MRPolyShowLevels),
+                                selectable=True)
+
+        # tie to event handler(s)
+        poly_obj.Bind(EVT_ONOFF, self.polylineOnOff)
+        poly_obj.Bind(EVT_SHOWONOFF, self.polylineShowOnOff)
+        poly_obj.Bind(EVT_SELECTONOFF, self.polylineSelectOnOff)
+
+        return poly_obj
+
+    def make_gui_polyline_view(self, parent):
+        """Build the view-relative polyline part of the controls part of GUI.
+
+        parent  reference to parent
+
+        Returns reference to containing sizer object.
+        """
+
+        # create widgets
+        poly_view_obj = LayerControl(parent, 'Polyline, view relative',
+                                     selectable=True)
+
+        # tie to event handler(s)
+        poly_view_obj.Bind(EVT_ONOFF, self.polylineViewOnOff)
+        poly_view_obj.Bind(EVT_SHOWONOFF, self.polylineViewShowOnOff)
+        poly_view_obj.Bind(EVT_SELECTONOFF, self.polylineViewSelectOnOff)
 
         return poly_view_obj
 
@@ -1426,6 +1481,181 @@ class AppFrame(wx.Frame):
 
         return True
 
+##### map-relative polyline layer
+
+    def polylineOnOff(self, event):
+        """Handle OnOff event for map-relative polyline layer control."""
+
+        if event.state:
+            self.polyline_layer = \
+                self.pyslip.AddPolylineLayer(PolyData, map_rel=True,
+                                             visible=True,
+                                             show_levels=MRPolyShowLevels,
+                                             name='<polyline_layer>')
+        else:
+            self.pyslip.DeleteLayer(self.polyline_layer)
+            self.polyline_layer = None
+            if self.sel_polyline_layer:
+                self.pyslip.DeleteLayer(self.sel_polyline_layer)
+                self.sel_polyline_layer = None
+                self.sel_polyline_point = None
+
+    def polylineShowOnOff(self, event):
+        """Handle ShowOnOff event for polycwlinegon layer control."""
+
+        if event.state:
+            self.pyslip.ShowLayer(self.polyline_layer)
+            if self.sel_polyline_layer:
+                self.pyslip.ShowLayer(self.sel_polyline_layer)
+        else:
+            self.pyslip.HideLayer(self.polyline_layer)
+            if self.sel_polyline_layer:
+                self.pyslip.HideLayer(self.sel_polyline_layer)
+
+    def polylineSelectOnOff(self, event):
+        """Handle SelectOnOff event for polyline layer control."""
+
+        layer = self.polyline_layer
+        if event.state:
+            self.add_select_handler(layer, self.polylineSelect)
+            self.pyslip.SetLayerSelectable(layer, True)
+        else:
+            self.del_select_handler(layer)
+            self.pyslip.SetLayerSelectable(layer, False)
+
+    def polylineSelect(self, event):
+        """Map- and view-relative polyline select event from pyslip.
+
+        event  the event that contains these attributes:
+                   type       the type of point selection: single or box
+                   selection  [list of] tuple (xgeo,ygeo) of selected point
+                              (if None then no point(s) selected)
+
+        The selection could be a single or box select.
+
+        Select a polyline to turn it on, any other polyline selection turns
+        it off, unless previous selection again selected.
+        """
+
+        # .seletion: [(poly,attr), ...]
+        selection = event.selection
+
+        # turn any previous selection off
+        if self.sel_polyline_layer:
+            self.pyslip.DeleteLayer(self.sel_polyline_layer)
+            self.sel_polyline_layer = None
+
+        # box OR single selection
+        if selection:
+            # get selected polygon points into form for point display layer
+            points = []
+            for (poly, d) in selection:
+                try:
+                    del d['colour']
+                except KeyError:
+                    pass
+                try:
+                    del d['radius']
+                except KeyError:
+                    pass
+                for (x, y) in poly:
+                    points.append((x, y, d))
+
+            self.sel_polyline_layer = \
+                self.pyslip.AddPointLayer(points, map_rel=True,
+                                          colour='#ff00ff',
+                                          radius=5, visible=True,
+                                          show_levels=[3,4],
+                                          name='<sel_polyline>')
+
+        return True
+
+##### view-relative polygon layer
+
+    def polylineViewOnOff(self, event):
+        """Handle OnOff event for map-relative polyline layer control."""
+
+        if event.state:
+            self.polyline_view_layer = \
+                self.pyslip.AddPolygonLayer(PolylineViewData, map_rel=False,
+                                            name='<polyline_view_layer>',
+                                            placement='cn', visible=True,
+                                            fontsize=24, colour='#0000ff')
+        else:
+            self.pyslip.DeleteLayer(self.polyline_view_layer)
+            self.polyline_view_layer = None
+            if self.sel_polyline_view_layer:
+                self.pyslip.DeleteLayer(self.sel_polyline_view_layer)
+                self.sel_polyline_view_layer = None
+                self.sel_polyline_view_point = None
+
+    def polylineViewShowOnOff(self, event):
+        """Handle ShowOnOff event for polyline layer control."""
+
+        if event.state:
+            self.pyslip.ShowLayer(self.polyline_view_layer)
+            if self.sel_polyline_view_layer:
+                self.pyslip.ShowLayer(self.sel_polyline_view_layer)
+        else:
+            self.pyslip.HideLayer(self.polyline_view_layer)
+            if self.sel_polyline_view_layer:
+                self.pyslip.HideLayer(self.sel_polyline_view_layer)
+
+    def polylineViewSelectOnOff(self, event):
+        """Handle SelectOnOff event for polyline layer control."""
+
+        layer = self.polyline_view_layer
+        if event.state:
+            self.add_select_handler(layer, self.polylineViewSelect)
+            self.pyslip.SetLayerSelectable(layer, True)
+        else:
+            self.del_select_handler(layer)
+            self.pyslip.SetLayerSelectable(layer, False)
+
+    def polylineViewSelect(self, event):
+        """View-relative polyline select event from pyslip.
+
+        event  the event that contains these attributes:
+                   type       the type of point selection: single or box
+                   selection  tuple (sel, udata, None) defining the selected
+                              polyline (if None then no point(s) selected)
+
+        The selection could be a single or box select.
+        """
+
+        selection = event.selection
+        log('####: selection=%s' % str(selection))
+
+        # point select, turn any previous selection off
+        if self.sel_polyline_view_layer:
+            self.pyslip.DeleteLayer(self.sel_polyline_view_layer)
+            self.sel_polyline_view_layer = None
+
+        # for box OR single selection
+        if selection:
+            # get selected polygon points into form for point display layer
+            points = []
+            for (poly, d) in selection:
+                try:
+                    del d['colour']
+                except KeyError:
+                    pass
+                try:
+                    del d['radius']
+                except KeyError:
+                    pass
+                for (x, y) in poly:
+                    points.append((x, y, d))
+
+            self.sel_polyline_view_layer = \
+                self.pyslip.AddPointLayer(points, map_rel=False,
+                                          colour='#ff00ff',
+                                          radius=5, visible=True,
+                                          show_levels=[3,4],
+                                          name='<sel_view_poly>')
+
+        return True
+
     ######
     # Small utility routines
     ######
@@ -1448,8 +1678,8 @@ class AppFrame(wx.Frame):
         global TextData # , TextDataColour
         global TextViewData
         global TextViewDataPlace, TextViewDataOffX, TextViewDataOffY
-        global PolyData
-        global PolyViewData
+        global PolyData, PolyViewData
+        global PolylineData, PolylineViewData
         global CR_Width, CR_Height
 
         # create PointData
@@ -1597,12 +1827,17 @@ class AppFrame(wx.Frame):
                       {'width': 3, 'colour': 'green', 'filled': True,
                        'fillcolour': 'yellow'}),
                     (((190.0,+50.0),(220.0,+65.0),(220.0,+50.0),(190.0,+65.0)),
-                      {'width': 10, 'colour': '#00000040'})
-                   ]
+                      {'width': 10, 'colour': '#00000040'})]
 
         PolyViewData = [(((230,0),(230,40),(-230,40),(-230,0)),
                         {'width': 3, 'colour': '#00ff00ff', 'closed': True,
                          'placement': 'cn', 'offset_y': 1})]
+
+        PolylineData = [(((150.0,10.0),(160.0,20.0),(170.0,10.0),(165.0,0.0),(155.0,0.0)),
+                          {'width': 3, 'colour': 'green'})]
+
+        PolylineViewData = [(((50,100),(100,50),(150,100),(100,150)),
+                            {'width': 3, 'colour': '#R00fffff', 'placement': 'cn'})]
 
         # define layer ID variables & sub-checkbox state variables
         self.point_layer = None
@@ -1636,6 +1871,14 @@ class AppFrame(wx.Frame):
         self.poly_view_layer = None
         self.sel_poly_view_layer = None
         self.sel_poly = None
+
+        self.polyline_layer = None
+        self.sel_polyline_layer = None
+        self.sel_polyline = None
+
+        self.polyline_view_layer = None
+        self.sel_polyline_view_layer = None
+        self.sel_polyline = None
 
         # get width and height of the compass rose image
         cr_img = wx.Image(CompassRoseGraphic, wx.BITMAP_TYPE_ANY)

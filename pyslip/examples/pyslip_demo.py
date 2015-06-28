@@ -1499,6 +1499,9 @@ class AppFrame(wx.Frame):
                 self.pyslip.DeleteLayer(self.sel_polyline_layer)
                 self.sel_polyline_layer = None
                 self.sel_polyline_point = None
+            if self.sel_polyline_layer2:
+                self.pyslip.DeleteLayer(self.sel_polyline_layer2)
+                self.sel_polyline_layer2 = None
 
     def polylineShowOnOff(self, event):
         """Handle ShowOnOff event for polycwlinegon layer control."""
@@ -1507,10 +1510,14 @@ class AppFrame(wx.Frame):
             self.pyslip.ShowLayer(self.polyline_layer)
             if self.sel_polyline_layer:
                 self.pyslip.ShowLayer(self.sel_polyline_layer)
+            if self.sel_polyline_layer2:
+                self.pyslip.ShowLayer(self.sel_polyline_layeri2)
         else:
             self.pyslip.HideLayer(self.polyline_layer)
             if self.sel_polyline_layer:
                 self.pyslip.HideLayer(self.sel_polyline_layer)
+            if self.sel_polyline_layer2:
+                self.pyslip.HideLayer(self.sel_polyline_layer2)
 
     def polylineSelectOnOff(self, event):
         """Handle SelectOnOff event for polyline layer control."""
@@ -1530,6 +1537,7 @@ class AppFrame(wx.Frame):
                    type       the type of point selection: single or box
                    selection  [list of] tuple (xgeo,ygeo) of selected point
                               (if None then no point(s) selected)
+                   relsel     a tuple (p1,p2) of polyline segment
 
         The selection could be a single or box select.
 
@@ -1539,14 +1547,28 @@ class AppFrame(wx.Frame):
 
         # .seletion: [(poly,attr), ...]
         selection = event.selection
+        relsel = event.relsel
+        log('####: selection=%s, relsel=%s' % (str(selection), str(relsel)))
 
         # turn any previous selection off
         if self.sel_polyline_layer:
             self.pyslip.DeleteLayer(self.sel_polyline_layer)
             self.sel_polyline_layer = None
+        if self.sel_polyline_layer2:
+            self.pyslip.DeleteLayer(self.sel_polyline_layer2)
+            self.sel_polyline_layer2 = None
 
         # box OR single selection
         if selection:
+            # show segment selected first, if any
+            if relsel:
+                self.sel_polyline_layer2 = \
+                    self.pyslip.AddPointLayer(relsel, map_rel=True,
+                                              colour='#40ff40',
+                                              radius=5, visible=True,
+                                              show_levels=[3,4],
+                                              name='<sel_polyline2>')
+
             # get selected polygon points into form for point display layer
             points = []
             for (poly, d) in selection:
@@ -1564,10 +1586,9 @@ class AppFrame(wx.Frame):
             self.sel_polyline_layer = \
                 self.pyslip.AddPointLayer(points, map_rel=True,
                                           colour='#ff00ff',
-                                          radius=5, visible=True,
+                                          radius=3, visible=True,
                                           show_levels=[3,4],
                                           name='<sel_polyline>')
-
         return True
 
 ##### view-relative polygon layer
@@ -1874,6 +1895,7 @@ class AppFrame(wx.Frame):
 
         self.polyline_layer = None
         self.sel_polyline_layer = None
+        self.sel_polyline_layer2 = None
         self.sel_polyline = None
 
         self.polyline_view_layer = None

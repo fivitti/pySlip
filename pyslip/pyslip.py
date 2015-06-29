@@ -1384,14 +1384,12 @@ class PySlip(_BufferedCanvas):
         if map_rel:
             pex = self.PexPolygon
 
-        # draw polyglines
+        # draw polyline(s)
         for (p, place, width, colour, x_off, y_off, udata) in data:
             (poly, extent) = pex(place, p, x_off, y_off)
             if poly:
                 dc.SetPen(wx.Pen(colour, width=width))
-
                 dc.SetBrush(wx.TRANSPARENT_BRUSH)
-
                 dc.DrawLines(poly)
 
     ######

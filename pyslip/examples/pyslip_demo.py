@@ -83,7 +83,7 @@ MRPolyShowLevels = [3, 4]
 LonLatPrecision = 3
 
 # startup size of the application
-DefaultAppSize = (1000, 700)
+DefaultAppSize = (1100, 770)
 
 # image used for shipwrecks, glassy buttons, etc
 ShipImg = 'graphics/shipwreck.png'
@@ -113,10 +113,6 @@ LogSym2Num = {'CRITICAL': 50,
 ######
 # Various GUI layout constants
 ######
-
-# sizes of various spacers
-HSpacerSize = (0,1)         # horizontal in application screen
-VSpacerSize = (0,0)         # vertical in control pane
 
 # border width when packing GUI elements
 PackBorder = 0
@@ -197,20 +193,20 @@ class LayerControl(wx.Panel):
         gbs = wx.GridBagSizer(vgap=0, hgap=0)
 
         self.cbx_onoff = wx.CheckBox(self, wx.ID_ANY, label='Add layer')
-        gbs.Add(self.cbx_onoff, (0,0), span=(1,4), border=0)
+        gbs.Add(self.cbx_onoff, (0,0), span=(1,4), border=PackBorder)
 
         self.cbx_show = wx.CheckBox(self, wx.ID_ANY, label='Show')
-        gbs.Add(self.cbx_show, (1,1), border=0)
+        gbs.Add(self.cbx_show, (1,1), border=PackBorder)
         self.cbx_show.Disable()
 
         if selectable:
             self.cbx_select = wx.CheckBox(self, wx.ID_ANY, label='Select')
-            gbs.Add(self.cbx_select, (1,2), border=0)
+            gbs.Add(self.cbx_select, (1,2), border=PackBorder)
             self.cbx_select.Disable()
 
         if editable:
             self.cbx_edit = wx.CheckBox(self, wx.ID_ANY, label='Edit')
-            gbs.Add(self.cbx_edit, (1,3), border=0)
+            gbs.Add(self.cbx_edit, (1,3), border=PackBorder)
             self.cbx_edit.Disable()
 
         sbs.Add(gbs)
@@ -312,14 +308,11 @@ class AppFrame(wx.Frame):
 
         # put map view in left of horizontal box
         sl_box = self.make_gui_view(parent)
-        all_display.Add(sl_box, proportion=1, border=0, flag=wx.EXPAND)
+        all_display.Add(sl_box, proportion=1, border=PackBorder, flag=wx.EXPAND)
 
-        # small spacer here - separate view and controls
-        all_display.AddSpacer(HSpacerSize)
-
-        # add controls to right of spacer
+        # add controls at right
         controls = self.make_gui_controls(parent)
-        all_display.Add(controls, proportion=0, border=0)
+        all_display.Add(controls, proportion=0, border=PackBorder)
 
         parent.SetSizerAndFit(all_display)
 
@@ -338,8 +331,7 @@ class AppFrame(wx.Frame):
 
         # lay out objects
         box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
-        #box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
-        box.Add(self.pyslip, proportion=1, border=0, flag=wx.EXPAND)
+        box.Add(self.pyslip, proportion=1, border=PackBorder, flag=wx.EXPAND)
 
         return box
 
@@ -354,84 +346,51 @@ class AppFrame(wx.Frame):
         # all controls in vertical box sizer
         controls = wx.BoxSizer(wx.VERTICAL)
 
-        # add the map level in use widget
+        # put level and position into one 'controls' position
+        l_p = wx.BoxSizer(wx.HORIZONTAL)
         level = self.make_gui_level(parent)
-#        controls.Add(level, proportion=0, flag=wx.EXPAND|wx.ALL)
-
-        # vertical spacer
-        controls.AddSpacer(VSpacerSize)
-
-        # add the mouse position feedback stuff
+        l_p.Add(level, proportion=0, flag=wx.EXPAND|wx.ALL)
         mouse = self.make_gui_mouse(parent)
-        controls.Add(mouse, proportion=0, flag=wx.EXPAND|wx.ALL)
-
-        # vertical spacer
-        controls.AddSpacer(VSpacerSize)
+        l_p.Add(mouse, proportion=0, flag=wx.EXPAND|wx.ALL)
+        controls.Add(l_p, proportion=0, flag=wx.EXPAND|wx.ALL)
 
         # controls for map-relative points layer
         point = self.make_gui_point(parent)
         controls.Add(point, proportion=0, flag=wx.EXPAND|wx.ALL)
 
-        # vertical spacer
-        controls.AddSpacer(VSpacerSize)
-
         # controls for view-relative points layer
         point_view = self.make_gui_point_view(parent)
         controls.Add(point_view, proportion=0, flag=wx.EXPAND|wx.ALL)
-
-        # vertical spacer
-        controls.AddSpacer(VSpacerSize)
 
         # controls for map-relative image layer
         image = self.make_gui_image(parent)
         controls.Add(image, proportion=0, flag=wx.EXPAND|wx.ALL)
 
-        # vertical spacer
-        controls.AddSpacer(VSpacerSize)
-
         # controls for map-relative image layer
         image_view = self.make_gui_image_view(parent)
         controls.Add(image_view, proportion=0, flag=wx.EXPAND|wx.ALL)
-
-        # vertical spacer
-        controls.AddSpacer(VSpacerSize)
 
         # controls for map-relative text layer
         text = self.make_gui_text(parent)
         controls.Add(text, proportion=0, flag=wx.EXPAND|wx.ALL)
 
-        # vertical spacer
-        controls.AddSpacer(VSpacerSize)
-
         # controls for view-relative text layer
         text_view = self.make_gui_text_view(parent)
         controls.Add(text_view, proportion=0, flag=wx.EXPAND|wx.ALL)
-
-        # vertical spacer
-        controls.AddSpacer(VSpacerSize)
 
         # controls for map-relative polygon layer
         poly = self.make_gui_poly(parent)
         controls.Add(poly, proportion=0, flag=wx.EXPAND|wx.ALL)
 
-        # vertical spacer
-        controls.AddSpacer(VSpacerSize)
-
         # controls for view-relative polygon layer
         poly_view = self.make_gui_poly_view(parent)
         controls.Add(poly_view, proportion=0, flag=wx.EXPAND|wx.ALL)
 
-        # vertical spacer
-        controls.AddSpacer(VSpacerSize)
-
-        # controls for map-relative polygon layer
+        # controls for map-relative polyline layer
         polyline = self.make_gui_polyline(parent)
         controls.Add(polyline, proportion=0, flag=wx.EXPAND|wx.ALL)
 
-        # vertical spacer
-        controls.AddSpacer(VSpacerSize)
-
-        # controls for view-relative polygon layer
+        # controls for view-relative polyline layer
         polyline_view = self.make_gui_polyline_view(parent)
         controls.Add(polyline_view, proportion=0, flag=wx.EXPAND|wx.ALL)
 
@@ -447,15 +406,16 @@ class AppFrame(wx.Frame):
 
         # create objects
         txt = wx.StaticText(parent, wx.ID_ANY, 'Level: ')
-        self.map_level = wx.StaticText(parent, wx.ID_ANY, ' ')
+        self.map_level = ROTextCtrl(parent, '', size=(30,-1),
+                                    tooltip='Shows map zoom level')
 
         # lay out the controls
         sb = AppStaticBox(parent, 'Map level')
         box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
         box.Add(txt, border=PackBorder, flag=(wx.ALIGN_CENTER_VERTICAL
-                                     |wx.ALIGN_RIGHT|wx.LEFT))
+                                              |wx.ALIGN_RIGHT|wx.LEFT))
         box.Add(self.map_level, proportion=0, border=PackBorder,
-                flag=wx.RIGHT|wx.TOP)
+                flag=wx.LEFT|wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL)
 
         return box
 
@@ -469,7 +429,7 @@ class AppFrame(wx.Frame):
 
         # create objects
         txt = wx.StaticText(parent, wx.ID_ANY, 'Lon/Lat: ')
-        self.mouse_position = ROTextCtrl(parent, '', size=(150,-1),
+        self.mouse_position = ROTextCtrl(parent, '', size=(120,-1),
                                          tooltip=('Shows the mouse '
                                                   'longitude and latitude '
                                                   'on the map'))
@@ -479,7 +439,8 @@ class AppFrame(wx.Frame):
         box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
         box.Add(txt, border=PackBorder, flag=(wx.ALIGN_CENTER_VERTICAL
                                      |wx.ALIGN_RIGHT|wx.LEFT))
-        box.Add(self.mouse_position, proportion=1, border=PackBorder,
+        #box.Add(self.mouse_position, proportion=1, border=PackBorder,
+        box.Add(self.mouse_position, proportion=0, border=PackBorder,
                 flag=wx.RIGHT|wx.TOP|wx.BOTTOM)
 
         return box
@@ -571,8 +532,8 @@ class AppFrame(wx.Frame):
         """
 
         # create widgets
-        text_obj = LayerControl(parent, 'Text, map relative %s'
-                                        % str(MRTextShowLevels),
+        text_obj = LayerControl(parent,
+                                'Text, map relative %s' % str(MRTextShowLevels),
                                 selectable=True, editable=False)
 
         # tie to event handler(s)
@@ -1110,7 +1071,6 @@ class AppFrame(wx.Frame):
                                               name='<sel_image_view_point>')
 
             # add polygon outline around image
-#            (x, y) = event.vposn
             p_dict = {'placement': img_placement, 'width': 3, 'colour': 'green', 'closed': True}
             poly_place_coords = {'ne': '(((-CR_Width,0),(0,0),(0,CR_Height),(-CR_Width,CR_Height)),p_dict)',
                                  'ce': '(((-CR_Width,-CR_Height/2.0),(0,-CR_Height/2.0),(0,CR_Height/2.0),(-CR_Width,CR_Height/2.0)),p_dict)',
@@ -1488,7 +1448,7 @@ class AppFrame(wx.Frame):
 
         if event.state:
             self.polyline_layer = \
-                self.pyslip.AddPolylineLayer(PolyData, map_rel=True,
+                self.pyslip.AddPolylineLayer(PolylineData, map_rel=True,
                                              visible=True,
                                              show_levels=MRPolyShowLevels,
                                              name='<polyline_layer>')
@@ -1712,7 +1672,7 @@ class AppFrame(wx.Frame):
         global PointViewData, PointViewDataColour
         global ImageData
         global ImageViewData
-        global TextData # , TextDataColour
+        global TextData
         global TextViewData
         global TextViewDataPlace, TextViewDataOffX, TextViewDataOffY
         global PolyData, PolyViewData
@@ -1754,10 +1714,10 @@ class AppFrame(wx.Frame):
                          (-26,-3),(-25,-7),(-24,-7),(-23,-7),(-22,-7),(-21,-8),
                          (-20,-9),(-20,-10),(-20,-11),(-20,-12),(-21,-13),
                          (-22,-14),(-23,-14),(-24,-14),(25,-14)]            # P
-        PointViewDataColour = '#00ff0020'	# very transparent
+        PointViewDataColour = '#00000040'	# transparent
         PointViewDataPlacement = 'se'
 
-        # create image data
+        # create image data - shipwrecks off the Australian east coast
         ImageData = [# Agnes Napier - 1855
                      (160.0, -30.0, ShipImg, {'placement': 'cc'}),
                      # Venus - 1826
@@ -1789,9 +1749,6 @@ class AppFrame(wx.Frame):
                                    3: SelGlassyImg5,
                                    4: SelGlassyImg6}
         self.current_layer_img_layer = None
-#        for x in range(80):
-#            for y in range(40):
-#                ImageData.append((-30+x*2, y*2-30, GlassyImg4))
 
         ImageViewData = [(0, 0, CompassRoseGraphic, {'placement': 'ne',
                                                      'data': 'compass rose'})]
@@ -1848,7 +1805,6 @@ class AppFrame(wx.Frame):
                     (100.49, +13.75, 'กรุงเทพมหานคร (Bangkok)', capital),
                     ( 77.56, +34.09, 'གླེ་(Leh)', text_placement),
                     (84.991275, 24.695102, 'बोधगया (Bodh Gaya)', text_placement)])
-#        TextDataColour = '#ffffff40'
 
         TextViewData = [(0, 0, '%s %s' % (DemoName, DemoVersion))]
         TextViewDataPlace = 'cn'
@@ -1871,10 +1827,10 @@ class AppFrame(wx.Frame):
                          'placement': 'cn', 'offset_y': 1})]
 
         PolylineData = [(((150.0,10.0),(160.0,20.0),(170.0,10.0),(165.0,0.0),(155.0,0.0)),
-                          {'width': 3, 'colour': 'green'})]
+                          {'width': 3, 'colour': 'blue'})]
 
         PolylineViewData = [(((50,100),(100,50),(150,100),(100,150)),
-                            {'width': 3, 'colour': '#R00fffff', 'placement': 'cn'})]
+                            {'width': 3, 'colour': '#00ffffff', 'placement': 'cn'})]
 
         # define layer ID variables & sub-checkbox state variables
         self.point_layer = None

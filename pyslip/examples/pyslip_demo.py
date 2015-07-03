@@ -30,16 +30,8 @@ except ImportError:
     msg = 'Sorry, you must install wxPython'
     tkinter_error(msg)
 
-
-# If we have log.py, well and good.  Otherwise ...
-try:
-    import pyslip.log as log
-    log = log.Log('pyslip.log', log.Log.NOTSET)
-except ImportError:
-    def log(*args, **kwargs):
-        pass
-
 import pyslip
+import pyslip.log as log
 
 
 ######

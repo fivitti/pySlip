@@ -34,13 +34,20 @@ except ImportError:
 import traceback
 import wx
 
-# if we don't have log.py, don't crash
 try:
-    import pyslip.log as log
+    from . import log
     log = log.Log('pyslip.log', log.Log.DEBUG)
-except ImportError:
-    def log(*args, **kwargs):
+except ImportError as e:
+    # if we don't have log.py, don't crash
+    # fake all log(), log.debug(), ... calls
+    def logit(*args, **kwargs):
         pass
+    log = logit
+    log.debug = logit
+    log.info = logit
+    log.warn = logit
+    log.error = logit
+    log.critical = logit
 
 
 # type of SELECT events
@@ -1889,7 +1896,7 @@ class PySlip(_BufferedCanvas):
                         delayed_paint = True
                 self.is_box_select = False
             else:
-                log('OnLeftUp: single selection?')
+                log.debug('OnLeftUp: single selection?')
 
                 # possible point selection, get click point in view coords
                 clickpt_v = event.GetPositionTuple()

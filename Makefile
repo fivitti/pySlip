@@ -14,3 +14,5 @@ test:
 
 clean:
 	rm -Rf *.pyc *.log *.jpg
+	(cd pyslip; rm -Rf *.pyc *.log)
+	(cd pyslip/examples; rm -Rf *.pyc *.log)

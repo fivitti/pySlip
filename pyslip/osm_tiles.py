@@ -24,10 +24,17 @@ import pycacheback
 # if we don't have log.py, don't crash
 try:
     import log
-    log = log.Log('pyslip.log', log.Log.DEBUG)
-except ImportError:
-    def log(*args, **kwargs):
+except ImportError as e:
+    # if we don't have log.py, don't crash
+    # fake all log(), log.debug(), ... calls
+    def logit(*args, **kwargs):
         pass
+    log = logit
+    log.debug = logit
+    log.info = logit
+    log.warn = logit
+    log.error = logit
+    log.critical = logit
 
 
 # attributes used for tileset introspection

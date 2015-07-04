@@ -92,14 +92,16 @@ class Log(object):
 
             self.logfile = logfile
 
-            self.critical('='*55)
-            self.critical('Log started on %s, log level=%s'
-                 % (datetime.datetime.now().ctime(),
-                    self._level_num_to_name[level]))
-            self.critical('-'*55)
+            self.debug('='*55)
+            self.debug('Log started on %s, log level=%s'
+                       % (datetime.datetime.now().ctime(),
+                          self._level_num_to_name[level]))
+            self.debug('-'*55)
 
     def check_level(self, level):
         """Check the level value for legality.
+
+        level  a numeric logging level
         
         If 'level' is invalid, raise Exception.  If valid, return value.
         """
@@ -148,7 +150,7 @@ class Log(object):
             level = self.level
 
         # are we going to log?
-        if level < self.level:
+        if level < self.level or self.level <= 0:
             return
 
         if msg is None:

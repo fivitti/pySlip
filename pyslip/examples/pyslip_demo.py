@@ -4,16 +4,24 @@
 """
 pySlip demonstration program with either GMT or OSM tiles.
 
-Usage: pyslip_demo.py [(-d|--debug) <level>] [-h|--help] [(-t|--tiles) (GMT|OSM)]
+Usage: pyslip_demo.py <options>
 
-where <level> is either a numeric debug level in the range [0, 50] or one of
-the symbolic debug level names:
-    CRITICAL 50
-    ERROR    40
-    WARNING  30
-    INFO     20
-    DEBUG    10
-    NOTSET    0
+where <options> is zero or more of:
+    -d|--debug <level>
+        where <level> is either a numeric debug level in the range [0, 50] or
+        one of the symbolic debug level names:
+            NOTSET    0     nothing is logged (default)
+            DEBUG    10     everything is logged
+            INFO     20     less than DEBUG, informational debugging
+            WARNING  30     less than INFO, only non-fatal warnings
+            ERROR    40     less than WARNING
+            CRITICAL 50     less than ERROR
+    -h|--help
+        prints this help and stops
+    -t|--tiles (GMT|OSM)
+        selects either GMT or OSM tiles (GMT is  default)
+    -x
+
 """
 
 
@@ -70,12 +78,25 @@ MRPointShowLevels = [3, 4]
 MRImageShowLevels = [3, 4]
 MRTextShowLevels = None #[3, 4]
 MRPolyShowLevels = [3, 4]
+MRPolylineShowLevels = [3, 4]
 
 # the number of decimal places in a lon/lat display
 LonLatPrecision = 3
 
 # startup size of the application
 DefaultAppSize = (1100, 770)
+
+# default deltas for various layer types
+DefaultPointMapDelta = 40
+DefaultPointViewDelta = 40
+DefaultImageMapDelta = 40
+DefaultImageViewDelta = 40
+DefaultTextMapDelta = 40
+DefaultTextViewDelta = 40
+DefaultPolygonMapDelta = 40
+DefaultPolygonViewDelta = 40
+DefaultPolylineMapDelta = 40
+DefaultPolylineViewDelta = 40
 
 # image used for shipwrecks, glassy buttons, etc
 ShipImg = 'graphics/shipwreck.png'
@@ -650,7 +671,7 @@ class AppFrame(wx.Frame):
                                           # offset points to exercise placement
                                           offset_x=25, offset_y=25, visible=True,
                                           show_levels=MRPointShowLevels,
-                                          delta=40,
+                                          delta=DefaultPointMapDelta,
                                           placement='nw',   # check placement
                                           name='<pt_layer>')
         else:
@@ -759,6 +780,7 @@ class AppFrame(wx.Frame):
                 self.pyslip.AddPointLayer(PointViewData, map_rel=False,
                                           placement=PointViewDataPlacement,
                                           colour=PointViewDataColour, radius=1,
+                                          delta=DefaultPointViewDelta,
                                           visible=True,
                                           name='<point_view_layer>')
         else:
@@ -846,6 +868,7 @@ class AppFrame(wx.Frame):
             self.image_layer = \
                 self.pyslip.AddImageLayer(ImageData, map_rel=True,
                                           visible=True,
+                                          delta=DefaultImageMapDelta,
                                           show_levels=MRImageShowLevels,
                                           name='<image_layer>')
         else:
@@ -957,6 +980,7 @@ class AppFrame(wx.Frame):
         if event.state:
             self.image_view_layer = \
                 self.pyslip.AddImageLayer(ImageViewData, map_rel=False,
+                                          delta=DefaultImageViewDelta,
                                           visible=True,
                                           name='<image_view_layer>')
         else:
@@ -1093,6 +1117,7 @@ class AppFrame(wx.Frame):
             self.text_layer = \
                 self.pyslip.AddTextLayer(TextData, map_rel=True,
                                          name='<text_layer>', visible=True,
+                                         delta=DefaultTextMapDelta,
                                          show_levels=MRTextShowLevels,
                                          placement='ne')
         else:
@@ -1183,6 +1208,7 @@ class AppFrame(wx.Frame):
             self.text_view_layer = \
                 self.pyslip.AddTextLayer(TextViewData, map_rel=False,
                                          name='<text_view_layer>',
+                                         delta=DefaultTextViewDelta,
                                          placement=TextViewDataPlace,
                                          visible=True,
                                          fontsize=24, textcolour='#0000ff',
@@ -1267,6 +1293,7 @@ class AppFrame(wx.Frame):
             self.poly_layer = \
                 self.pyslip.AddPolygonLayer(PolyData, map_rel=True,
                                             visible=True,
+                                            delta=DefaultPolygonMapDelta,
                                             show_levels=MRPolyShowLevels,
                                             name='<poly_layer>')
         else:
@@ -1355,6 +1382,7 @@ class AppFrame(wx.Frame):
         if event.state:
             self.poly_view_layer = \
                 self.pyslip.AddPolygonLayer(PolyViewData, map_rel=False,
+                                            delta=DefaultPolygonViewDelta,
                                             name='<poly_view_layer>',
                                             placement='cn', visible=True,
                                             fontsize=24, colour='#0000ff')
@@ -1401,7 +1429,6 @@ class AppFrame(wx.Frame):
         """
 
         selection = event.selection
-        log('####: selection=%s' % str(selection))
 
         # point select, turn any previous selection off
         if self.sel_poly_view_layer:
@@ -1442,6 +1469,7 @@ class AppFrame(wx.Frame):
             self.polyline_layer = \
                 self.pyslip.AddPolylineLayer(PolylineData, map_rel=True,
                                              visible=True,
+                                             delta=DefaultPolylineMapDelta,
                                              show_levels=MRPolyShowLevels,
                                              name='<polyline_layer>')
         else:
@@ -1500,7 +1528,6 @@ class AppFrame(wx.Frame):
         # .seletion: [(poly,attr), ...]
         selection = event.selection
         relsel = event.relsel
-        log('####: selection=%s, relsel=%s' % (str(selection), str(relsel)))
 
         # turn any previous selection off
         if self.sel_polyline_layer:
@@ -1543,7 +1570,7 @@ class AppFrame(wx.Frame):
                                           name='<sel_polyline>')
         return True
 
-##### view-relative polygon layer
+##### view-relative polyline layer
 
     def polylineViewOnOff(self, event):
         """Handle OnOff event for map-relative polyline layer control."""
@@ -1551,6 +1578,7 @@ class AppFrame(wx.Frame):
         if event.state:
             self.polyline_view_layer = \
                 self.pyslip.AddPolylineLayer(PolylineViewData, map_rel=False,
+                                             delta=DefaultPolylineViewDelta,
                                              name='<polyline_view_layer>',
                                              placement='cn', visible=True,
                                              fontsize=24, colour='#0000ff')
@@ -1601,7 +1629,6 @@ class AppFrame(wx.Frame):
 
         selection = event.selection
         relsel = event.relsel
-        log('####: selection=%s, relsel=%s' % (str(selection), str(relsel)))
 
         # point select, turn any previous selection off
         if self.sel_polyline_view_layer:
@@ -1613,16 +1640,25 @@ class AppFrame(wx.Frame):
 
         # for box OR single selection
         if selection:
-            # first,, display selected segment
+            # first, display selected segment
             if relsel:
+                # get original polyline attributes, get placement and offsets
+                (_, attributes) = PolylineViewData[0]
+                place = attributes.get('placement', None)
+                offset_x = attributes.get('offset_x', 0)
+                offset_y = attributes.get('offset_y', 0)
+
                 self.sel_polyline_view_layer2 = \
                     self.pyslip.AddPointLayer(relsel, map_rel=False,
-                                              colour='#00ff00',
+                                              placement=place,
+                                              offset_x=offset_x,
+                                              offset_y=offset_y,
+                                              colour='#4040ff',
                                               radius=5, visible=True,
                                               show_levels=[3,4],
-                                              name='<sel_view_poly2>')
+                                              name='<sel_view_polyline2>')
 
-            # get selected polygon points into form for point display layer
+            # get selected polyline points into form for point display layer
             points = []
             for (poly, d) in selection:
                 try:
@@ -1639,9 +1675,9 @@ class AppFrame(wx.Frame):
             self.sel_polyline_view_layer = \
                 self.pyslip.AddPointLayer(points, map_rel=False,
                                           colour='#ff00ff',
-                                          radius=5, visible=True,
+                                          radius=3, visible=True,
                                           show_levels=[3,4],
-                                          name='<sel_view_poly>')
+                                          name='<sel_view_polyline>')
 
         return True
 
@@ -1973,8 +2009,10 @@ if __name__ == '__main__':
         usage()
         sys.exit(1)
 
+    debug = 0              # no logging
     tile_source = 'GMT'
-    debug = 0       # NOTSET
+    inspector = False
+
     for (opt, param) in opts:
         if opt in ['-d', '--debug']:
             debug = param
@@ -1983,6 +2021,9 @@ if __name__ == '__main__':
             sys.exit(0)
         elif opt in ('-t', '--tiles'):
             tile_source = param
+        elif opt == '-x':
+            inspector = True
+
     tile_source = tile_source.lower()
 
     # convert any symbolic debug level to a number
@@ -2008,13 +2049,12 @@ if __name__ == '__main__':
         usage('Bad tile source: %s' % tile_source)
         sys.exit(3)
 
-
     # start wxPython app
     app = wx.App()
     app_frame = AppFrame(tile_dir=tile_dir) #, levels=[0,1,2,3,4])
     app_frame.Show()
 
-    if debug >= 40:
+    if inspector:
         import wx.lib.inspection
         wx.lib.inspection.InspectionTool().Show()
 

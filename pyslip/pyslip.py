@@ -36,7 +36,7 @@ import wx
 
 try:
     from . import log
-    log = log.Log('pyslip.log', log.Log.DEBUG)
+    log = log.Log('pyslip.log')
 except ImportError as e:
     # if we don't have log.py, don't crash
     # fake all log(), log.debug(), ... calls
@@ -2646,6 +2646,7 @@ class PySlip(_BufferedCanvas):
         """
 
         result = None
+        delta = layer.delta
 
         # get correct 'point in polyline' routine
         pip = self.point_near_polyline_view
@@ -2653,12 +2654,12 @@ class PySlip(_BufferedCanvas):
             pip = self.point_near_polyline_geo
 
         # check polyons in layer, choose first where point is close enough
-        for (poly, place, width, colour, x_off, y_off, udata) in layer.data:
-            seg = pip(poly, point, place, x_off, y_off)
+        for (polyline, place, width, colour, x_off, y_off, udata) in layer.data:
+            seg = pip(point, polyline, place, x_off, y_off, delta=delta)
             if seg:
-                sel = (poly, {'placement': place,
-                              'offset_x': x_off,
-                              'offset_y': y_off})
+                sel = (polyline, {'placement': place,
+                                  'offset_x': x_off,
+                                  'offset_y': y_off})
                 result = ([sel], udata, seg)
                 break
 
@@ -2813,8 +2814,7 @@ class PySlip(_BufferedCanvas):
 # flag for the select event as the user controls selectability on a
 # layer-by-layer basis.
 
-    def RaiseEventSelect(self, mposn, vposn, layer=None, selection=None,
-                         data=None, relsel=None):
+    def RaiseEventSelect(self, mposn, vposn, layer=None, selection=None):
         """Raise a point SELECT event.
 
         mposn      map coordinates of the mouse click
@@ -2830,7 +2830,8 @@ class PySlip(_BufferedCanvas):
         mouse click positions.
         """
 
-        log('RaiseEventSelect: mposn=%s, vposn=%s, selection=%s, data=%s, relsel=%s' % (str(mposn), str(vposn), str(selection), str(data), str(relsel)))
+        log('RaiseEventSelect: mposn=%s, vposn=%s, selection=%s'
+                % (str(mposn), str(vposn), str(selection)))
 
         event = _PySlipEvent(_myEVT_PYSLIP_SELECT, self.GetId())
 
@@ -2993,53 +2994,61 @@ class PySlip(_BufferedCanvas):
         # decide if (ptx,pty) is inside polygon
         return self.point_inside_polygon(view, view_poly)
 
-    def point_near_polyline_geo(self, poly, geo, placement, offset_x, offset_y):
+    def point_near_polyline_geo(self, point, poly, placement,
+                                offset_x, offset_y, delta):
         """Decide if a point is near a map-relative polyline.
 
+        point      tuple (xgeo, ygeo) of point position
         poly       an iterable of (x,y) where x,y are in geo coordinates
-        geo        tuple (xgeo, ygeo) of point position
         placement  a placement string
         offset_x   X offset in pixels
         offset_y   Y offset in pixels
+        delta      distance (squared) before selection allowed
 
         The 'geo' point, while in geo coordinates, must be a click point
         within the view.
 
-        Returns first line segment of polyline that is 'close enough'
+        Returns nearest line segment of polyline that is 'close enough'
         to the point.  Returns None if no segment close enough.
         """
 
-        log('point_near_polyline_geo: poly=%s, geo=%s, placement=%s, offset_x=%s, offset_y=%s'
-                % (str(poly), str(geo), placement, str(offset_x), str(offset_y)))
+        return self.point_near_polyline(point, poly, delta=delta)
 
-        return self.point_near_polyline(geo, poly)
-
-    def point_near_polyline_view(self, poly, view, place, x_off, y_off):
+    def point_near_polyline_view(self, point, polyline, place,
+                                 x_off, y_off, delta):
         """Decide if a point is near a view-relative polyline.
 
-        poly      an iterable of (x,y) where x,y are in view (pixel) coordinates
-        ptx       point X coordinate (view)
-        pty       point Y coordinate (view)
+        point     a tuple (viewx, viewy) of selection point in view coordinates
+        polyline  an iterable of (x,y) where x,y are in view (pixel) coordinates
         place     a placement string
         offset_x  X offset in pixels
         offset_y  Y offset in pixels
+        delta     distance (squared) before selection allowed
 
-        Returns first line segment of polyline that is 'close enough'
+        Returns nearest line segment of polyline that is 'close enough'
         to the point.  Returns None if no segment close enough.
         """
 
-        log('point_near_polyline_view: poly=%s, view=%s, place=%s, x_off=%s, y_off=%s'
-                % (str(poly), str(view), place, str(x_off), str(y_off)))
+        # dict to convert selected segment back to orig coords
+        back_to_orig = {}
 
         # convert polyline and placement into list of (x,y) tuples
         view_poly = []
-        for (x, y) in poly:
-            (x, y) = self.point_placement(place, x, y, x_off, y_off,
-                                          self.view_width, self.view_height)
-            view_poly.append((x, y))
+        for (x, y) in polyline:
+            (vx, vy) = self.point_placement(place, x, y, x_off, y_off,
+                                            self.view_width, self.view_height)
+            view_poly.append((vx, vy))
+            back_to_orig[(vx, vy)] = (x, y)
 
-        # decide if (ptx,pty) is inside polyline
-        return self.point_near_polyline(view, view_poly)
+        # decide if (ptx,pty) is inside polyline (gets nearest segment)
+        seg = self.point_near_polyline(point, view_poly, delta=delta)
+
+        if seg:
+            (s1, s2) = seg
+            s1 = back_to_orig[s1]
+            s2 = back_to_orig[s2]
+            return (s1, s2)
+        return None
 
     def point_near_polyline(self, point, polyline, delta=50):
         """Decide if point is within 'delta' of the given polyline.
@@ -3048,18 +3057,25 @@ class PySlip(_BufferedCanvas):
         polyline  iterable of (x, y) point tuples
         delta     maximum distance before 'not close enough'
 
-        Returns first line segment of polyline that is 'close enough'
+        Returns nearest line segment of polyline that is 'close enough'
         to the point.  Returns None if no segment close enough.
         """
 
+        result = None
+        last_delta = delta + 1
+
         last_pp = polyline[0]
         for pp in polyline[1:]:
-            if self.point_segment_distance(point, last_pp, pp) <= delta:
-                log('point_near_polyline: returning %s' % str((last_pp, pp)))
-                return (last_pp, pp)
+            d = self.point_segment_distance(point, last_pp, pp)
+            if d < last_delta:
+                result = (last_pp, pp)
+                last_delta = d
             last_pp = pp
 
-        return None
+        if last_delta > delta:
+            result = None
+
+        return result
 
     def point_segment_distance(self, point, s1, s2):
         """Get distance from a point to segment (s1, s2).

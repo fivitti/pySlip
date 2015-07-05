@@ -1491,7 +1491,7 @@ class AppFrame(wx.Frame):
             if self.sel_polyline_layer:
                 self.pyslip.ShowLayer(self.sel_polyline_layer)
             if self.sel_polyline_layer2:
-                self.pyslip.ShowLayer(self.sel_polyline_layeri2)
+                self.pyslip.ShowLayer(self.sel_polyline_layer2)
         else:
             self.pyslip.HideLayer(self.polyline_layer)
             if self.sel_polyline_layer:
@@ -1598,10 +1598,14 @@ class AppFrame(wx.Frame):
 
         if event.state:
             self.pyslip.ShowLayer(self.polyline_view_layer)
+            if self.sel_polyline_view_layer:
+                self.pyslip.ShowLayer(self.sel_polyline_view_layer)
             if self.sel_polyline_view_layer2:
                 self.pyslip.ShowLayer(self.sel_polyline_view_layer2)
         else:
             self.pyslip.HideLayer(self.polyline_view_layer)
+            if self.sel_polyline_view_layer:
+                self.pyslip.HideLayer(self.sel_polyline_view_layer)
             if self.sel_polyline_view_layer2:
                 self.pyslip.HideLayer(self.sel_polyline_view_layer2)
 

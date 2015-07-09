@@ -74,7 +74,7 @@ class _BufferedCanvas(wx.Panel):
         """Initialise the canvas.
 
         parent  reference to 'parent' widget
-        id      the unique widget ID (NB: shadows builtin 'id')
+        id      the unique widget ID (NB: shadows builtin 'id()')
         pos     canvas position
         size    canvas size
         style   wxPython style
@@ -255,7 +255,7 @@ class Resource(object):
 
         return self.layers
 
-    def GetLayer(self, name):
+    def GetLayerByName(self, name):
         """Get a layer by name.
 
         name  name of the layer to get
@@ -282,15 +282,14 @@ class Resource(object):
         return len(self.layers)
 
 ###############################################################################
-# The wxPython pySlip widget events.
-# define the events that are raised by the pySlip widget
+# Define the events that are raised by the pySlip widget.
 ###############################################################################
 
 # level change
 _myEVT_PYSLIP_LEVEL = wx.NewEventType()
 EVT_PYSLIP_LEVEL = wx.PyEventBinder(_myEVT_PYSLIP_LEVEL, 1)
 
-# mouse geo position change
+# mouse position change
 _myEVT_PYSLIP_POSITION = wx.NewEventType()
 EVT_PYSLIP_POSITION = wx.PyEventBinder(_myEVT_PYSLIP_POSITION, 1)
 
@@ -419,14 +418,6 @@ class PySlip(_BufferedCanvas):
     DefaultPolygonViewOffsetY = 0
     DefaultPolygonViewData = None
 
-    # default polyline attributes - view relative
-    DefaultPolylineViewPlacement = 'nw'
-    DefaultPolylineViewWidth = 1
-    DefaultPolylineViewColour = wx.RED
-    DefaultPolylineViewOffsetX = 0
-    DefaultPolylineViewOffsetY = 0
-    DefaultPolylineViewData = None
-
     # default polyline attributes - map view
     DefaultPolylinePlacement = 'cc'
     DefaultPolylineWidth = 1
@@ -434,6 +425,14 @@ class PySlip(_BufferedCanvas):
     DefaultPolylineOffsetX = 0
     DefaultPolylineOffsetY = 0
     DefaultPolylineData = None
+
+    # default polyline attributes - view relative
+    DefaultPolylineViewPlacement = 'cc'
+    DefaultPolylineViewWidth = 1
+    DefaultPolylineViewColour = wx.RED
+    DefaultPolylineViewOffsetX = 0
+    DefaultPolylineViewOffsetY = 0
+    DefaultPolylineViewData = None
 
     # layer type values
     (TypePoint, TypeImage, TypeText, TypePolygon, TypePolyline) = range(5)
@@ -473,9 +472,9 @@ class PySlip(_BufferedCanvas):
         self.tile_size_x = self.tiles.tile_size_x
         self.tile_size_y = self.tiles.tile_size_y
 
-    ######
-    # set some internal state
-    ######
+        ######
+        # set some internal state
+        ######
 
         # view size in pixels, set properly in OnSize()
         self.view_width = None
@@ -523,9 +522,6 @@ class PySlip(_BufferedCanvas):
 
         # default cursor
         self.default_cursor = wx.CURSOR_DEFAULT
-
-        # cache values
-#        self.last_setfont = None        # last font and size (font, size)
 
         # state of the SHIFT key
         self.shift_down = False
@@ -585,6 +581,7 @@ class PySlip(_BufferedCanvas):
         bmp    tile bitmap
 
         We don't use any of the above - just redraw the entire canvas.
+        This is because the new tile is already in the in-memory cache.
         """
 
         self.Update()
@@ -1399,9 +1396,9 @@ class PySlip(_BufferedCanvas):
                 dc.SetBrush(wx.TRANSPARENT_BRUSH)
                 dc.DrawLines(poly)
 
-    ######
-    # Positioning methods
-    ######
+######
+# Positioning methods
+######
 
     def GotoPosition(self, geo):
         """Set view to centre on a geo position in the current level.
@@ -1449,7 +1446,7 @@ class PySlip(_BufferedCanvas):
         Centre an area and zoom to view such that the area will fill
         approximately 50% of width or height, whichever is greater.
 
-        Use the ppd_x and ppd_y values in the level 'tiles.info' file.
+        Use the ppd_x and ppd_y values in the level 'tiles' file.
         """
 
         # unpack area width/height (degrees)
@@ -1468,9 +1465,9 @@ class PySlip(_BufferedCanvas):
 
         self.GotoLevelAndPosition(level, geo)
 
-    ######
-    # Convert between geo and view coordinates
-    ######
+######
+# Convert between geo and view coordinates
+######
 
     def Geo2View(self, geo):
         """Convert a geo coord to view.
@@ -1503,14 +1500,14 @@ class PySlip(_BufferedCanvas):
 
         return None
 
-    ######
-    # PEX - Point & EXtension.
-    #
-    # These functions encapsulate the code that finds the extent of an object.
-    # They all return a tuple (point, extent) where 'point' is the placement
-    # point of an object (or list of points for a polygon) and an 'extent'
-    # tuple (lx, rx, ty, by) [left, right, top, bottom].
-    ######
+######
+# PEX - Point & EXtension.
+#
+# These functions encapsulate the code that finds the extent of an object.
+# They all return a tuple (point, extent) where 'point' is the placement
+# point of an object (or list of points for a polygon) and an 'extent'
+# tuple (lx, rx, ty, by) [left, right, top, bottom].
+######
 
     def PexPoint(self, place, geo, x_off, y_off, radius):
         """Given a point object (geo coords) get point/extent in view coords.
@@ -1735,9 +1732,9 @@ class PySlip(_BufferedCanvas):
 
         return (res_pt, res_ex)
 
-    ######
-    # GUI stuff
-    ######
+######
+# GUI stuff
+######
 
     def OnMove(self, event):
         """Handle a mouse move (map drag or rectangle select).
@@ -2081,10 +2078,10 @@ class PySlip(_BufferedCanvas):
             if self.ZoomToLevel(self.level - 1):
                 self.ZoomOut(gposn)
 
-    ######
-    # Method that overrides _BufferedCanvas.Draw() method.
-    # This code does the actual drawing of tiles, layers, etc.
-    ######
+######
+# Method that overrides _BufferedCanvas.Draw() method.
+# This code does the actual drawing of tiles, layers, etc.
+######
 
     def Draw(self, dc):
         """Do actual map tile and layers drawing.
@@ -2158,9 +2155,9 @@ class PySlip(_BufferedCanvas):
             dc.DrawRectangle(self.sbox_1_x, self.sbox_1_y,
                              self.sbox_w, self.sbox_h)
 
-    ######
-    # Miscellaneous
-    ######
+######
+# Miscellaneous
+######
 
     def View2Geo(self, view):
         """Convert a view coords position to a geo coords position.
@@ -2275,9 +2272,9 @@ class PySlip(_BufferedCanvas):
 
         return False
 
-    ######
-    # Select helpers - get objects that were selected
-    ######
+######
+# Select helpers - get objects that were selected
+######
 
     def GetPointInLayer(self, layer, pt):
         """Determine if clicked location selects a point in layer data.
@@ -2294,9 +2291,9 @@ class PySlip(_BufferedCanvas):
         selection point, which is meaningless for point selection.
         """
 
-# TODO: speed this up?  Do we need to??
-# http://en.wikipedia.org/wiki/Kd-tree
-# would need to create kd-tree in AddLayer()
+        # TODO: speed this up?  Do we need to??
+        # http://en.wikipedia.org/wiki/Kd-tree
+        # would need to create kd-tree in AddLayer()
 
         result = None
         delta = layer.delta
@@ -2707,16 +2704,16 @@ class PySlip(_BufferedCanvas):
             return None
         return (selection, data, None)
 
-    ######
-    # The next two routines could be folded into one as they are the same.
-    # However, if we ever implement a 'staged' zoom, we need both routines.
-    #
-    # A 'staged' zoom is something similar to google maps zoom where the
-    # existing map image is algorithimically enlarged (or diminished) and
-    # is later overwritten with the actual zoomed map tiles.  I think google
-    # is using tiles that can be enlarged (diminished) without too much
-    # reduction in detail (SVG-ish), but we'll never be doing *that*!
-    ######
+######
+# The next two routines could be folded into one as they are the same.
+# However, if we ever implement a 'staged' zoom, we need both routines.
+#
+# A 'staged' zoom is something similar to google maps zoom where the
+# existing map image is algorithimically enlarged (or diminished) and
+# is later overwritten with the actual zoomed map tiles.  I think google
+# is using tiles that can be enlarged (diminished) without too much
+# reduction in detail (SVG-ish), but we'll never be doing *that*!
+######
 
     def ZoomIn(self, gposn):
         """Zoom map in to the next level.
@@ -2752,9 +2749,9 @@ class PySlip(_BufferedCanvas):
         # redraw the map
         self.Update()
 
-    ######
-    # Routines for pySlip events
-    ######
+######
+# Routines for pySlip events
+######
 
     def SetLevelChangeEvent(self, event):
         """Set event routine on level change.
@@ -2913,9 +2910,9 @@ class PySlip(_BufferedCanvas):
 
         self.GetEventHandler().ProcessEvent(event)
 
-    ######
-    # Various pySlip utility routines
-    ######
+######
+# Various pySlip utility routines
+######
 
     @staticmethod
     def point_inside_polygon(point, poly):
@@ -3105,50 +3102,50 @@ class PySlip(_BufferedCanvas):
 
         return dx**2 + dy**2
 
-    def GeoExtent(self, geo, place, w, h, x_off, y_off):
-        """Get geo extent of area.
-
-        geo           tuple (xgeo, ygeo) of position to place area at
-        place         placement string ('cc', 'se', etc)
-        w, h          area width and height (pixels)
-        x_off, y_off  x and y offset (geo coords)
-
-        Return the geo extent of the area: (llon, rlon, tlat, blat)
-        where:
-            llon  longitude of left side of area
-            rlon  longitude of right side of area
-            tlat  top latitude of area
-            blat  bottom latitude of area
-
-        If object extent is totally off the map, return None.
-        """
-
-        # decide if object CAN be in view
-        # check point in lower, right or lower-right quadrants
-        (xgeo, ygeo) = geo
-        if self.view_rlon < xgeo or self.view_blat > ygeo:
-            return None
-
-        # now, figure out point view posn and extent posn from geo coords+
-        (vx, vy) = self.Geo2View(geo)
-        (tlvx, tlvy) = self.extent_placement(place, vx, vy, x_off, y_off, w, h)
-        # tlvx = top-left view X coordinate
-
-        # now get bottom_right corner in pixel coords
-        brvx = tlvx + w
-        brvy = tlvy + h
-        # brvx = bottom-right view X coordinate
-
-        # decide if object is completely on-view
-        if (brvx < -w or brvy < -h
-                or tlvx > self.view_width or tlvy > self.view_height):
-            return None
-
-        # return geo extent
-        (llon, tlat) = self.View2Geo((tlvx, tlvy))
-        (rlon, blat) = self.View2Geo((brvx, brvy))
-
-        return (llon, rlon, tlat, blat)
+#    def GeoExtent(self, geo, place, w, h, x_off, y_off):
+#        """Get geo extent of area.
+#
+#        geo           tuple (xgeo, ygeo) of position to place area at
+#        place         placement string ('cc', 'se', etc)
+#        w, h          area width and height (pixels)
+#        x_off, y_off  x and y offset (geo coords)
+#
+#        Return the geo extent of the area: (llon, rlon, tlat, blat)
+#        where:
+#            llon  longitude of left side of area
+#            rlon  longitude of right side of area
+#            tlat  top latitude of area
+#            blat  bottom latitude of area
+#
+#        If object extent is totally off the map, return None.
+#        """
+#
+#        # decide if object CAN be in view
+#        # check point in lower, right or lower-right quadrants
+#        (xgeo, ygeo) = geo
+#        if self.view_rlon < xgeo or self.view_blat > ygeo:
+#            return None
+#
+#        # now, figure out point view posn and extent posn from geo coords+
+#        (vx, vy) = self.Geo2View(geo)
+#        (tlvx, tlvy) = self.extent_placement(place, vx, vy, x_off, y_off, w, h)
+#        # tlvx = top-left view X coordinate
+#
+#        # now get bottom_right corner in pixel coords
+#        brvx = tlvx + w
+#        brvy = tlvy + h
+#        # brvx = bottom-right view X coordinate
+#
+#        # decide if object is completely on-view
+#        if (brvx < -w or brvy < -h
+#                or tlvx > self.view_width or tlvy > self.view_height):
+#            return None
+#
+#        # return geo extent
+#        (llon, tlat) = self.View2Geo((tlvx, tlvy))
+#        (rlon, blat) = self.View2Geo((brvx, brvy))
+#
+#        return (llon, rlon, tlat, blat)
 
     def ViewExtent(self, place, view, w, h, x_off, y_off, dcw=0, dch=0):
         """Get view extent of area.

@@ -3,7 +3,7 @@
 
 """Test PySlip map-relative text.
 
-Usage: test_maprel_text.py [-h] [-t (OSM|GMT)]                                                                                     
+Usage: test_maprel_text.py [-h] [-t (OSM|GMT)]
 """
 
 
@@ -19,7 +19,7 @@ DefaultAppSize = (600, 400)
 
 MinTileLevel = 0
 InitViewLevel = 2
-InitViewPosition = (133.87, -23.7)      # Alice Springs                                                                             
+InitViewPosition = (133.87, -23.7)      # Alice Springs
 
 TextMapData = [(151.20, -33.85, 'Sydney cc', {'placement': 'cc'}),
                (144.95, -37.84, 'Melbourne ne', {'placement': 'ne'}),
@@ -113,11 +113,11 @@ if __name__ == '__main__':
     import getopt
     import traceback
 
-    # print some usage information                                                                                                  
-    def usage(msg=None):                                                                                                            
-        if msg:                                                                                                                     
-            print(msg+'\n')                                                                                                         
-        print(__doc__)        # module docstring used                                                                               
+    # print some usage information
+    def usage(msg=None):
+        if msg:
+            print(msg+'\n')
+        print(__doc__)        # module docstring used
 
     # our own handler for uncaught exceptions
     def excepthook(type, value, tb):
@@ -131,34 +131,34 @@ if __name__ == '__main__':
     # plug our handler into the python system
     sys.excepthook = excepthook
 
-    # decide which tiles to use, default is GMT                                                                                     
-    argv = sys.argv[1:]                                                                                                             
-                                                                        
-    try:                                                                                                                            
-        (opts, args) = getopt.getopt(argv, 'ht:', ['help', 'tiles='])                                                               
-    except getopt.error:                                                                                                            
-        usage()                                                                                                                     
-        sys.exit(1)                                                                                                                 
+    # decide which tiles to use, default is GMT
+    argv = sys.argv[1:]
 
-    tile_source = 'GMT'                                                                                                             
-    for (opt, param) in opts:                                                                                                       
-        if opt in ['-h', '--help']:                                                                                                 
-            usage()                                                                                                                 
-            sys.exit(0)                                                                                                             
-        elif opt in ('-t', '--tiles'):                                                                                              
-            tile_source = param                                                                                                     
-    tile_source = tile_source.lower()                                                                                               
+    try:
+        (opts, args) = getopt.getopt(argv, 'ht:', ['help', 'tiles='])
+    except getopt.error:
+        usage()
+        sys.exit(1)
 
-    # set up the appropriate tile source                                                                                            
-    if tile_source == 'gmt':                                                                                                        
+    tile_source = 'GMT'
+    for (opt, param) in opts:
+        if opt in ['-h', '--help']:
+            usage()
+            sys.exit(0)
+        elif opt in ('-t', '--tiles'):
+            tile_source = param
+    tile_source = tile_source.lower()
+
+    # set up the appropriate tile source
+    if tile_source == 'gmt':
         from pyslip.gmt_local_tiles import GMTTiles as Tiles
-        tile_dir = 'gmt_tiles'                                                                                                      
-    elif tile_source == 'osm':                                                                                                      
-        from pyslip.osm_tiles import OSMTiles as Tiles                                                                                     
-        tile_dir = 'osm_tiles'                                                                                                      
-    else:                                                                                                                           
-        usage('Bad tile source: %s' % tile_source)                                                                                  
-        sys.exit(3)                                                                                                                 
+        tile_dir = 'gmt_tiles'
+    elif tile_source == 'osm':
+        from pyslip.osm_tiles import OSMTiles as Tiles
+        tile_dir = 'osm_tiles'
+    else:
+        usage('Bad tile source: %s' % tile_source)
+        sys.exit(3)
 
     # start wxPython app
     app = wx.App()

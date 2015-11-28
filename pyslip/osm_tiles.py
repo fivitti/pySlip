@@ -23,7 +23,7 @@ import pycacheback
 
 # if we don't have log.py, don't crash
 try:
-    import log
+    import pyslip.log as log
 except ImportError as e:
     # if we don't have log.py, don't crash
     # fake all log(), log.debug(), ... calls

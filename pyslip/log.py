@@ -5,7 +5,6 @@ A simple logger.
 
 Simple usage:
     import log
-    log = log.Log('my_log.log', log.Log.DEBUG)
     log('A line in the log at the default level (DEBUG)')
     log('A log line at WARN level', Log.WARN)
     log.info('log line issued at INFO level')
@@ -50,7 +49,7 @@ class Log(object):
     DefaultMaxFname = 15
 
 
-    def __init__(self, logfile=None, level=NOTSET, append=False,
+    def __init__(self, logfile=None, level=DEBUG, append=False,
                  max_fname=DefaultMaxFname):
         """Initialise the logging object.
 
@@ -102,7 +101,7 @@ class Log(object):
         """Check the level value for legality.
 
         level  a numeric logging level
-        
+
         If 'level' is invalid, raise Exception.  If valid, return value.
         """
 
@@ -114,8 +113,8 @@ class Log(object):
             raise Exception(msg)
 
         if not 0 <= level <= 50:
-            msg = "Logging level invalid: '%s'" % str(level)                                                                                       
-            print(msg)                                                                                                                             
+            msg = "Logging level invalid: '%s'" % str(level)
+            print(msg)
             raise Exception(msg)
 
         return level

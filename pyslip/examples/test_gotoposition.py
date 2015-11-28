@@ -20,10 +20,15 @@ from pyslip.osm_tiles import OSMTiles as Tiles
 # If we have log.py, well and good.  Otherwise ...
 try:
     import pyslip.log as log
-    log = log.Log('pyslip.log', log.Log.DEBUG)
 except ImportError:
-    def log(*args, **kwargs):
+    def logit(*args, **kwargs):
         pass
+    log = logit
+    log.debug = logit
+    log.info = logit
+    log.warn = logit
+    log.error = logit
+    log.critical = logit
 
 ######
 # Various demo constants

@@ -63,7 +63,7 @@ class _BufferedCanvas(wx.Panel):
     """Implements a buffered, flicker-free canvas widget.
 
     This class is based on:
-        http://wiki.wxpython.org/index.cgi/BufferedCanvas
+        http://wiki.wxpython.org/BufferedCanvas
     """
 
     # The backing buffer

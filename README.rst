@@ -3,11 +3,9 @@ pySlip
 
 pySlip is a 'slip map' widget for wxPython.
 
-::
-
-    This is the GitHub version of the `Google Code pySlip project <https://code.google.com/p/pyslip>`_ .
-    The 2.X versions of code will remain on Google.
-    The 3.X versions will be developed here on GitHub.
+**This is the GitHub version of the `Google Code pySlip project <https://code.google.com/p/pyslip>`_ .
+The 2.X versions of code will remain on Google.
+The 3.X versions will be developed here on GitHub.**
 
 During my work writing geophysical applications in python I often wanted to
 display a map that was very large - many hundreds of thousands of pixels in

@@ -5,7 +5,7 @@ pySlip is a 'slip map' widget for wxPython.
 
 ::
 
-    This is the GitHub version of the `Google Code pySlip project <https://code.google.com/p/pyslip>`_.
+    This is the GitHub version of the `Google Code pySlip project <https://code.google.com/p/pyslip>`_ .
     The 2.X versions of code will remain on Google.
     The 3.X versions will be developed here on GitHub.
 

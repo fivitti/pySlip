@@ -111,14 +111,12 @@ if __name__ == '__main__':
         usage()
         sys.exit(1)
 
-    tile_source = 'GMT'
     for (opt, param) in opts:
         if opt in ['-h', '--help']:
             usage()
             sys.exit(0)
-    tile_source = tile_source.lower()
 
-    # set up the tile sources - make them global
+    # set up the tile sources - GMT and OSM
     from pyslip.gmt_local_tiles import GMTTiles
     gmt_tile_dir = 'gmt_tiles'
 
@@ -128,6 +126,7 @@ if __name__ == '__main__':
 
     # start wxPython app
     app = wx.App()
-    TestFrame(gmt_tile_dir, osm_tile_dir).Show()
+    #TestFrame(gmt_tile_dir, osm_tile_dir).Show()
+    TestFrame(gmt_tile_dir, gmt_tile_dir).Show()
     app.MainLoop()
 

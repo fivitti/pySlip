@@ -18,7 +18,8 @@ import pycacheback
 
 # if we don't have log.py, don't crash
 try:
-    import log
+    import pyslip.log
+    log = log.Log('pyslip.log')
 except ImportError as e:
     # if we don't have log.py, don't crash
     # fake all log(), log.debug(), ... calls
@@ -190,33 +191,6 @@ class GMTTiles(tiles.Tiles):
         Return tile from the local cache, return None if not found.
         """
 
-#        # the tile 'key'
-#        tile_key = (x, y)
-#
-#        try:
-#            # if tile in cache, return it from there
-#            bitmap = self.cache[level][tile_key]
-#            self.lru[level].remove((x, y))      # remove, add at recent end
-#            self.lru[level].insert(0, tile_key)
-#        except KeyError:
-#            # tile *not* in memory cache look in disk cache
-#            tile_dir = os.path.join(self.cache_dir, '%d' % level)
-#            tile_path = os.path.join(tile_dir, self.TilePath % (x, y))
-#            if not os.path.exists(tile_path):
-#                # tile not there, return None
-#                bitmap = None
-#        else:
-#            # we have the tile file - read into memory, cache & return
-#            image = wx.Image(tile_path, wx.BITMAP_TYPE_ANY)
-#            bitmap = image.ConvertToBitmap()
-#            self.cache[level][tile_key] = bitmap
-#            self.lru[level].insert(0, tile_key)
-#
-#        # newly cached tile, check if we must drop old cached tiles
-#        self._trim_cache(level)
-#
-#        return bitmap
-
         return self.cache[(self.level, x, y)]
 
     def Geo2Tile(self, geo):
@@ -231,17 +205,26 @@ class GMTTiles(tiles.Tiles):
         This is an easy transformation as geo coordinates are Cartesian.
         """
 
+        log('Geo2Tile: id(self)=%0x, geo=%s' % (id(self), str(geo)))
+
         (xgeo, ygeo) = geo
 
         # get extent information
         (min_xgeo, max_xgeo, min_ygeo, max_ygeo) = self.extent
 
+        log('Geo2Tile: self.extent=%s' % str(self.extent))
+
         # get 'geo-like' coords with origin at top-left
         x = xgeo - min_xgeo
         y = max_ygeo - ygeo
 
+        log('Geo2Tile: x=%s, y=%s' % (str(x), str(y)))
+
         tdeg_x = self.tile_size_x / self.ppd_x
         tdeg_y = self.tile_size_y / self.ppd_y
+
+        log('Geo2Tile: tdeg_x=%s, tdeg_y=%s' % (str(tdeg_x), str(tdeg_y)))
+        log('Geo2Tile: returning: %s' % str((x/tdeg_x, y/tdeg_y)))
 
         return (x/tdeg_x, y/tdeg_y)
 

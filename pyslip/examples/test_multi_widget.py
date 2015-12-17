@@ -30,7 +30,7 @@ InitViewPosition = (100.51, 13.75)      # Bangkok
 ################################################################################
 
 class TestFrame(wx.Frame):
-    def __init__(self, gmt_tile_dir, osm_tile_dir):
+    def __init__(self, gmt_tile_src, osm_tile_src):
         wx.Frame.__init__(self, None, size=DefaultAppSize,
                           title=('PySlip %s - multiwidget test'
                                  % pyslip.__version__))
@@ -40,8 +40,8 @@ class TestFrame(wx.Frame):
         self.panel.ClearBackground()
 
         # create the tile source object
-        self.gmt_tile_src = GMTTiles(gmt_tile_dir)
-        self.osm_tile_src = OSMTiles(osm_tile_dir)
+        self.gmt_tile_src = gmt_tile_src
+        self.osm_tile_src = osm_tile_src
 
         # build the GUI
         box = wx.BoxSizer(wx.VERTICAL)
@@ -119,14 +119,15 @@ if __name__ == '__main__':
     # set up the tile sources - GMT and OSM
     from pyslip.gmt_local_tiles import GMTTiles
     gmt_tile_dir = 'gmt_tiles'
+    gmt_tile_src = GMTTiles(gmt_tile_dir)
 
     from pyslip.osm_tiles import OSMTiles
     osm_tile_dir = 'osm_tiles'
-
+    osm_tile_src = GMTTiles(gmt_tile_dir)
+    #osm_tile_src = OSMTiles(osm_tile_dir)
 
     # start wxPython app
     app = wx.App()
-    #TestFrame(gmt_tile_dir, osm_tile_dir).Show()
-    TestFrame(gmt_tile_dir, gmt_tile_dir).Show()
+    TestFrame(gmt_tile_src, osm_tile_src).Show()
     app.MainLoop()
 

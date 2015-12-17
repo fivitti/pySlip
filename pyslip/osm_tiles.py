@@ -24,6 +24,7 @@ import pycacheback
 # if we don't have log.py, don't crash
 try:
     import pyslip.log as log
+    log = log.Log('pyslip.log')
 except ImportError as e:
     # if we don't have log.py, don't crash
     # fake all log(), log.debug(), ... calls
@@ -711,6 +712,8 @@ class OSMTiles(tiles.Tiles):
 
         Code taken from [http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames]
         """
+
+        log('Geo2Tile(OSM): id(self)=%0x, geo=%s' % (id(self), str(geo)))
 
         (xgeo, ygeo) = geo
         lat_rad = math.radians(ygeo)

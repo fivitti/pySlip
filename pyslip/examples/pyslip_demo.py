@@ -21,7 +21,7 @@ where <options> is zero or more of:
     -t|--tiles (GMT|OSM)
         selects either GMT or OSM tiles (GMT is  default)
     -x
-
+        turns on the wxPython InspectionTool
 """
 
 

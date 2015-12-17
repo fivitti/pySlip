@@ -451,6 +451,10 @@ class PySlip(_BufferedCanvas):
         **kwargs     keyword args for Panel
         """
 
+        print 'vars=%s' % str(vars().has_key('id'))
+        print 'globals=%s' % str(globals().has_key('id'))
+        print 'locals=%s' % str(locals().has_key('id'))
+
         # create and initialise the base panel
         _BufferedCanvas.__init__(self, parent=parent, **kwargs)
         self.SetBackgroundColour(PySlip.BackgroundColour)
@@ -1764,6 +1768,8 @@ class PySlip(_BufferedCanvas):
                 (self.sbox_w, self.sbox_h) = (x - self.sbox_1_x,
                                               y - self.sbox_1_y)
             elif not self.last_drag_x is None:
+                log('OnMove: map drag, ID=%0x' % id(self))
+
                 # no, just a map drag
                 self.was_dragging = True
                 dx = self.last_drag_x - x
@@ -1800,6 +1806,7 @@ class PySlip(_BufferedCanvas):
                 self.last_drag_x = x
                 self.last_drag_y = y
 
+                log('OnMove: ID=%0x, calling .RecalcViewLimits()' % id(self))
                 self.RecalcViewLimits()
 
             # redraw client area
@@ -1839,8 +1846,6 @@ class PySlip(_BufferedCanvas):
         Could be end of a drag or point or box selection.  If it's the end of
         a drag we don't do a lot.  If a selection we process that.
         """
-
-        log('OnLeftUp: entered')
 
         # turn off any dragging
         self.last_drag_x = self.last_drag_y = None
@@ -1886,15 +1891,12 @@ class PySlip(_BufferedCanvas):
                             sel = self.layerBSelHandler[l.type](l,
                                                                 (ll_vx, ll_vy),
                                                                 (tr_vx, tr_vy))
-                        log('OnLeftUp: BOX sel=%s' % str(sel))
                         self.RaiseEventBoxSelect(layer=l, selection=sel)
 
                         # user code possibly updated screen
                         delayed_paint = True
                 self.is_box_select = False
             else:
-                log.debug('OnLeftUp: single selection?')
-
                 # possible point selection, get click point in view coords
                 clickpt_v = event.GetPositionTuple()
 
@@ -1911,7 +1913,6 @@ class PySlip(_BufferedCanvas):
                             sel = self.layerPSelHandler[l.type](l, clickpt_g)
                         else:
                             sel = self.layerPSelHandler[l.type](l, clickpt_v)
-                        log('OnLeftUp: SINGLE sel=%s' % str(sel))
                         self.RaiseEventSelect(mposn=clickpt_g, vposn=clickpt_v,
                                               layer=l, selection=sel)
                         # user code possibly updated screen
@@ -2100,6 +2101,9 @@ class PySlip(_BufferedCanvas):
         if the view is smaller than the map.
         """
 
+        print str(vars().has_key('id'))
+        log('Draw: self=%0x, .view_offset_x=%s, .view_offset_y=%s' % (id(self), str(self.view_offset_x), str(self.view_offset_y)))
+
         # figure out how to draw tiles
         if self.view_offset_x < 0:
             # View > Map in X - centre in X direction
@@ -2126,6 +2130,9 @@ class PySlip(_BufferedCanvas):
             stop_y_tile = min(self.tiles.num_tiles_y-1, stop_y_tile) + 1
             row_list = range(start_y_tile, stop_y_tile)
             y_pix_start = start_y_tile * self.tile_size_y - self.view_offset_y
+
+        log('Draw: self=%s, x_pix_start=%s, y_pix_start=%s' % (str(self), str(x_pix_start), str(y_pix_start)))
+        log('Draw: self=%s, col_list=%s, row_list=%s' % (str(self), str(col_list), str(row_list)))
 
         # start pasting tiles onto the view
         # use x_pix and y_pix to place tiles
@@ -2232,11 +2239,17 @@ class PySlip(_BufferedCanvas):
         values have been set.  All are map pixel values.
         """
 
+        log('RecalcViewLimits: ID=%0x, .view_offset_x=%s, .view_offset_y=%s, .tiles.tile_size_x=%s, .tiles.tile_size_y=%s'
+            % (id(self), str(self.view_offset_x), str(self.view_offset_y), str(self.tiles.tile_size_x), str(self.tiles.tile_size_y)))
+
         # get geo coords of top-left of view
         tltile_x = float(self.view_offset_x) / self.tiles.tile_size_x
         tltile_y = float(self.view_offset_y) / self.tiles.tile_size_y
         (self.view_llon, self.view_tlat) = self.tiles.Tile2Geo((tltile_x,
                                                                 tltile_y))
+
+        log('tltile_x=%s, tltile_y=%s' % (str(tltile_x), str(tltile_y)))
+        log('self.view_llon=%s, self.view_tlat=%s' % (str(self.view_llon), str(self.view_tlat)))
 
         # then get geo coords of bottom-right of view
         tltile_x = (float(self.view_offset_x + self.view_width)
@@ -2245,6 +2258,8 @@ class PySlip(_BufferedCanvas):
                         / self.tiles.tile_size_y)
         (self.view_rlon, self.view_blat) = self.tiles.Tile2Geo((tltile_x,
                                                                 tltile_y))
+        log('tltile_x=%s, tltile_y=%s' % (str(tltile_x), str(tltile_y)))
+        log('self.view_rlon=%s, self.view_blat=%s' % (str(self.view_rlon), str(self.view_blat)))
 
     def ZoomToLevel(self, level):
         """Use a new tile level.
@@ -2253,6 +2268,9 @@ class PySlip(_BufferedCanvas):
 
         Returns True if all went well.
         """
+
+        log('ZoomToLevel: id(self)=%0x, level=%d, .min_level=%d, .max_level=%d'
+            % (id(self), level, self.min_level, self.max_level))
 
         if self.min_level <= level <= self.max_level:
             self.tiles.UseLevel(level)
@@ -2826,9 +2844,6 @@ class PySlip(_BufferedCanvas):
         event.layer_id and .selection are None and .mposn and .vposn are the
         mouse click positions.
         """
-
-        log('RaiseEventSelect: mposn=%s, vposn=%s, selection=%s'
-                % (str(mposn), str(vposn), str(selection)))
 
         event = _PySlipEvent(_myEVT_PYSLIP_SELECT, self.GetId())
 

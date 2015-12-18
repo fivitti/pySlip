@@ -1,4 +1,4 @@
-include pyslip/examples/README.md
+include pyslip/examples/README.rst
 include pyslip/examples/*.py
 include pyslip/examples/gmt_tiles.tar.gz
 include pyslip/examples/graphics/*

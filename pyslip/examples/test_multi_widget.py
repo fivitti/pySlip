@@ -10,6 +10,9 @@ Usage: test_multi_widget.py [-h]
 import wx
 import pyslip
 
+from pyslip.gmt_local_tiles import GMTTiles
+from pyslip.osm_tiles import OSMTiles
+
 
 ######
 # Various demo constants
@@ -30,7 +33,13 @@ InitViewPosition = (100.51, 13.75)      # Bangkok
 ################################################################################
 
 class TestFrame(wx.Frame):
-    def __init__(self, gmt_tile_src, osm_tile_src):
+    def __init__(self, gmt_tile_dir, osm_tile_dir):
+        """Initialize the widget.
+
+        gmt_tile_dir  path to directory of GMT tiles
+        osm_tile_dir  directory for OSM tile caching
+        """
+
         wx.Frame.__init__(self, None, size=DefaultAppSize,
                           title=('PySlip %s - multiwidget test'
                                  % pyslip.__version__))
@@ -40,26 +49,33 @@ class TestFrame(wx.Frame):
         self.panel.ClearBackground()
 
         # create the tile source object
-        self.gmt_tile_src = gmt_tile_src
-        self.osm_tile_src = osm_tile_src
+        self.gmt_tile_dir = gmt_tile_dir
+        self.osm_tile_dir = osm_tile_dir
+
+        # note that we a unique Tile source for each widget
+        # sharing directories is OK
+        gmt_tile_src_1 = GMTTiles(gmt_tile_dir)
+        gmt_tile_src_2 = GMTTiles(gmt_tile_dir)
+        osm_tile_src_1 = OSMTiles(osm_tile_dir)
+        osm_tile_src_2 = OSMTiles(osm_tile_dir)
 
         # build the GUI
         box = wx.BoxSizer(wx.VERTICAL)
         gsz = wx.GridSizer(rows=2, cols=2, vgap=5, hgap=5)
 
-        self.pyslip1 = pyslip.PySlip(self.panel, tile_src=self.gmt_tile_src,
+        self.pyslip1 = pyslip.PySlip(self.panel, tile_src=gmt_tile_src_1,
                                      min_level=MinTileLevel)
         gsz.Add(self.pyslip1, flag=wx.ALL|wx.EXPAND)
 
-        self.pyslip2 = pyslip.PySlip(self.panel, tile_src=self.osm_tile_src,
+        self.pyslip2 = pyslip.PySlip(self.panel, tile_src=osm_tile_src_1,
                                      min_level=MinTileLevel)
         gsz.Add(self.pyslip2, flag=wx.ALL|wx.EXPAND)
 
-        self.pyslip3 = pyslip.PySlip(self.panel, tile_src=self.osm_tile_src,
+        self.pyslip3 = pyslip.PySlip(self.panel, tile_src=osm_tile_src_2,
                                      min_level=MinTileLevel)
         gsz.Add(self.pyslip3, flag=wx.ALL|wx.EXPAND)
 
-        self.pyslip4 = pyslip.PySlip(self.panel, tile_src=self.gmt_tile_src,
+        self.pyslip4 = pyslip.PySlip(self.panel, tile_src=gmt_tile_src_2,
                                      min_level=MinTileLevel)
         gsz.Add(self.pyslip4, flag=wx.ALL|wx.EXPAND)
 
@@ -117,17 +133,11 @@ if __name__ == '__main__':
             sys.exit(0)
 
     # set up the tile sources - GMT and OSM
-    from pyslip.gmt_local_tiles import GMTTiles
     gmt_tile_dir = 'gmt_tiles'
-    gmt_tile_src = GMTTiles(gmt_tile_dir)
-
-    from pyslip.osm_tiles import OSMTiles
     osm_tile_dir = 'osm_tiles'
-    osm_tile_src = GMTTiles(gmt_tile_dir)
-    #osm_tile_src = OSMTiles(osm_tile_dir)
 
     # start wxPython app
     app = wx.App()
-    TestFrame(gmt_tile_src, osm_tile_src).Show()
+    TestFrame(gmt_tile_dir, osm_tile_dir).Show()
     app.MainLoop()
 

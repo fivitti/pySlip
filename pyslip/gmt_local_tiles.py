@@ -18,8 +18,10 @@ import pycacheback
 
 # if we don't have log.py, don't crash
 try:
-    import pyslip.log
+    from . import log
     log = log.Log('pyslip.log')
+except AttributeError:
+    pass
 except ImportError as e:
     # if we don't have log.py, don't crash
     # fake all log(), log.debug(), ... calls
@@ -205,26 +207,17 @@ class GMTTiles(tiles.Tiles):
         This is an easy transformation as geo coordinates are Cartesian.
         """
 
-        log('Geo2Tile: id(self)=%0x, geo=%s' % (id(self), str(geo)))
-
         (xgeo, ygeo) = geo
 
         # get extent information
         (min_xgeo, max_xgeo, min_ygeo, max_ygeo) = self.extent
 
-        log('Geo2Tile: self.extent=%s' % str(self.extent))
-
         # get 'geo-like' coords with origin at top-left
         x = xgeo - min_xgeo
         y = max_ygeo - ygeo
 
-        log('Geo2Tile: x=%s, y=%s' % (str(x), str(y)))
-
         tdeg_x = self.tile_size_x / self.ppd_x
         tdeg_y = self.tile_size_y / self.ppd_y
-
-        log('Geo2Tile: tdeg_x=%s, tdeg_y=%s' % (str(tdeg_x), str(tdeg_y)))
-        log('Geo2Tile: returning: %s' % str((x/tdeg_x, y/tdeg_y)))
 
         return (x/tdeg_x, y/tdeg_y)
 

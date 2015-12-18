@@ -23,8 +23,10 @@ import pycacheback
 
 # if we don't have log.py, don't crash
 try:
-    import pyslip.log as log
+    from . import log
     log = log.Log('pyslip.log')
+except AttributeError:
+    pass
 except ImportError as e:
     # if we don't have log.py, don't crash
     # fake all log(), log.debug(), ... calls
@@ -588,8 +590,11 @@ class OSMTiles(tiles.Tiles):
         """Prepare to serve tiles from the required level.
 
         level  the required level
+
+        Returns True if zoom was performed, else False.
         """
 
+        # first, CAN we zoom to this level?
         if level not in self.levels:
             return None
         self.level = level
@@ -600,8 +605,10 @@ class OSMTiles(tiles.Tiles):
             return None
         (self.num_tiles_x, self.num_tiles_y, self.ppd_x, self.ppd_y) = info
 
-#        # store partial path to level dir (small speedup)
-#        self.tile_level_dir = os.path.join(self.tiles_dir, '%d' % level)
+        # flush any outstanding requests.
+        # we do this to speed up multiple-level zooms so the user doesn't
+        # sit waiting for tiles to arrive that won't be shown.
+        self.FlushRequests()
 
         # finally, return True
         return True
@@ -660,6 +667,12 @@ class OSMTiles(tiles.Tiles):
             self.request_queue.put(tile_key)
             self.queued_requests[tile_key] = True
 
+    def FlushRequests(self):
+        """Delete any outstanding tile requests."""
+
+        self.request_queue.queue.clear()
+        self.queued_requests.clear()
+
     def _tile_available(self, level, x, y, image, error):
         """A tile is available.
 
@@ -673,7 +686,7 @@ class OSMTiles(tiles.Tiles):
         # convert image to bitmap, save in cache
         bitmap = image.ConvertToBitmap()
 
-        # don't cche error images, maybe we can get it again later
+        # don't cache error images, maybe we can get it again later
         if not error:
             self._cache_tile(image, bitmap, level, x, y)
 
@@ -712,8 +725,6 @@ class OSMTiles(tiles.Tiles):
 
         Code taken from [http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames]
         """
-
-        log('Geo2Tile(OSM): id(self)=%0x, geo=%s' % (id(self), str(geo)))
 
         (xgeo, ygeo) = geo
         lat_rad = math.radians(ygeo)

@@ -56,6 +56,8 @@ class Tiles(object):
         be fully implemented in child classes.
         """
 
+        # don't forget to cancel any outstanding requests from servers
+
         raise Exception('You must override Tiles.UseLevel()')
 
     def GetTile(self, x, y):

@@ -19,6 +19,7 @@ test_osm_tiles.py        simplistic test of OSM tiles
 test_maprel_image.py     simple test of map-relative image placement
 test_maprel_poly.py      simple test of map-relative polygon placement
 test_maprel_text.py      simple test of map-relative text placement
+test_multi_widget.py     simple multi-widget test - look for interaction
 test_viewrel_image.py    simple test of view-relative image placement
 test_viewrel_point.py    simple test of view-relative point placement
 test_viewrel_poly.py     simple test of view-relative polygon placement

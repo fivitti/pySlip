@@ -1,4 +1,4 @@
-.. image:: tree/master/pyslip/examples/graphics/pyslip_logo.png
+.. image:: pyslip/examples/graphics/pyslip_logo.png
 
 pySlip
 ======

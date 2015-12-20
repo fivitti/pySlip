@@ -30,4 +30,8 @@ Map Tiles
 ---------
 
 Stamen Toner Tiles:
-Map tiles by `Stamen Design <http://stamen.com/>`_, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://www.openstreetmap.org/copyright">ODbL</a>.
+
+Map tiles by `Stamen Design <http://stamen.com/>`_, under
+`CC BY 3.0 <http://creativecommons.org/licenses/by/3.0>`_.  Data by
+`OpenStreetMap <http://openstreetmap.org>`_, under
+`ODbL <http://www.openstreetmap.org/copyright>`_.

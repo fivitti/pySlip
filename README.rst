@@ -1,4 +1,5 @@
 .. image:: pyslip/examples/graphics/pyslip_logo.png
+   :scale: 50 %
 
 pySlip
 ======

@@ -35,3 +35,10 @@ Map tiles by `Stamen Design <http://stamen.com/>`_, under
 `CC BY 3.0 <http://creativecommons.org/licenses/by/3.0>`_.  Data by
 `OpenStreetMap <http://openstreetmap.org>`_, under
 `ODbL <http://www.openstreetmap.org/copyright>`_.
+
+Stamen Watercolor Tiles:
+
+Map tiles by `Stamen Design <http://stamen.com/>`_, under
+`CC BY 3.0 <http://creativecommons.org/licenses/by/3.0>`_.  Data by
+`OpenStreetMap <http://openstreetmap.org>`_, under
+`CC BY SA <http://creativecommons.org/licenses/by-sa/3.0>`_.

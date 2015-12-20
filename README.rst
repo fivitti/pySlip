@@ -1,6 +1,4 @@
 .. image:: pyslip/examples/graphics/pyslip_logo.png
-    :align: right
-    :alt: A python behind a map
 
 pySlip
 ======

@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Test PySlip with multiple instances.
+"""Test PySlip with multiple widget instances.
 
 Usage: test_multi_widget.py [-h]
+
+Uses the GMT and OSM tiles.  Look for interactions of any sort between
+the widget instances.
 """
 
 
@@ -52,7 +55,7 @@ class TestFrame(wx.Frame):
         self.gmt_tile_dir = gmt_tile_dir
         self.osm_tile_dir = osm_tile_dir
 
-        # note that we a unique Tile source for each widget
+        # note that we need a unique Tile source for each widget
         # sharing directories is OK
         gmt_tile_src_1 = GMTTiles(gmt_tile_dir)
         gmt_tile_src_2 = GMTTiles(gmt_tile_dir)

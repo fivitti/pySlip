@@ -26,19 +26,37 @@ pySlip works on Linux, Mac and Windows.  It only works with wxPython 2.x and
 Python 2.x (at the moment).  At some point when wxPython matures I hope to
 move to Python 3.X and later versions of wxPython.
 
-Map Tiles
----------
+Map Tiles Licensing
+===================
 
-Stamen Toner Tiles:
+OpenStreetMap Tiles
+-------------------
+
+© OpenStreetMap contributors
+
+See the licence `here <http://www.openstreetmap.org/copyright>`_.
+
+Stamen Toner Tiles
+------------------
 
 Map tiles by `Stamen Design <http://stamen.com/>`_, under
 `CC BY 3.0 <http://creativecommons.org/licenses/by/3.0>`_.  Data by
 `OpenStreetMap <http://openstreetmap.org>`_, under
 `ODbL <http://www.openstreetmap.org/copyright>`_.
 
-Stamen Watercolor and Transport Tiles:
+Stamen Watercolor and Transport Tiles
+-------------------------------------
 
 Map tiles by `Stamen Design <http://stamen.com/>`_, under
 `CC BY 3.0 <http://creativecommons.org/licenses/by/3.0>`_.  Data by
 `OpenStreetMap <http://openstreetmap.org>`_, under
 `CC BY SA <http://creativecommons.org/licenses/by-sa/3.0>`_.
+
+Tile Usage
+==========
+
+Before using any tiles provided by pySlip modules, make sure you are not
+transgressing any usage rules applied by the tiles provider.
+
+Heavy usage of tiles probably means you should set up your own tile cache
+server and write a Tiles module that gets tiles from your own server(s).

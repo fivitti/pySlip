@@ -26,3 +26,8 @@ pySlip works on Linux, Mac and Windows.  It only works with wxPython 2.x and
 Python 2.x (at the moment).  At some point when wxPython matures I hope to
 move to Python 3.X and later versions of wxPython.
 
+Map Tiles
+---------
+
+Stamen Toner Tiles:
+Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://www.openstreetmap.org/copyright">ODbL</a>.

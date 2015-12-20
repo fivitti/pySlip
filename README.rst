@@ -29,7 +29,7 @@ move to Python 3.X and later versions of wxPython.
 Map Tiles
 ---------
 
-Stamen Toner and Watercolor Tiles:
+Stamen Toner Tiles:
 
 Map tiles by `Stamen Design <http://stamen.com/>`_, under
 `CC BY 3.0 <http://creativecommons.org/licenses/by/3.0>`_.  Data by

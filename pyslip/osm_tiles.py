@@ -42,11 +42,35 @@ except ImportError as e:
 
 
 # attributes used for tileset introspection
-tileset_name = ''
-tileset_shortname = ''
-tileset_version = '1.0'
+TilesetName = 'OpenStreetMap Tiles'
+TilesetShortName = 'OSM Tiles'
+TilesetVersion = '1.0'
 
-# tiles stored at <basepath>/<level>/<x>/<y>.jpg
+# the pool of tile servers used and tile path on server
+# to each tile, %params are (level, x, y)
+# OSM tiles
+TileServers = ['http://otile1.mqcdn.com',
+               'http://otile2.mqcdn.com',
+               'http://otile3.mqcdn.com',
+               'http://otile4.mqcdn.com']
+TileURLPath = '/tiles/1.0.0/osm/%d/%d/%d.jpg'   # zoom, column, row
+TileLevels = range(17)
+
+# maximum pending requests for each tile server
+MaxServerRequests = 2
+
+# set maximum number of in-memory tiles for each level
+DefaultMaxLRU = 10000
+
+# size of OSM tiles
+TileWidth = 256
+TileHeight = 256
+
+# where earlier-cached tiles will be
+# this can be overridden in the OSMTiles() constructor
+DefaultTilesDir = 'osm_tiles'
+
+# tiles stored at <DefaultTilesDir>/<level>/<x>/<y>.jpg
 TilePath = '%d/%d/%d.jpg'
 
 
@@ -142,8 +166,12 @@ class TileWorker(threading.Thread):
             except Exception as e:
                 # some sort of generic exception
                 error = True
-                log("'%s' exception getting tile %d,%d,%d from %s\n%s"
-                    % (e.__class__.__name__level, x, y, tile_url, str(e)))
+                log("exception getting tile %d,%d,%d from %s\n%s"
+                    % (level, x, y, tile_url, str(e)))
+            except:
+                error = True
+                log('exception getting tile %d,%d,%d from %s'
+                    % (level, x, y, tile_url))
 
             wx.CallAfter(self.callafter, level, x, y, image, error)
             self.requests.task_done()
@@ -152,37 +180,8 @@ class TileWorker(threading.Thread):
 # Class for OSM tiles.   Builds on tiles.Tiles.
 ################################################################################
 
-# where earlier-cached tiles will be
-# this can be overridden in the OSMTiles() constructor
-DefaultTilesDir = 'osm_tiles'
-
-# set maximum number of in-memory tiles for each level
-DefaultMaxLRU = 10000
-
 class OSMTiles(tiles.Tiles):
     """An object to source OSM tiles for pySlip."""
-
-    TileSize = 256      # width/height of tiles
-
-    # the pool of tile servers used and tile path on server
-    # to each tile, %params are (level, x, y)
-# OSM tiles
-    TileServers = ['http://otile1.mqcdn.com',
-                   'http://otile2.mqcdn.com',
-                   'http://otile3.mqcdn.com',
-                   'http://otile4.mqcdn.com']
-    TileURLPath = '/tiles/1.0.0/osm/%d/%d/%d.jpg'   # zoom, column, row
-    TileLevels = range(17)
-# satellite tiles
-#    TileServers = ['http://oatile1.mqcdn.com',
-#                   'http://oatile2.mqcdn.com',
-#                   'http://oatile3.mqcdn.com',
-#                   'http://oatile4.mqcdn.com']
-#    TileURLPath = '/tiles/1.0.0/sat/%d/%d/%d.jpg'
-#    TileLevels = range(13)         # [0, ..., 12] for the satellite tiles
-
-    # maximum pending requests for each tile server
-    MaxServerRequests = 2
 
     def __init__(self, tiles_dir=None, tile_levels=None, callback=None,
                  http_proxy=None, pending_file=None, error_file=None):
@@ -202,7 +201,7 @@ class OSMTiles(tiles.Tiles):
         self.tiles_dir = tiles_dir
 
         if tile_levels is None:
-            tile_levels = self.TileLevels
+            tile_levels = TileLevels
         self.levels = tile_levels
         self.level = None
 
@@ -223,7 +222,7 @@ class OSMTiles(tiles.Tiles):
                        % tiles_dir)
                 raise Exception(msg)
             os.makedirs(tiles_dir)
-        for level in self.TileLevels:
+        for level in self.levels:
             level_dir = os.path.join(tiles_dir, '%d' % level)
             if not os.path.isdir(level_dir):
                 os.makedirs(level_dir)
@@ -235,8 +234,8 @@ class OSMTiles(tiles.Tiles):
         self.queued_requests = {}
 
         # OSM tiles always (256, 256)
-        self.tile_size_x = self.TileSize
-        self.tile_size_y = self.TileSize
+        self.tile_size_x = TileWidth
+        self.tile_size_y = TileHeight
 
         # prepare the "pending" and "error" images
         if pending_file:
@@ -252,7 +251,7 @@ class OSMTiles(tiles.Tiles):
         self.error_tile = self.error_tile_image.ConvertToBitmap()
 
         # test for firewall - use proxy (if supplied)
-        test_url = self.TileServers[0] + self.TileURLPath % (0, 0, 0)
+        test_url = TileServers[0] + TileURLPath % (0, 0, 0)
         try:
             urllib2.urlopen(test_url)
         except:
@@ -277,9 +276,9 @@ class OSMTiles(tiles.Tiles):
         # set up the request queue and worker threads
         self.request_queue = Queue.Queue()  # entries are (level, x, y)
         self.workers = []
-        for server in self.TileServers:
-            for num_threads in range(self.MaxServerRequests):
-                worker = TileWorker(server, self.TileURLPath,
+        for server in TileServers:
+            for num_threads in range(MaxServerRequests):
+                worker = TileWorker(server, TileURLPath,
                                     self.request_queue, self._tile_available,
                                     self.error_tile_image)
                 self.workers.append(worker)

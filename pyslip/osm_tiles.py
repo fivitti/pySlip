@@ -48,11 +48,11 @@ TilesetVersion = '1.0'
 
 # the pool of tile servers used and tile path on server
 # to each tile, %params are (level, x, y)
-# OSM tiles
 TileServers = ['http://otile1.mqcdn.com',
                'http://otile2.mqcdn.com',
                'http://otile3.mqcdn.com',
-               'http://otile4.mqcdn.com']
+               'http://otile4.mqcdn.com',
+              ]
 TileURLPath = '/tiles/1.0.0/osm/%d/%d/%d.jpg'   # zoom, column, row
 TileLevels = range(17)
 
@@ -159,19 +159,10 @@ class TileWorker(threading.Thread):
                 f = urllib2.urlopen(urllib2.Request(tile_url))
                 if f.info().getheader('Content-Type') == 'image/jpeg':
                     image = wx.ImageFromStream(f, wx.BITMAP_TYPE_JPEG)
-            except urllib2.HTTPError as e:
+            except (urllib2.HTTPError, Exception) as e:
                 error = True
-                log('HTTPError exception getting tile %d,%d,%d from %s\n%s'
-                    % (level, x, y, tile_url, str(e)))
-            except Exception as e:
-                # some sort of generic exception
-                error = True
-                log("exception getting tile %d,%d,%d from %s\n%s"
-                    % (level, x, y, tile_url, str(e)))
-            except:
-                error = True
-                log('exception getting tile %d,%d,%d from %s'
-                    % (level, x, y, tile_url))
+                log('%s exception getting tile %d,%d,%d from %s\n%s'
+                    % (type(e).__name__, level, x, y, tile_url, e.message))
 
             wx.CallAfter(self.callafter, level, x, y, image, error)
             self.requests.task_done()
@@ -254,8 +245,9 @@ class OSMTiles(tiles.Tiles):
         test_url = TileServers[0] + TileURLPath % (0, 0, 0)
         try:
             urllib2.urlopen(test_url)
-        except:
-            log('Error doing simple connection to: %s' % test_url)
+        except Exception as e:
+            log('%s exception doing simple connection to: %s'
+                % (type(e).__name__, test_url))
             log(''.join(traceback.format_exc()))
 
             if http_proxy:

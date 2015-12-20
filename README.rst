@@ -36,7 +36,7 @@ Map tiles by `Stamen Design <http://stamen.com/>`_, under
 `OpenStreetMap <http://openstreetmap.org>`_, under
 `ODbL <http://www.openstreetmap.org/copyright>`_.
 
-Stamen Watercolor Tiles:
+Stamen Watercolor and Transport Tiles:
 
 Map tiles by `Stamen Design <http://stamen.com/>`_, under
 `CC BY 3.0 <http://creativecommons.org/licenses/by/3.0>`_.  Data by

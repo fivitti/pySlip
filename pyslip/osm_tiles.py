@@ -15,7 +15,6 @@ import traceback
 import urllib2
 import Queue
 import wx
-from wx.lib.embeddedimage import PyEmbeddedImage
 
 import tiles
 import pycacheback
@@ -27,6 +26,7 @@ try:
     from . import log
     log = log.Log('pyslip.log')
 except AttributeError:
+    # means log already set up
     pass
 except ImportError as e:
     # if we don't have log.py, don't crash
@@ -41,19 +41,28 @@ except ImportError as e:
     log.critical = logit
 
 
+###############################################################################
+# Change values below here to configure an internet tile source.
+###############################################################################
+
 # attributes used for tileset introspection
+# names must be unique amongst tile modules
 TilesetName = 'OpenStreetMap Tiles'
 TilesetShortName = 'OSM Tiles'
 TilesetVersion = '1.0'
 
-# the pool of tile servers used and tile path on server
-# to each tile, %params are (level, x, y)
+# the pool of tile servers used
 TileServers = ['http://otile1.mqcdn.com',
                'http://otile2.mqcdn.com',
                'http://otile3.mqcdn.com',
                'http://otile4.mqcdn.com',
               ]
-TileURLPath = '/tiles/1.0.0/osm/%d/%d/%d.jpg'   # zoom, column, row
+
+# the path on the server to a tile
+# {} params are Z=level, X=column, Y=row, origin at map top-left
+TileURLPath = '/tiles/1.0.0/osm/{Z}/{X}/{Y}.jpg'
+
+# tile levels to be used
 TileLevels = range(17)
 
 # maximum pending requests for each tile server
@@ -62,16 +71,47 @@ MaxServerRequests = 2
 # set maximum number of in-memory tiles for each level
 DefaultMaxLRU = 10000
 
-# size of OSM tiles
+# size of tiles
 TileWidth = 256
 TileHeight = 256
 
 # where earlier-cached tiles will be
-# this can be overridden in the OSMTiles() constructor
+# this can be overridden in the __init__ method
 DefaultTilesDir = 'osm_tiles'
 
-# tiles stored at <DefaultTilesDir>/<level>/<x>/<y>.jpg
-TilePath = '%d/%d/%d.jpg'
+###############################################################################
+# End of configuration.  You should not need to change anything below here.
+###############################################################################
+
+# figure out tile filename extension from TileURLPath
+TileExtension = os.path.splitext(TileURLPath)[1][1:]
+TileExtensionLower = TileExtension.lower()      # ensure lower case
+
+# tiles stored on disk at <DefaultTilesDir>/<TilePath>
+TilePath = '{Z}/{X}/{Y}.%s' % TileExtensionLower
+
+# allowed file types and associated values
+AllowedFileTypes = {'jpg': wx.BITMAP_TYPE_JPEG,
+                    'png': wx.BITMAP_TYPE_PNG,
+                   }
+
+#####
+# Figure out various constants used in the program
+#####
+
+# determine the file bitmap type
+try:
+    BitmapFileType = AllowedFileTypes[TileExtensionLower]
+except KeyError as e:
+    raise TypeError("Bad TileExtension value, got '%s', expected one of %s"
+                    % (str(TileExtension), str(AllowedFileTypes.keys())))
+
+# compose the expected 'Content-Type' string on request result
+# if we get here we know the extension is a valid value
+if TileExtensionLower == 'jpg':
+    ContentType = 'image/jpeg'
+elif TileExtensionLower == 'png':
+    ContentType = 'image/png'
 
 
 ######
@@ -91,7 +131,8 @@ class OSMCache(pycacheback.pyCacheBack):
         """
 
         # look for item in disk cache
-        tile_path = os.path.join(self._tiles_dir, TilePath % key)
+        (level, x, y) = key
+        tile_path = os.path.join(self._tiles_dir, TilePath.format(Z=level, X=x, Y=y))
         if not os.path.exists(tile_path):
             # tile not there, raise KeyError
             raise KeyError
@@ -111,14 +152,15 @@ class OSMCache(pycacheback.pyCacheBack):
                       y      integer tile coordinate
         """
 
-        tile_path = os.path.join(self._tiles_dir, TilePath % key)
+        (level, x, y) = key
+        tile_path = os.path.join(self._tiles_dir, TilePath.format(Z=level, X=x, Y=y))
         dir_path = os.path.dirname(tile_path)
         try:
             os.makedirs(dir_path)
         except OSError:
             # we assume it's a "directory exists' error, which we ignore
             pass
-        value.SaveFile(tile_path, wx.BITMAP_TYPE_JPEG)
+        value.SaveFile(tile_path, BitmapFileType)
 
 ################################################################################
 # Worker class for internet tile retrieval
@@ -155,11 +197,11 @@ class TileWorker(threading.Thread):
             image = self.error_tile_image
             error = False       # True if we get an error
             try:
-                tile_url = self.server + self.tilepath % (level, x, y)
+                tile_url = self.server + self.tilepath.format(Z=level, X=x, Y=y)
                 f = urllib2.urlopen(urllib2.Request(tile_url))
-                if f.info().getheader('Content-Type') == 'image/jpeg':
-                    image = wx.ImageFromStream(f, wx.BITMAP_TYPE_JPEG)
-            except (urllib2.HTTPError, Exception) as e:
+                if f.info().getheader('Content-Type') == ContentType:
+                    image = wx.ImageFromStream(f, BitmapFileType)
+            except Exception as e:
                 error = True
                 log('%s exception getting tile %d,%d,%d from %s\n%s'
                     % (type(e).__name__, level, x, y, tile_url, e.message))
@@ -224,7 +266,7 @@ class OSMTiles(tiles.Tiles):
         # set the list of queued unsatisfied requests to 'empty'
         self.queued_requests = {}
 
-        # OSM tiles always (256, 256)
+        # set tile size
         self.tile_size_x = TileWidth
         self.tile_size_y = TileHeight
 
@@ -242,7 +284,7 @@ class OSMTiles(tiles.Tiles):
         self.error_tile = self.error_tile_image.ConvertToBitmap()
 
         # test for firewall - use proxy (if supplied)
-        test_url = TileServers[0] + TileURLPath % (0, 0, 0)
+        test_url = TileServers[0] + TileURLPath.format(Z=0, X=0, Y=0)
         try:
             urllib2.urlopen(test_url)
         except Exception as e:

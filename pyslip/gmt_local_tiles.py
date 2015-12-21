@@ -35,8 +35,8 @@ except ImportError as e:
     log.critical = logit
 
 # attributes used for tileset introspection
-tileset_name = ''
-tileset_shortname = ''
+tileset_name = 'GMT local tiles'
+tileset_shortname = 'GMT tiles'
 tileset_version = '1.0'
 
 

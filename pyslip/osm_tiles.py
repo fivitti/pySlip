@@ -238,6 +238,11 @@ class OSMTiles(tiles.Tiles):
         self.levels = tile_levels
         self.level = None
 
+        # set instance names and version
+        self.TilesetName = TilesetName
+        self.TilesetShortName = TilesetShortName
+        self.TilesetVersion = TilesetVersion
+
         # set min and max tile levels
         self.min_level = min(self.levels)
         self.max_level = max(self.levels)

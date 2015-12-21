@@ -456,7 +456,7 @@ class PySlip(_BufferedCanvas):
         self.SetBackgroundColour(PySlip.BackgroundColour)
 
         # save tile source object
-        self.tiles = tile_src
+        self.ChangeTileSource(tile_src)
 
         # append user tileset directories to sys.path
         if tilesets:
@@ -468,9 +468,6 @@ class PySlip(_BufferedCanvas):
         self.max_level = max_level if max_level else self.tiles.max_level
         self.min_level = min_level if min_level else self.tiles.min_level
         self.level = start_level if start_level else self.min_level
-
-        self.tile_size_x = self.tiles.tile_size_x
-        self.tile_size_y = self.tiles.tile_size_y
 
         ######
         # set some internal state
@@ -559,9 +556,6 @@ class PySlip(_BufferedCanvas):
         self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyUp)
 
-        # set callback from Tile source object when tile(s) available
-        self.tiles.SetAvailableCallback(self.OnTileAvailable)
-
         # set callback when parent resizes
         self.onSizeCallback = self.ResizeCallback
 
@@ -595,6 +589,36 @@ class PySlip(_BufferedCanvas):
         """Event handler when mouse leaves widget."""
 
         self.RaiseEventPosition(None, None)
+
+    ######
+    # "change tile source" routine
+    ######
+
+    def self.ChangeTileSource(self, new_source):
+        """Change the source of tiles.
+
+        new_source  new tile source object
+
+        Returns the old tile spource object, None if none.
+
+        Refreshes the display and maintains the same zoom level amd position.
+        """
+
+        # remember old tile source
+        result = self.tiles
+
+        # set new tile source and set some state
+        self.tiles = tile_src
+        self.tile_size_x = self.tiles.tile_size_x
+        self.tile_size_y = self.tiles.tile_size_y
+        # set callback from Tile source object when tile(s) available
+        self.tiles.SetAvailableCallback(self.OnTileAvailable)
+
+        # refresh the display
+        self.Update()
+
+        return result
+
 
     ######
     # "add a layer" routines

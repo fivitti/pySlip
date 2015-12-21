@@ -293,6 +293,14 @@ class AppFrame(wx.Frame):
         # build the GUI
         self.make_gui(self.panel)
 
+        # create menus
+        menuBar = wx.MenuBar()
+        fileMenu = wx.Menu()
+        exitMenuItem = fileMenu.Append(wx.NewId(), "Choose",
+                                       "Choose the tileset to display")
+        menuBar.Append(fileMenu, "&Tiles")
+        self.SetMenuBar(menuBar)
+
         # do initialisation stuff - all the application stuff
         self.init()
 
@@ -307,6 +315,13 @@ class AppFrame(wx.Frame):
         self.pyslip.Bind(pyslip.EVT_PYSLIP_BOXSELECT, self.handle_select_event)
         self.pyslip.Bind(pyslip.EVT_PYSLIP_POSITION, self.handle_position_event)
         self.pyslip.Bind(pyslip.EVT_PYSLIP_LEVEL, self.handle_level_change)
+
+    def OnClose(self):
+        """Application is closing."""
+
+        pass
+
+        #self.Close(True)
 
 #####
 # Build the GUI

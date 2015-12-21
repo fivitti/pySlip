@@ -21,7 +21,7 @@ import wx
 
 import tiles
 import pycacheback
-import error_pending_tiles as ept
+import sys_tile_data as std
 
 
 # if we don't have log.py, don't crash
@@ -281,13 +281,13 @@ class STMTRTiles(tiles.Tiles):
         if pending_file:
             self.pending_tile_image = wx.Image(pending_file, wx.BITMAP_TYPE_ANY)
         else:
-            self.pending_tile_image = ept.getPendingImage()
+            self.pending_tile_image = std.getPendingImage()
         self.pending_tile = self.pending_tile_image.ConvertToBitmap()
 
         if error_file:
             self.error_tile_image = wx.Image(error_file, wx.BITMAP_TYPE_ANY)
         else:
-            self.error_tile_image = ept.getErrorImage()
+            self.error_tile_image = std.getErrorImage()
         self.error_tile = self.error_tile_image.ConvertToBitmap()
 
         # test for firewall - use proxy (if supplied)

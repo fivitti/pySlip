@@ -13,8 +13,8 @@ the widget instances.
 import wx
 import pyslip
 
-from pyslip.gmt_local_tiles import GMTTiles
-from pyslip.osm_tiles import OSMTiles
+import pyslip.gmt_local_tiles as GMTTiles
+import pyslip.osm_tiles as NetTiles
 
 
 ######
@@ -57,10 +57,10 @@ class TestFrame(wx.Frame):
 
         # note that we need a unique Tile source for each widget
         # sharing directories is OK
-        gmt_tile_src_1 = GMTTiles(gmt_tile_dir)
-        gmt_tile_src_2 = GMTTiles(gmt_tile_dir)
-        osm_tile_src_1 = OSMTiles(osm_tile_dir)
-        osm_tile_src_2 = OSMTiles(osm_tile_dir)
+        gmt_tile_src_1 = GMTTiles.Tiles()
+        gmt_tile_src_2 = GMTTiles.Tiles()
+        osm_tile_src_1 = NetTiles.Tiles()
+        osm_tile_src_2 = NetTiles.Tiles()
 
         # build the GUI
         box = wx.BoxSizer(wx.VERTICAL)

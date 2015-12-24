@@ -455,8 +455,16 @@ class PySlip(_BufferedCanvas):
         _BufferedCanvas.__init__(self, parent=parent, **kwargs)
         self.SetBackgroundColour(PySlip.BackgroundColour)
 
+        # set new tile source and set some state
+        self.tiles = tile_src
+        self.tile_size_x = self.tiles.tile_size_x
+        self.tile_size_y = self.tiles.tile_size_y
+
+        # set callback from Tile source object when tile(s) available
+        self.tiles.SetAvailableCallback(self.OnTileAvailable)
+
         # save tile source object
-        self.ChangeTileSource(tile_src)
+#        self.ChangeTileSource(tile_src)
 
         # append user tileset directories to sys.path
         if tilesets:
@@ -594,7 +602,7 @@ class PySlip(_BufferedCanvas):
     # "change tile source" routine
     ######
 
-    def self.ChangeTileSource(self, new_source):
+    def ChangeTileSource(self, new_source):
         """Change the source of tiles.
 
         new_source  new tile source object

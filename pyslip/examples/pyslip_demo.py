@@ -40,7 +40,8 @@ except ImportError:
 
 import pyslip
 import pyslip.log as log
-
+#import pyslip.osm_tiles as tiles
+import pyslip.gmt_local_tiles as tiles
 
 ######
 # Various demo constants
@@ -301,29 +302,31 @@ class AppFrame(wx.Frame):
         self.panel.SetBackgroundColour(wx.WHITE)
         self.panel.ClearBackground()
 
-        # get list of tile sources: (name, shortname, instance)
-        for name in TileSources:
-            exec 'import pyslip.%s as tiles' % name
-            instance = tiles.Tiles()
+#        # get list of tile sources: (name, shortname, instance)
+#        for name in TileSources:
+#            exec 'import pyslip.%s as tiles' % name
+#            instance = tiles.Tiles()
 
-        # create menus
-        menuBar = wx.MenuBar()
-        tileMenu = wx.Menu()
+#        # create menus
+#        menuBar = wx.MenuBar()
+#        tileMenu = wx.Menu()
+#
+#        self.tile_source = None
+#        SourceName2Instance = {}
+#        for name in TileSources:
+#            exec 'import pyslip.%s as tiles' % name
+#            new_src = tiles.Tiles()
+#            new_name = new_src.TilesetName
+#            new_shortname = new_src.TilesetShortName
+#            new_item = tileMenu.Append(wx.NewId(), new_shortname, new_name, wx.ITEM_RADIO)
+#            SourceName2Instance[name] = (new_item, new_src)
+#            if self.tile_source is None:
+#                self.tile_source = new_src
+#
+#        menuBar.Append(tileMenu, "&Tiles")
+#        self.SetMenuBar(menuBar)
 
-        self.tile_source = None
-        SourceName2Instance = {}
-        for name in TileSources:
-            exec 'import pyslip.%s as tiles' % name
-            new_src = tiles.Tiles(tiles_dir='%s_dir' % name, callback=None)
-            new_name = new_src.TilesetName
-            new_shortname = new_src.TilesetShortName
-            new_item = tileMenu.Append(wx.NewId(), new_shortname, new_name, wx.ITEM_RADIO)
-            SourceName2Instance[name] = (new_item, new_src)
-            if self.tile_source is None:
-                self.tile_source = new_src
-
-        menuBar.Append(tileMenu, "&Tiles")
-        self.SetMenuBar(menuBar)
+        self.tile_source = tiles.Tiles()
 
         # build the GUI
         self.make_gui(self.panel)

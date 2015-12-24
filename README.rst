@@ -26,6 +26,13 @@ pySlip works on Linux, Mac and Windows.  It only works with wxPython 2.x and
 Python 2.x (at the moment).  At some point when wxPython matures I hope to
 move to Python 3.X and later versions of wxPython.
 
+Screenshots
+===========
+
+A few screenshots of pyslip_demo.py.
+
+.. image:: pyslip/examples/graphics/pyslip_demo_osm.png
+
 Map Tiles Licensing
 ===================
 

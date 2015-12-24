@@ -51,7 +51,6 @@ DemoName = 'pySlip %s - Demonstration' % pyslip.__version__
 DemoVersion = '3.0'
 
 # tiles info
-TileDirectory = 'tiles'
 MinTileLevel = 0
 
 # initial view level and position
@@ -122,6 +121,19 @@ LogSym2Num = {'CRITICAL': 50,
               'INFO': 20,
               'DEBUG': 10,
               'NOTSET': 0}
+
+# list of modules containing tile sources
+TileSources = [
+               'osm_tiles',
+               'bm_tiles',
+#               'gmt_local_tiles',
+               'mm_tiles',
+               'mq_tiles',
+               'stmt_tiles',
+               'stmtr_tiles',
+               'stmw_tiles',
+              ]
+
 
 ######
 # Various GUI layout constants
@@ -279,7 +291,9 @@ class LayerControl(wx.Panel):
 ###############################################################################
 
 class AppFrame(wx.Frame):
-    def __init__(self, tile_dir=TileDirectory, levels=None):
+    def __init__(self):
+        global SourceName2Instance
+
         wx.Frame.__init__(self, None, size=DefaultAppSize,
                           title='%s %s' % (DemoName, DemoVersion))
         self.SetMinSize(DefaultAppSize)
@@ -287,19 +301,32 @@ class AppFrame(wx.Frame):
         self.panel.SetBackgroundColour(wx.WHITE)
         self.panel.ClearBackground()
 
-        self.tile_directory = tile_dir
-        self.tile_source = Tiles(tile_dir, levels)
-
-        # build the GUI
-        self.make_gui(self.panel)
+        # get list of tile sources: (name, shortname, instance)
+        for name in TileSources:
+            exec 'import pyslip.%s as tiles' % name
+            instance = tiles.Tiles()
 
         # create menus
         menuBar = wx.MenuBar()
-        fileMenu = wx.Menu()
-        exitMenuItem = fileMenu.Append(wx.NewId(), "Choose",
-                                       "Choose the tileset to display")
-        menuBar.Append(fileMenu, "&Tiles")
+        tileMenu = wx.Menu()
+
+        self.tile_source = None
+        SourceName2Instance = {}
+        for name in TileSources:
+            exec 'import pyslip.%s as tiles' % name
+            new_src = tiles.Tiles(tiles_dir='%s_dir' % name, callback=None)
+            new_name = new_src.TilesetName
+            new_shortname = new_src.TilesetShortName
+            new_item = tileMenu.Append(wx.NewId(), new_shortname, new_name, wx.ITEM_RADIO)
+            SourceName2Instance[name] = (new_item, new_src)
+            if self.tile_source is None:
+                self.tile_source = new_src
+
+        menuBar.Append(tileMenu, "&Tiles")
         self.SetMenuBar(menuBar)
+
+        # build the GUI
+        self.make_gui(self.panel)
 
         # do initialisation stuff - all the application stuff
         self.init()
@@ -1999,6 +2026,11 @@ if __name__ == '__main__':
     import getopt
     import traceback
 
+    def usage(msg=None):
+        if msg:
+            print(('*'*80 + '\n%s\n' + '*'*80) % msg)
+        print(__doc__)
+
     # our own handler for uncaught exceptions
     def excepthook(type, value, tb):
         msg = '\n' + '=' * 80
@@ -2009,27 +2041,19 @@ if __name__ == '__main__':
         tkinter_error(msg)
         sys.exit(1)
 
-    def usage(msg=None):
-        if msg:
-            print(('*'*80 + '\n%s\n' + '*'*80) % msg)
-        print(__doc__)
-
-
     # plug our handler into the python system
     sys.excepthook = excepthook
 
-    # decide which tiles to use, default is GMT
+    # parse the CLI params
     argv = sys.argv[1:]
 
     try:
-        (opts, args) = getopt.getopt(argv, 'd:ht:',
-                                           ['debug=', 'help', 'tiles='])
+        (opts, args) = getopt.getopt(argv, 'd:h', ['debug=', 'help'])
     except getopt.error:
         usage()
         sys.exit(1)
 
-    debug = 0              # no logging
-    tile_source = 'GMT'
+    debug = 10              # no logging
     inspector = False
 
     for (opt, param) in opts:
@@ -2038,12 +2062,8 @@ if __name__ == '__main__':
         elif opt in ['-h', '--help']:
             usage()
             sys.exit(0)
-        elif opt in ('-t', '--tiles'):
-            tile_source = param
         elif opt == '-x':
             inspector = True
-
-    tile_source = tile_source.lower()
 
     # convert any symbolic debug level to a number
     try:
@@ -2057,20 +2077,9 @@ if __name__ == '__main__':
             sys.exit(1)
     log.set_level(debug)
 
-    # set up the appropriate tile source
-    if tile_source == 'gmt':
-        from pyslip.gmt_local_tiles import GMTTiles as Tiles
-        tile_dir = 'gmt_tiles'
-    elif tile_source == 'osm':
-        from pyslip.osm_tiles import OSMTiles as Tiles
-        tile_dir = 'osm_tiles'
-    else:
-        usage('Bad tile source: %s' % tile_source)
-        sys.exit(3)
-
     # start wxPython app
     app = wx.App()
-    app_frame = AppFrame(tile_dir=tile_dir) #, levels=[0,1,2,3,4])
+    app_frame = AppFrame()
     app_frame.Show()
 
     if inspector:

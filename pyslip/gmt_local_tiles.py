@@ -88,6 +88,9 @@ class Tiles(tiles.BaseTiles):
                                     max_lru=MaxLRU, tiles_dir=TilesDir,
                                     http_proxy=http_proxy)
 
+        # hard code the extent here, don't rely on the INFO file
+        self.extent=(-65.0, 295.0, -66.66, 66.66)
+
     def GetInfo(self, level):
         """Get tile info for a particular level.
 

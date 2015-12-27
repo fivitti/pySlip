@@ -29,9 +29,13 @@ move to Python 3.X and later versions of wxPython.
 Screenshots
 ===========
 
-A few screenshots of pyslip_demo.py.
+A few screenshots of pyslip_demo.pyR, the first showing OpenStreetMap tiles:
 
 .. image:: pyslip/examples/graphics/pyslip_demo_osm.png
+
+Next, the pre-generated GMT tiles:
+
+.. image:: pyslip/examples/graphics/pyslip_demo_gmt.png
 
 Map Tiles Licensing
 ===================

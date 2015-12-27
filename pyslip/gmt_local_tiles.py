@@ -50,7 +50,7 @@ TileServers = None
 TileURLPath = None
 
 # tile levels to be used
-TileLevels = range(57)
+TileLevels = range(5)
 
 # maximum pending requests for each tile server
 MaxServerRequests = None
@@ -88,11 +88,17 @@ class Tiles(tiles.BaseTiles):
                                     max_lru=MaxLRU, tiles_dir=TilesDir,
                                     http_proxy=http_proxy)
 
-        # hard code the extent here, don't rely on the INFO file
+        # override the tiles.py extent here, the GMT tileset is different
         self.extent=(-65.0, 295.0, -66.66, 66.66)
+
+        # get tile information into instance
+        self.level = min(TileLevels)
+        (self.num_tiles_x, self.num_tiles_y,
+         self.ppd_x, self.ppd_y) = self.GetInfo(self.level)
 
     def GetInfo(self, level):
         """Get tile info for a particular level.
+        Override the tiles.py method.
 
         level  the level to get tile info for
 

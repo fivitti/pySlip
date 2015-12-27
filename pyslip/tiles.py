@@ -323,24 +323,34 @@ class BaseTiles(object):
         """Prepare to serve tiles from the required level.
 
         level  the required level
+
+        Return True if level change occurred, else False if not possible.
         """
 
         # first, CAN we zoom to this level?
         if level not in self.levels:
-            raise Exception("Sorry, level %s doesn't exist, existing levels=%s"
-                            % (str(level), str(self.levels)))
-
-        # OK, save new level
-        self.level = level
+            return False
+#            raise Exception("Sorry, level %s doesn't exist, existing levels=%s"
+#                            % (str(level), str(self.levels)))
 
         # get tile info
         info = self.GetInfo(level)
+        if info is None:
+            return False
+#            # failed to get new level extent
+#            raise Exception("Sorry, level %s doesn't exist, existing levels=%s"
+#                            % (str(level), str(self.levels)))
+
+        # OK, save new level
+        self.level = level
         (self.num_tiles_x, self.num_tiles_y, self.ppd_x, self.ppd_y) = info
 
         # flush any outstanding requests.
         # we do this to speed up multiple-level zooms so the user doesn't
         # sit waiting for tiles to arrive that won't be shown.
         self.FlushRequests()
+
+        return True
 
     def GetTile(self, x, y):
         """Get bitmap for tile at tile coords (x, y) and current level.
@@ -382,8 +392,8 @@ class BaseTiles(object):
         This method is for internet tiles.  It will be overridden for GMT tiles.
         """
 
-        self.num_tiles_x = int(math.pow(2, self.level))
-        self.num_tiles_y = int(math.pow(2, self.level))
+        self.num_tiles_x = int(math.pow(2, level))
+        self.num_tiles_y = int(math.pow(2, level))
 
         return (self.num_tiles_x, self.num_tiles_y, None, None)
 

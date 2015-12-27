@@ -124,16 +124,19 @@ LogSym2Num = {'CRITICAL': 50,
               'NOTSET': 0}
 
 # list of modules containing tile sources
+# list of (<long_name>, <module_name>)
+# the <long_name>s go into the Tileselect menu
 TileSources = [
-               'osm_tiles',
-               'bm_tiles',
-#               'gmt_local_tiles',
-               'mm_tiles',
-               'mq_tiles',
-               'stmt_tiles',
-               'stmtr_tiles',
-               'stmw_tiles',
+               ('BlueMarble tiles', 'pyslip.bm_tiles'),
+               ('GMT tiles', 'pyslip.gmt_local_tiles'),
+               ('ModestMaps tiles', 'pyslip.mm_tiles'),
+               ('MapQuest tiles', 'pyslip.mq_tiles'),
+               ('OpenStreetMap tiles', 'pyslip.osm_tiles'),
+               ('Stamen Toner tiles', 'pyslip.stmt_tiles'),
+               ('Stamen Transport tiles', 'pyslip.stmtr_tiles'),
+               ('Stamen Watercolor tiles', 'pyslip.stmw_tiles'),
               ]
+DefaultTileset = 'GMT tiles'
 
 
 ######
@@ -293,8 +296,6 @@ class LayerControl(wx.Panel):
 
 class AppFrame(wx.Frame):
     def __init__(self):
-        global SourceName2Instance
-
         wx.Frame.__init__(self, None, size=DefaultAppSize,
                           title='%s %s' % (DemoName, DemoVersion))
         self.SetMinSize(DefaultAppSize)
@@ -302,29 +303,33 @@ class AppFrame(wx.Frame):
         self.panel.SetBackgroundColour(wx.WHITE)
         self.panel.ClearBackground()
 
-#        # get list of tile sources: (name, shortname, instance)
-#        for name in TileSources:
-#            exec 'import pyslip.%s as tiles' % name
-#            instance = tiles.Tiles()
+        # create tileset menuitems
+        menuBar = wx.MenuBar()
+        tile_menu = wx.Menu()
 
-#        # create menus
-#        menuBar = wx.MenuBar()
-#        tileMenu = wx.Menu()
-#
-#        self.tile_source = None
-#        SourceName2Instance = {}
-#        for name in TileSources:
-#            exec 'import pyslip.%s as tiles' % name
-#            new_src = tiles.Tiles()
-#            new_name = new_src.TilesetName
-#            new_shortname = new_src.TilesetShortName
-#            new_item = tileMenu.Append(wx.NewId(), new_shortname, new_name, wx.ITEM_RADIO)
-#            SourceName2Instance[name] = (new_item, new_src)
-#            if self.tile_source is None:
-#                self.tile_source = new_src
-#
-#        menuBar.Append(tileMenu, "&Tiles")
-#        self.SetMenuBar(menuBar)
+        # initialise tileset handling
+        self.tile_source = None
+        # a dict of "gui_id: (name, module_name, object)" tuples
+        self.id2tiledata = {}
+        # a dict of "name: gui_id"
+        self.name2guiid = {}
+
+        self.default_tileset_name = None
+        for (name, module_name) in TileSources:
+            new_id = wx.NewId()
+            tile_menu.Append(new_id, name, name, wx.ITEM_RADIO)
+            self.Bind(wx.EVT_MENU, self.onTilesetSelect)
+            self.id2tiledata[new_id] = (name, module_name, None)
+            self.name2guiid[name] = new_id
+            if name == DefaultTileset:
+                self.default_tileset_name = name
+
+        if self.default_tileset_name is None:
+            raise Exception('Bad DefaultTileset (%s) or TileSources (%s)'
+                            % (DefaultTileset, str(TileSources)))
+
+        menuBar.Append(tile_menu, "&Tileset")
+        self.SetMenuBar(menuBar)
 
         self.tile_source = tiles.Tiles()
 
@@ -346,7 +351,43 @@ class AppFrame(wx.Frame):
         self.pyslip.Bind(pyslip.EVT_PYSLIP_POSITION, self.handle_position_event)
         self.pyslip.Bind(pyslip.EVT_PYSLIP_LEVEL, self.handle_level_change)
 
-    def OnClose(self):
+        # select the required tileset
+#        log('.name2guiid=%s' % str(self.name2guiid))
+#        log('.default_tileset_name=%s' % str(self.default_tileset_name))
+#        item_id = self.name2guiid[self.default_tileset_name]
+#        log('type(item_id)=%s' % str(item_id))
+#        tile_menu.Check(item_id, True)
+
+    def onTilesetSelect(self, event):
+        """User selected a tileset from the menu.
+
+        event  the menu select event
+        """
+
+        log('event=%s' % str(dir(event)))
+        log('event.GetEventObject()=%s' % str(event.GetEventObject()))
+
+        menu_id = event.GetId()
+        log('self.id2tiledata[%d]=%s' % (menu_id, str(self.id2tiledata[menu_id])))
+        try:
+            (name, module_name, new_tile_obj) = self.id2tiledata[menu_id]
+        except KeyError:
+            # badly formed self.id2tiledata element
+            raise Exception('self.id2tiledata is badly formed:\n%s'
+                            % str(self.id2tiledata))
+
+        if new_tile_obj is None:
+            # haven't seen this tileset before, import and instantiate
+            module_name = self.id2tiledata[menu_id][1]
+            exec 'import %s as tiles' % module_name
+            new_tile_obj = tiles.Tiles()
+
+            # update the self.id2tiledata element
+            self.id2tiledata[menu_id] = (name, module_name, new_tile_obj)
+
+        self.pyslip.ChangeTileSource(new_tile_obj)
+
+    def onClose(self):
         """Application is closing."""
 
         pass
@@ -1875,7 +1916,7 @@ class AppFrame(wx.Frame):
                         text_placement),
                     (114.158889, +22.278333, '香港 (Hong Kong)',
                         {'placement': 'nw'}),
-                    (98.392, 7.888, 'นครภูเก็ต (Phuket)', text_placement),
+                    (98.392, 7.888, 'ภูเก็ต (Phuket)', text_placement),
                     ( 96.16, +16.80, 'ရန်ကုန် (Yangon)', capital),
                     (104.93, +11.54, ' ភ្នំពេញ (Phnom Penh)',
                         {'placement': 'ce', 'fontsize': 12, 'colour': 'red'}),
@@ -2042,7 +2083,7 @@ if __name__ == '__main__':
         msg += '=' * 80 + '\n'
         log(msg)
         tkinter_error(msg)
-        sys.exit(1)
+#        sys.exit(1)
 
     # plug our handler into the python system
     sys.excepthook = excepthook

@@ -92,7 +92,11 @@ class _BufferedCanvas(wx.Panel):
         self.Bind(wx.EVT_ERASE_BACKGROUND, disable_event)
 
         # set callback upon onSize event
-        self.onSizeCallback = None
+        self.on_size_callback = None
+
+# NEW
+        (width, height) = size
+        self.buffer = wx.EmptyBitmap(width, height)
 
     def Draw(self, dc):
         """Stub: called when the canvas needs to be re-drawn."""
@@ -129,11 +133,11 @@ class _BufferedCanvas(wx.Panel):
         self.buffer = wx.EmptyBitmap(width, height)
 
         # call onSize callback, if registered
-        if self.onSizeCallback:
-            self.onSizeCallback()
-
-        # Now update the screen
-        self.Update()
+        if self.on_size_callback:
+            self.on_size_callback()
+#NEW
+            # Now update the screen
+            self.Update()
 
 ######
 # A layer class - encapsulates all layer data.
@@ -438,7 +442,7 @@ class PySlip(_BufferedCanvas):
     (TypePoint, TypeImage, TypeText, TypePolygon, TypePolyline) = range(5)
 
 
-    def __init__(self, parent, tile_src=None, start_level=None,
+    def __init__(self, parent, tile_src, start_level=None,
                  min_level=None, max_level=None, tilesets=None, **kwargs):
         """Initialise a pySlip instance.
 
@@ -455,81 +459,49 @@ class PySlip(_BufferedCanvas):
         _BufferedCanvas.__init__(self, parent=parent, **kwargs)
         self.SetBackgroundColour(PySlip.BackgroundColour)
 
-        # set new tile source and set some state
-        self.tiles = tile_src
-        self.tile_size_x = self.tiles.tile_size_x
-        self.tile_size_y = self.tiles.tile_size_y
-
-        # set callback from Tile source object when tile(s) available
-        self.tiles.SetAvailableCallback(self.OnTileAvailable)
-
-        # save tile source object
-#        self.ChangeTileSource(tile_src)
-
-        # append user tileset directories to sys.path
-        if tilesets:
-            for ts_path in tilesets:
-                ts_path_abs = os.path.abspath(ts_path)
-                sys.path.append(ts_path_abs)
-
-        # set tile levels stuff - allowed levels, etc
-        self.max_level = max_level if max_level else self.tiles.max_level
-        self.min_level = min_level if min_level else self.tiles.min_level
-        self.level = start_level if start_level else self.min_level
-
-        ######
-        # set some internal state
-        ######
-
-        # view size in pixels, set properly in OnSize()
-        self.view_width = None
-        self.view_height = None
-
-        # map size in pixels
-        self.map_width = None       # set in UseLevel()
-        self.map_height = None
-
-        self.view_offset_x = 0          # map pixel offset at left & top of view
-        self.view_offset_y = 0
-
-        # maximum X and Y offset of view (set in ResizeCallback())
-        self.max_x_offset = None
-        self.max_y_offset = None
-
-        # view left+right lon and top+bottom lat (set in OnSize())
-        self.view_llon = self.view_rlon = None
-        self.view_tlat = self.view_blat = None
-
-        # various other state variables
-        self.was_dragging = False               # True if dragging map
-        self.last_drag_x = None                 # previous drag position
-        self.last_drag_y = None
-
-        self.ignore_next_up = False             # ignore next LEFT UP event
+        # initialize all state variables to a 'vanilla' state
+        self.change_level_event = True          # True if we send event on level change
+        self.default_cursor = wx.CURSOR_DEFAULT # initial and usual cursor
         self.ignore_next_right_up = False       # ignore next RIGHT UP event
-
+        self.ignore_next_up = False             # ignore next LEFT UP event
         self.is_box_select = False              # True if box selection
-        self.sbox_1_x = self.sbox_1_y = None    # box size
+        self.last_drag_x = None                 # previous drag position (X)
+        self.last_drag_y = None                 # previous drag position (Y)
+        self.layer_mapping = {}                 # maps layer ID to layer data
+        self.layer_z_order = []                 # layer Z order, contains layer IDs
+        self.level = None
+        self.map_height = None                  # set in UseLevel()
+        self.map_rlon = None
+        self.map_width = None                   # set in UseLevel()
+        self.max_level = None
+        self.max_x_offset = None                # max view X offset (set in ResizeCallback())
+        self.max_y_offset = None                # max view Y offset (set in ResizeCallback())
+        self.min_level = None
+        self.mouse_position_event = True        # True if we send event to report mouse position in view
+        self.next_layer_id = 1                  # source of unique layer IDs
+        self.on_size_callback = self.ResizeCallback # set callback when parent resizes
+        self.right_click_event = False          # True if event on right mouse click (right button up event)
+        self.sbox_1_x = None                    # selection box X size
+        self.sbox_1_y = None                    # selection box Y size
+        self.sbox_h = None
+        self.sbox_w = None
+        self.shift_down = False                 # state of the SHIFT key
+        self.tile_size_x = None
+        self.tile_size_y = None
+        self.tiles = None                       # tile source object
+        self.view_blat = None                   # view bottom lat (set in OnSize())
+        self.view_height = None                 # view size in pixels, set in OnSize()
+        self.view_llon = None                   # view left lon and top+bottom lat (set in OnSize())
+        self.view_offset_x = None               # map pixel offset at left of view
+        self.view_offset_y = None               # map pixel offset at top of view
+        self.view_rlon = None                   # view right lon (set in OnSize())
+        self.view_tlat = None                   # view top lat (set in OnSize())
+        self.view_width = None                  # view size in pixels, set in OnSize()
+        self.was_dragging = False               # True if dragging map
 
-        # layer stuff (no layers at this point)
-        self.next_layer_id = 1      # source of unique layer IDs
-        self.layer_z_order = []     # layer Z order, contains layer IDs
-        self.layer_mapping = {}     # maps layer ID to layer data
-
-        # True if we send event to report mouse position in view
-        self.mouse_position_event = True
-
-        # True if event on right mouse click (right button up event)
-        self.right_click_event = False
-
-        # True if we send event on level change
-        self.change_level_event = True
-
-        # default cursor
-        self.default_cursor = wx.CURSOR_DEFAULT
-
-        # state of the SHIFT key
-        self.shift_down = False
+        ######
+        # set some internal data
+        ######
 
         # set up dispatch dictionaries for layer select handlers
         # for point select
@@ -564,15 +536,45 @@ class PySlip(_BufferedCanvas):
         self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         self.Bind(wx.EVT_KEY_UP, self.OnKeyUp)
 
-        # set callback when parent resizes
-        self.onSizeCallback = self.ResizeCallback
+        # set tile levels stuff - allowed levels, etc
+        # if max_level given ensure in tileset range
+        log('__init__: BEFORE self.max_level=%s' % str(self.max_level))
+        log('__init__: BEFORE self.min_level=%s' % str(self.min_level))
+        log('__init__: BEFORE self.level=%s' % str(self.level))
 
-        # finally, use the tile level the user wants
-        self.ZoomToLevel(self.level)
+        if max_level is None:
+            max_level = max(tile_src.levels)
+        else:
+            max_level = max(max_level, min(tile_src.levels))
+        self.max_level = max_level
+
+        # if min_level given ensure in tileset range
+        if min_level is None:
+            min_level = min(tile_src.levels)
+        else:
+            min_level = min(min_level, max(tile_src.levels))
+        self.min_level = min_level
+
+        # ditto for start_level
+        if start_level is None:
+            start_level = self.min_level
+        elif start_level not in tile_src.levels:
+            start_level = self.min_level
+        self.level = start_level
+
+        log('__init__: AFTER self.max_level=%s' % str(self.max_level))
+        log('__init__: AFTER self.min_level=%s' % str(self.min_level))
+        log('__init__: AFTER self.level=%s' % str(self.level))
+
+        # set the tile source object
+        self.ChangeTileSource(tile_src)
 
         # force a resize, which sets up the rest of the state
         # eventually calls ResizeCallback()
         self.OnSize()
+
+        # finally, use the tile level the user wants
+        self.ZoomToLevel(self.level)
 
     def OnTileAvailable(self, level, x, y, img, bmp):
         """Callback routine: tile level/x/y is available.
@@ -584,6 +586,8 @@ class PySlip(_BufferedCanvas):
 
         We don't use any of the above - just redraw the entire canvas.
         This is because the new tile is already in the in-memory cache.
+
+        On a slow display we could just redraw the new tile.
         """
 
         self.Update()
@@ -602,31 +606,44 @@ class PySlip(_BufferedCanvas):
     # "change tile source" routine
     ######
 
-    def ChangeTileSource(self, new_source):
+    def ChangeTileSource(self, tile_obj):
         """Change the source of tiles.
 
-        new_source  new tile source object
+        tile_obj  the tileset object to use
 
-        Returns the old tile spource object, None if none.
-
+        Returns the old tileset object, None if none.
         Refreshes the display and maintains the same zoom level amd position.
         """
+
+        log('ChangeTileSource: tile_obj=%s' % str(tile_obj))
 
         # remember old tile source
         result = self.tiles
 
+        # set new tileset source
+#        new_name = tile_obj.TilesetName
+#        new_shortname = tile_obj.TilesetShortName
+
+        tile_obj.UseLevel(self.level)
+
         # set new tile source and set some state
-        self.tiles = tile_src
+        self.tiles = tile_obj
         self.tile_size_x = self.tiles.tile_size_x
         self.tile_size_y = self.tiles.tile_size_y
+
+        (num_tiles_x, num_tiles_y, ppd_x, ppd_y) = tile_obj.GetInfo(self.level)
+        self.map_width = self.tile_size_x * num_tiles_x
+        self.map_height = self.tile_size_y * num_tiles_y
+        self.ppd_x = ppd_x
+        self.ppd_y = ppd_y
+
         # set callback from Tile source object when tile(s) available
         self.tiles.SetAvailableCallback(self.OnTileAvailable)
 
         # refresh the display
-        self.Update()
+#        self.Update()
 
         return result
-
 
     ######
     # "add a layer" routines
@@ -2281,7 +2298,9 @@ class PySlip(_BufferedCanvas):
         """
 
         if self.min_level <= level <= self.max_level:
-            self.tiles.UseLevel(level)
+            if not self.tiles.UseLevel(level):
+                # couldn't change level
+                return False
             self.level = level
             self.map_width = self.tiles.num_tiles_x * self.tiles.tile_size_x
             self.map_height = self.tiles.num_tiles_y * self.tiles.tile_size_y

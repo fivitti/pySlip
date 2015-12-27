@@ -49,7 +49,7 @@ import pyslip.gmt_local_tiles as tiles
 
 # demo name/version
 DemoName = 'pySlip %s - Demonstration' % pyslip.__version__
-DemoVersion = '3.0'
+DemoVersion = '3.1'
 
 # tiles info
 MinTileLevel = 0

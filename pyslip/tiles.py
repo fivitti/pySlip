@@ -52,18 +52,18 @@ except ImportError as e:
 class TileWorker(threading.Thread):
     """Thread class that gets request from queue, loads tile, calls callback."""
 
-    def __init__(self, server, tilepath, requests, callafter,
+    def __init__(self, server, tilepath, requests, callback,
                  error_tile, content_type, filetype):
         """Prepare the tile worker.
 
         server        server URL
         tilepath      path to tile on server
         requests      the request queue
-        callafter     function to CALL AFTER tile available
+        callback      function to call after tile available
         content_type  expected Content-Type string
         filetype      wxPython integer filetype
 
-        Results are returned in the CallAfter() params.
+        Results are returned in the callback() params.
         """
 
         threading.Thread.__init__(self)
@@ -71,7 +71,7 @@ class TileWorker(threading.Thread):
         self.server = server
         self.tilepath = tilepath
         self.requests = requests
-        self.callafter = callafter
+        self.callback = callback
         self.error_tile_image = error_tile
         self.content_type = content_type
         self.filetype = filetype
@@ -87,15 +87,23 @@ class TileWorker(threading.Thread):
             try:
                 tile_url = self.server + self.tilepath.format(Z=level, X=x, Y=y)
                 f = urllib2.urlopen(urllib2.Request(tile_url))
-                if f.info().getheader('Content-Type') == self.content_type:
+                content_type = f.info().getheader('Content-Type')
+                if content_type == self.content_type:
                     image = wx.ImageFromStream(f, self.filetype)
-
+                else:
+                    error = True
+                    log("Expected tile data with content type of '%s', got '%s'"
+                        % (self.content_type, str(content_type)))
             except Exception as e:
                 error = True
                 log('%s exception getting tile %d,%d,%d from %s\n%s'
                     % (type(e).__name__, level, x, y, tile_url, e.message))
 
-            wx.CallAfter(self.callafter, level, x, y, image, error)
+            # call the callback function passing level, x, y and image data
+            # error is False if we want to cache this tile on-disk
+            wx.CallAfter(self.callback, level, x, y, image, error)
+
+            # finally, removes request from Queue
             self.requests.task_done()
 
 ################################################################################
@@ -330,16 +338,11 @@ class BaseTiles(object):
         # first, CAN we zoom to this level?
         if level not in self.levels:
             return False
-#            raise Exception("Sorry, level %s doesn't exist, existing levels=%s"
-#                            % (str(level), str(self.levels)))
 
         # get tile info
         info = self.GetInfo(level)
         if info is None:
             return False
-#            # failed to get new level extent
-#            raise Exception("Sorry, level %s doesn't exist, existing levels=%s"
-#                            % (str(level), str(self.levels)))
 
         # OK, save new level
         self.level = level

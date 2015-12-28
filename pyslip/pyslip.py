@@ -94,7 +94,7 @@ class _BufferedCanvas(wx.Panel):
         # set callback upon onSize event
         self.on_size_callback = None
 
-# NEW
+        # allocate bitmap buffer for display
         (width, height) = size
         self.buffer = wx.EmptyBitmap(width, height)
 
@@ -135,7 +135,7 @@ class _BufferedCanvas(wx.Panel):
         # call onSize callback, if registered
         if self.on_size_callback:
             self.on_size_callback()
-#NEW
+
             # Now update the screen
             self.Update()
 
@@ -538,10 +538,6 @@ class PySlip(_BufferedCanvas):
 
         # set tile levels stuff - allowed levels, etc
         # if max_level given ensure in tileset range
-        log('__init__: BEFORE self.max_level=%s' % str(self.max_level))
-        log('__init__: BEFORE self.min_level=%s' % str(self.min_level))
-        log('__init__: BEFORE self.level=%s' % str(self.level))
-
         if max_level is None:
             max_level = max(tile_src.levels)
         else:
@@ -562,12 +558,8 @@ class PySlip(_BufferedCanvas):
             start_level = self.min_level
         self.level = start_level
 
-        log('__init__: AFTER self.max_level=%s' % str(self.max_level))
-        log('__init__: AFTER self.min_level=%s' % str(self.min_level))
-        log('__init__: AFTER self.level=%s' % str(self.level))
-
         # set the tile source object
-        self.ChangeTileSource(tile_src)
+        self.ChangeTileset(tile_src)
 
         # force a resize, which sets up the rest of the state
         # eventually calls ResizeCallback()
@@ -603,28 +595,36 @@ class PySlip(_BufferedCanvas):
         self.RaiseEventPosition(None, None)
 
     ######
-    # "change tile source" routine
+    # Change the tileset
     ######
 
-    def ChangeTileSource(self, tile_obj):
+    def ChangeTileset(self, tile_obj):
         """Change the source of tiles.
 
         tile_obj  the tileset object to use
 
         Returns the old tileset object, None if none.
-        Refreshes the display and maintains the same zoom level amd position.
+        Refreshes the display and tries to maintain the same position
+        and zoom level.
         """
-
-        log('ChangeTileSource: tile_obj=%s' % str(tile_obj))
 
         # remember old tile source
         result = self.tiles
 
-        # set new tileset source
-#        new_name = tile_obj.TilesetName
-#        new_shortname = tile_obj.TilesetShortName
+        # set the new zoom level to the old
+        if not tile_obj.UseLevel(self.level)
+            # can't use old level, make sensible choice
+            if self.level < min(tile_obj.levels):
+                self.level = min(tile_obj.levels)
+            elif self.level > max(tile_obj.levels):
+                self.level = max(tile_obj.levels)
 
-        tile_obj.UseLevel(self.level)
+            # if we can't change level now, raise an error exception
+            if not tile_obj.UseLevel(self.level):
+                raise Exception('Trying to use level %s in tile obj %s, '
+                                'levels available are %s'
+                                % (str(self.level),
+                                   str(tile_obj), str(tile_obj.levels)))
 
         # set new tile source and set some state
         self.tiles = tile_obj
@@ -1215,19 +1215,18 @@ class PySlip(_BufferedCanvas):
         show_levels  new layer show list
         """
 
-        # just in case we got None
+        # if we actually got an 'id' change the .show_levels value
         if id:
             layer = self.layer_mapping[id]
 
-            # prepare the show_level value
-            if show_levels is None:
+            # if not given a 'show_levels' show all levels available
+            if not show_levels:
                 show_levels = range(self.min_level, self.max_level + 1)[:]
 
             layer.show_levels = show_levels
 
-            # if layer was visible, refresh display
-            if visible:
-                self.Update()
+            # always update the display, there may be a change
+            self.Update()
 
     def SetLayerSelectable(self, id, selectable=False):
         """Update the .selectable attribute for a layer.
@@ -1945,8 +1944,8 @@ class PySlip(_BufferedCanvas):
                 # get click point in geo coords
                 clickpt_g = self.View2Geo(clickpt_v)
 
-                # check each layer for a point select callback
-                # we work on a copy as user callback could change order
+                # check each layer for a point select handler
+                # we work on a copy as user code could change order
                 for id in self.layer_z_order[:]:
                     l = self.layer_mapping[id]
                     # if layer visible and selectable

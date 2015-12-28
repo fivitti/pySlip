@@ -73,7 +73,7 @@ TilesDir = 'bm_tiles'
 class Tiles(tiles.BaseTiles):
     """An object to source internet tiles for pySlip."""
 
-    def __init__(self, http_proxy=None):
+    def __init__(self, tiles_dir=TilesDir, http_proxy=None):
         """Override the base class for these tiles.
 
         Basically, just fill in the BaseTiles class with values from above
@@ -83,7 +83,7 @@ class Tiles(tiles.BaseTiles):
         super(Tiles, self).__init__(TileLevels, TileWidth, TileHeight,
                                     servers=TileServers, url_path=TileURLPath,
                                     max_server_requests=MaxServerRequests,
-                                    max_lru=MaxLRU, tiles_dir=TilesDir,
+                                    max_lru=MaxLRU, tiles_dir=tiles_dir,
                                     http_proxy=http_proxy)
 
     def Geo2Tile(self, geo):

@@ -59,10 +59,10 @@ InitViewLevel = 4
 
 # this will eventually be selectable within the app
 # a selection of cities, position from WikiPedia, etc
-#InitViewPosition = (0.0, 51.48)             # Greenwich, England
+InitViewPosition = (0.0, 51.48)             # Greenwich, England
 #InitViewPosition = (5.33, 60.389444)        # Bergen, Norway
 #InitViewPosition = (153.033333, -27.466667)  # Brisbane, Australia
-InitViewPosition = (98.3786761, 7.8627326)   # Phuket (), Thailand
+#InitViewPosition = (98.3786761, 7.8627326)   # Phuket (), Thailand
 #InitViewPosition = (151.209444, -33.859972) # Sydney, Australia
 #InitViewPosition = (-77.036667, 38.895111)  # Washington, DC, USA
 #InitViewPosition = (132.455278, 34.385278)  # Hiroshima, Japan
@@ -352,11 +352,11 @@ class AppFrame(wx.Frame):
         self.pyslip.Bind(pyslip.EVT_PYSLIP_LEVEL, self.handle_level_change)
 
         # select the required tileset
-#        log('.name2guiid=%s' % str(self.name2guiid))
-#        log('.default_tileset_name=%s' % str(self.default_tileset_name))
-#        item_id = self.name2guiid[self.default_tileset_name]
-#        log('type(item_id)=%s' % str(item_id))
-#        tile_menu.Check(item_id, True)
+        log('.name2guiid=%s' % str(self.name2guiid))
+        log('.default_tileset_name=%s' % str(self.default_tileset_name))
+        item_id = self.name2guiid[self.default_tileset_name]
+        log('type(item_id)=%s' % str(item_id))
+        tile_menu.Check(item_id, True)
 
     def onTilesetSelect(self, event):
         """User selected a tileset from the menu.
@@ -385,7 +385,7 @@ class AppFrame(wx.Frame):
             # update the self.id2tiledata element
             self.id2tiledata[menu_id] = (name, module_name, new_tile_obj)
 
-        self.pyslip.ChangeTileSource(new_tile_obj)
+        self.pyslip.ChangeTileset(new_tile_obj)
 
     def onClose(self):
         """Application is closing."""
@@ -425,7 +425,7 @@ class AppFrame(wx.Frame):
 
         # create gui objects
         sb = AppStaticBox(parent, '', style=wx.NO_BORDER)
-        self.pyslip = pyslip.PySlip(parent, tile_src=self.tile_source,
+        self.pyslip = pyslip.PySlip(parent, tileset=self.tile_source,
                                     min_level=MinTileLevel)
 
         # lay out objects

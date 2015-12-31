@@ -352,10 +352,7 @@ class AppFrame(wx.Frame):
         self.pyslip.Bind(pyslip.EVT_PYSLIP_LEVEL, self.handle_level_change)
 
         # select the required tileset
-        log('.name2guiid=%s' % str(self.name2guiid))
-        log('.default_tileset_name=%s' % str(self.default_tileset_name))
         item_id = self.name2guiid[self.default_tileset_name]
-        log('type(item_id)=%s' % str(item_id))
         tile_menu.Check(item_id, True)
 
     def onTilesetSelect(self, event):
@@ -364,11 +361,7 @@ class AppFrame(wx.Frame):
         event  the menu select event
         """
 
-        log('event=%s' % str(dir(event)))
-        log('event.GetEventObject()=%s' % str(event.GetEventObject()))
-
         menu_id = event.GetId()
-        log('self.id2tiledata[%d]=%s' % (menu_id, str(self.id2tiledata[menu_id])))
         try:
             (name, module_name, new_tile_obj) = self.id2tiledata[menu_id]
         except KeyError:

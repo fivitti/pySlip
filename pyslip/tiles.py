@@ -217,9 +217,10 @@ class BaseTiles(object):
         self.available_callback = callback
         self.max_requests = max_server_requests
 
-        # set min and max tile levels
+        # set min and max tile levels and current level
         self.min_level = min(self.levels)
         self.max_level = max(self.levels)
+        self.level = self.min_level
 
         # setup the tile cache (note, no callback set since net unused)
         self.cache = Cache(tiles_dir=tiles_dir, max_lru=max_lru)

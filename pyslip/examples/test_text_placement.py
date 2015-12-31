@@ -34,7 +34,6 @@ InitialViewLevel = 4
 InitialViewPosition = (145.0, -20.0)
 
 # tiles info
-TileDirectory = 'tiles'
 MinTileLevel = 0
 
 # the number of decimal places in a lon/lat display
@@ -349,7 +348,7 @@ class LayerControl(wx.Panel):
 ################################################################################
 
 class AppFrame(wx.Frame):
-    def __init__(self, tile_dir=TileDirectory, levels=None):
+    def __init__(self):
         wx.Frame.__init__(self, None, size=DefaultAppSize,
                           title='%s, test version %s' % (DemoName, DemoVersion))
         self.SetMinSize(DefaultAppSize)
@@ -357,8 +356,7 @@ class AppFrame(wx.Frame):
         self.panel.SetBackgroundColour(wx.WHITE)
         self.panel.ClearBackground()
 
-        self.tile_directory = tile_dir
-        self.tile_source = Tiles(tile_dir, levels)
+        self.tile_source = Tiles.Tiles()
 
         # build the GUI
         self.make_gui(self.panel)
@@ -416,8 +414,7 @@ class AppFrame(wx.Frame):
         # create gui objects
         sb = AppStaticBox(parent, '')
         self.pyslip = pyslip.PySlip(parent, tile_src=self.tile_source,
-                                    min_level=MinTileLevel,
-                                    tilesets=['./tilesets'])
+                                    min_level=MinTileLevel)
 
         # lay out objects
         box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
@@ -801,11 +798,9 @@ if __name__ == '__main__':
 
     # set up the appropriate tile source
     if tile_source == 'gmt':
-        from pyslip.gmt_local_tiles import GMTTiles as Tiles
-        tile_dir = 'gmt_tiles'
+        import pyslip.gmt_local_tiles as Tiles
     elif tile_source == 'osm':
-        from pyslip.osm_tiles import OSMTiles as Tiles
-        tile_dir = 'osm_tiles'
+        import pyslip.osm_tiles as Tiles
     else:
         usage('Bad tile source: %s' % tile_source)
         sys.exit(3)
@@ -815,7 +810,7 @@ if __name__ == '__main__':
 
     prepare_font_choices()    # fills global 'FontChoices'
 
-    app_frame = AppFrame(tile_dir=tile_dir)
+    app_frame = AppFrame()
     app_frame.Show()
 
     if debug:

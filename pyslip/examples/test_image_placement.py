@@ -352,7 +352,7 @@ class AppFrame(wx.Frame):
         self.panel.ClearBackground()
 
         self.tile_directory = tile_dir
-        self.tile_source = Tiles(tile_dir, levels)
+        self.tile_source = Tiles.Tiles()
 
         # build the GUI
         self.make_gui(self.panel)
@@ -410,8 +410,7 @@ class AppFrame(wx.Frame):
         # create gui objects
         sb = AppStaticBox(parent, '')
         self.pyslip = pyslip.PySlip(parent, tile_src=self.tile_source,
-                                    min_level=MinTileLevel,
-                                    tilesets=['./tilesets'])
+                                    min_level=MinTileLevel)
 
         # lay out objects
         box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
@@ -754,11 +753,9 @@ if __name__ == '__main__':
 
     # set up the appropriate tile source
     if tile_source == 'gmt':
-        from pyslip.gmt_local_tiles import GMTTiles as Tiles
-        tile_dir = 'gmt_tiles'
+        import pyslip.gmt_local_tiles as Tiles
     elif tile_source == 'osm':
-        from pyslip.osm_tiles import OSMTiles as Tiles
-        tile_dir = 'osm_tiles'
+        import pyslip.osm_tiles as Tiles
     else:
         usage('Bad tile source: %s' % tile_source)
         sys.exit(3)
@@ -766,7 +763,7 @@ if __name__ == '__main__':
 
     # start wxPython app
     app = wx.App()
-    app_frame = AppFrame(tile_dir=tile_dir) #, levels=[0,1,2,3,4])
+    app_frame = AppFrame()
     app_frame.Show()
 
     if debug:

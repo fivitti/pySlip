@@ -36,12 +36,8 @@ InitViewPosition = (100.51, 13.75)      # Bangkok
 ################################################################################
 
 class TestFrame(wx.Frame):
-    def __init__(self, gmt_tile_dir, osm_tile_dir):
-        """Initialize the widget.
-
-        gmt_tile_dir  path to directory of GMT tiles
-        osm_tile_dir  directory for OSM tile caching
-        """
+    def __init__(self):
+        """Initialize the widget."""
 
         wx.Frame.__init__(self, None, size=DefaultAppSize,
                           title=('PySlip %s - multiwidget test'
@@ -50,10 +46,6 @@ class TestFrame(wx.Frame):
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.panel.SetBackgroundColour(wx.WHITE)
         self.panel.ClearBackground()
-
-        # create the tile source object
-        self.gmt_tile_dir = gmt_tile_dir
-        self.osm_tile_dir = osm_tile_dir
 
         # note that we need a unique Tile source for each widget
         # sharing directories is OK
@@ -135,12 +127,8 @@ if __name__ == '__main__':
             usage()
             sys.exit(0)
 
-    # set up the tile sources - GMT and OSM
-    gmt_tile_dir = 'gmt_tiles'
-    osm_tile_dir = 'osm_tiles'
-
     # start wxPython app
     app = wx.App()
-    TestFrame(gmt_tile_dir, osm_tile_dir).Show()
+    TestFrame().Show()
     app.MainLoop()
 

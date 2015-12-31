@@ -123,9 +123,9 @@ class _BufferedCanvas(wx.Panel):
 
         (width, height) = self.GetClientSizeTuple()
         if width == 0:
-            width = 1
+            width = 1       # during startup, can be 0
         if height == 0:
-            height = 1
+            height = 1      # during startup, can be 0
         self.view_width = width
         self.view_height = height
 
@@ -442,12 +442,12 @@ class PySlip(_BufferedCanvas):
     (TypePoint, TypeImage, TypeText, TypePolygon, TypePolyline) = range(5)
 
 
-    def __init__(self, parent, tileset, start_level=None,
+    def __init__(self, parent, tile_src, start_level=None,
                  min_level=None, max_level=None, tiledirs=None, **kwargs):
         """Initialise a pySlip instance.
 
         parent       reference to parent object
-        tileset      the Tiles source object
+        tile_src     the Tiles source object
         start_level  initial tile level to start at
         min_level    the minimum tile level to use (IGNORED)
         max_level    the maximum tile level to use (IGNORED)
@@ -486,9 +486,9 @@ class PySlip(_BufferedCanvas):
         self.sbox_h = None
         self.sbox_w = None
         self.shift_down = False                 # state of the SHIFT key
-        self.tile_size_x = None
-        self.tile_size_y = None
-        self.tileset = None                     # source of tiles
+        self.tile_src = None                    # source of tiles
+        self.tile_size_x = None                 # tile width
+        self.tile_size_y = None                 # tile height
         self.view_blat = None                   # view bottom lat (set in OnSize())
         self.view_height = None                 # view size in pixels, set in OnSize()
         self.view_llon = None                   # view left lon and top+bottom lat (set in OnSize())
@@ -537,18 +537,27 @@ class PySlip(_BufferedCanvas):
         self.Bind(wx.EVT_KEY_UP, self.OnKeyUp)
 
         # set tile levels stuff - allowed levels, etc
-        self.max_level = max(tileset.levels)
-        self.min_level = min(tileset.levels)
+        self.max_level = max(tile_src.levels)
+        self.min_level = min(tile_src.levels)
 
         # ditto for start_level
         if start_level is None:
             start_level = self.min_level
-        elif start_level not in tileset.levels:
+        elif start_level not in tile_src.levels:
             start_level = self.min_level
         self.level = start_level
 
+        # fill in just enough state to get running
+        self.tile_src = tile_src
+        self.tile_size_x = tile_src.tile_size_x
+        self.tile_size_y = tile_src.tile_size_y
+        self.view_width = 1
+        self.view_height = 1
+        self.view_offset_x = 0
+        self.view_offset_y = 0
+
         # set the tile source object
-        self.ChangeTileset(tileset)
+        self.ChangeTileset(tile_src)
 
         # force a resize, which sets up the rest of the state
         # eventually calls ResizeCallback()
@@ -587,56 +596,57 @@ class PySlip(_BufferedCanvas):
     # Change the tileset
     ######
 
-    def ChangeTileset(self, tileset):
+    def ChangeTileset(self, tile_src):
         """Change the source of tiles.
 
-        tileset  the tileset object to use
+        tile_src  the tileset object to use
 
         Returns the old tileset object, None if none.
         Refreshes the display and tries to maintain the same position
         and zoom level.
         """
 
-        log('ChangeTileset: new tileset: %s' % str(tileset))
+        # get level and geo position of view centre
+        (level, geo) = self.GetLevelAndPosition()
 
         # remember old tileset
-        result = self.tileset
+        result = self.tile_src
 
         # set the new zoom level to the old
-        if not tileset.UseLevel(self.level):
+        if not tile_src.UseLevel(self.level):
             # can't use old level, make sensible choice
-            if self.level < min(tileset.levels):
-                self.level = min(tileset.levels)
-            elif self.level > max(tileset.levels):
-                self.level = max(tileset.levels)
+            if self.level < min(tile_src.levels):
+                self.level = min(tile_src.levels)
+            elif self.level > max(tile_src.levels):
+                self.level = max(tile_src.levels)
 
             # if we can't change level now, raise an error exception
-            if not tileset.UseLevel(self.level):
+            if not tile_src.UseLevel(self.level):
                 raise Exception('Trying to use level %s in tile obj %s, '
                                 'levels available are %s'
                                 % (str(self.level),
-                                   str(tileset), str(tileset.levels)))
+                                   str(tile_src), str(tile_src.levels)))
 
         # set new tile source and set some state
-        self.tileset = tileset
-        self.tile_size_x = self.tileset.tile_size_x
-        self.tile_size_y = self.tileset.tile_size_y
+        self.tile_src = tile_src
+        self.tile_size_x = tile_src.tile_size_x
+        self.tile_size_y = tile_src.tile_size_y
 
-        (num_tiles_x, num_tiles_y, ppd_x, ppd_y) = tileset.GetInfo(self.level)
+        (num_tiles_x, num_tiles_y, ppd_x, ppd_y) = tile_src.GetInfo(self.level)
         self.map_width = self.tile_size_x * num_tiles_x
         self.map_height = self.tile_size_y * num_tiles_y
         self.ppd_x = ppd_x
         self.ppd_y = ppd_y
 
         # set tile levels stuff - allowed levels, etc
-        self.max_level = max(tileset.levels)
-        self.min_level = min(tileset.levels)
+        self.max_level = max(tile_src.levels)
+        self.min_level = min(tile_src.levels)
 
         # set callback from Tile source object when tile(s) available
-        self.tileset.SetAvailableCallback(self.OnTileAvailable)
+        self.tile_src.SetAvailableCallback(self.OnTileAvailable)
 
-        # refresh the display
-#        self.Update()
+        # back to old level+centre, and refresh the display
+        self.GotoLevelAndPosition(level, geo)
 
         return result
 
@@ -1456,7 +1466,7 @@ class PySlip(_BufferedCanvas):
         """
 
         # get fractional tile coords of required centre of view
-        (xtile, ytile) = self.tileset.Geo2Tile(geo)
+        (xtile, ytile) = self.tile_src.Geo2Tile(geo)
 
         # now calculate view offsets, top, left, bottom and right
         half_width = self.view_width / 2
@@ -1499,9 +1509,9 @@ class PySlip(_BufferedCanvas):
         (awidth, aheight) = size
 
         # step through levels (smallest first) and check view size (degrees)
-        for l in self.tileset.levels:
+        for l in self.tile_src.levels:
             level = l
-            (_, _, ppd_x, ppd_y) = self.tileset.getInfo(l)
+            (_, _, ppd_x, ppd_y) = self.tile_src.getInfo(l)
             view_deg_width = self.view_width / ppd_x
             view_deg_height = self.view_height / ppd_y
 
@@ -1510,6 +1520,25 @@ class PySlip(_BufferedCanvas):
                 break
 
         self.GotoLevelAndPosition(level, geo)
+
+######
+# Get level and view data
+######
+
+    def GetLevelAndPosition(self, place='cc'):
+        """Get the level and geo position of a point within the view.
+
+        place  a placement string specifying the point in the view
+               for which we require the geo position
+
+        Returns a tuple (level, geo) where 'geo' is (geo_x, geo_y).
+        """
+
+        view_coords = self.point_placement(place, 0, 0, 0, 0,
+                                           self.view_width, self.view_height)
+        geo = self.View2Geo(view_coords)
+
+        return (self.level, geo)
 
 ######
 # Convert between geo and view coordinates
@@ -1524,9 +1553,9 @@ class PySlip(_BufferedCanvas):
         Assume point is in view.
         """
 
-        (tx, ty) = self.tileset.Geo2Tile(geo)
-        return ((tx * self.tileset.tile_size_x) - self.view_offset_x,
-                (ty * self.tileset.tile_size_y) - self.view_offset_y)
+        (tx, ty) = self.tile_src.Geo2Tile(geo)
+        return ((tx * self.tile_src.tile_size_x) - self.view_offset_x,
+                (ty * self.tile_src.tile_size_y) - self.view_offset_y)
 
 
     def Geo2ViewMasked(self, geo):
@@ -1913,8 +1942,8 @@ class PySlip(_BufferedCanvas):
                 tr_ty = float(tr_vy+self.view_offset_y) / self.tile_size_y
 
                 # selection box in geo coords
-                ll_g = self.tileset.Tile2Geo((ll_tx, ll_ty))
-                tr_g = self.tileset.Tile2Geo((tr_tx, tr_ty))
+                ll_g = self.tile_src.Tile2Geo((ll_tx, ll_ty))
+                tr_g = self.tile_src.Tile2Geo((tr_tx, tr_ty))
 
                 # check each layer for a box select event
                 # we work on a copy as user response could change order
@@ -2041,8 +2070,8 @@ class PySlip(_BufferedCanvas):
             ll_x = (self.sbox_1_x + self.view_offset_x) / self.tile_size_x
             ll_y = (self.sbox_1_y + self.view_offset_y) / self.tile_size_y
 
-            ll_g = self.tileset.Tile2Geo((ll_x, ll_y))
-            tr_g = self.tileset.Tile2Geo((ll_x + self.sbox_w, ll_y + self.sbox_h))
+            ll_g = self.tile_src.Tile2Geo((ll_x, ll_y))
+            tr_g = self.tile_src.Tile2Geo((ll_x + self.sbox_w, ll_y + self.sbox_h))
 
             # check each layer for a box select event
             # we work on a copy as user response could change order
@@ -2069,7 +2098,7 @@ class PySlip(_BufferedCanvas):
             (click_vx, click_vy) = click_v
             click_vx += self.view_offset_x
             click_vy += self.view_offset_y
-            click_g = self.tileset.Tile2Geo((click_vx, click_vy))
+            click_g = self.tile_src.Tile2Geo((click_vx, click_vy))
             # FIXME: do we REALLY need tile coords?
 
             # check each layer for a point select callback
@@ -2143,27 +2172,27 @@ class PySlip(_BufferedCanvas):
         # figure out how to draw tiles
         if self.view_offset_x < 0:
             # View > Map in X - centre in X direction
-            col_list = range(self.tileset.num_tiles_x)
+            col_list = range(self.tile_src.num_tiles_x)
             x_pix_start = -self.view_offset_x
         else:
             # Map > View - determine layout in X direction
             start_x_tile = int(self.view_offset_x / self.tile_size_x)
             stop_x_tile = int((self.view_offset_x + self.view_width
                                + self.tile_size_x - 1) / self.tile_size_x)
-            stop_x_tile = min(self.tileset.num_tiles_x-1, stop_x_tile) + 1
+            stop_x_tile = min(self.tile_src.num_tiles_x-1, stop_x_tile) + 1
             col_list = range(start_x_tile, stop_x_tile)
             x_pix_start = start_x_tile * self.tile_size_y - self.view_offset_x
 
         if self.view_offset_y < 0:
             # View > Map in Y - centre in Y direction
-            row_list = range(self.tileset.num_tiles_y)
+            row_list = range(self.tile_src.num_tiles_y)
             y_pix_start = -self.view_offset_y
         else:
             # Map > View - determine layout in Y direction
             start_y_tile = int(self.view_offset_y / self.tile_size_y)
             stop_y_tile = int((self.view_offset_y + self.view_height
                                + self.tile_size_y - 1) / self.tile_size_y)
-            stop_y_tile = min(self.tileset.num_tiles_y-1, stop_y_tile) + 1
+            stop_y_tile = min(self.tile_src.num_tiles_y-1, stop_y_tile) + 1
             row_list = range(start_y_tile, stop_y_tile)
             y_pix_start = start_y_tile * self.tile_size_y - self.view_offset_y
 
@@ -2173,7 +2202,7 @@ class PySlip(_BufferedCanvas):
         for x in col_list:
             y_pix = y_pix_start
             for y in row_list:
-                tile = self.tileset.GetTile(x, y)
+                tile = self.tile_src.GetTile(x, y)
                 dc.DrawBitmap(tile, x_pix, y_pix, False)
                 y_pix += self.tile_size_y
             x_pix += self.tile_size_x
@@ -2211,7 +2240,7 @@ class PySlip(_BufferedCanvas):
         xtile = float(self.view_offset_x + xview) / self.tile_size_x
         ytile = float(self.view_offset_y + yview) / self.tile_size_y
 
-        return self.tileset.Tile2Geo((xtile, ytile))
+        return self.tile_src.Tile2Geo((xtile, ytile))
 
     def ResizeCallback(self, event=None):
         """Handle a window resize.
@@ -2267,23 +2296,23 @@ class PySlip(_BufferedCanvas):
         Assumes only:
             self.view_offset_x
             self.view_offset_y
-            self.tileset.tile_size_x
-            self.tileset.tile_size_y
+            self.tile_src.tile_size_x
+            self.tile_src.tile_size_y
         values have been set.  All are map pixel values.
         """
 
         # get geo coords of top-left of view
-        tltile_x = float(self.view_offset_x) / self.tileset.tile_size_x
-        tltile_y = float(self.view_offset_y) / self.tileset.tile_size_y
-        (self.view_llon, self.view_tlat) = self.tileset.Tile2Geo((tltile_x,
-                                                                tltile_y))
+        tltile_x = float(self.view_offset_x) / self.tile_src.tile_size_x
+        tltile_y = float(self.view_offset_y) / self.tile_src.tile_size_y
+        (self.view_llon, self.view_tlat) = self.tile_src.Tile2Geo((tltile_x,
+                                                                   tltile_y))
 
         # then get geo coords of bottom-right of view
         tltile_x = (float(self.view_offset_x + self.view_width)
-                        / self.tileset.tile_size_x)
+                        / self.tile_src.tile_size_x)
         tltile_y = (float(self.view_offset_y + self.view_height)
-                        / self.tileset.tile_size_y)
-        (self.view_rlon, self.view_blat) = self.tileset.Tile2Geo((tltile_x,
+                        / self.tile_src.tile_size_y)
+        (self.view_rlon, self.view_blat) = self.tile_src.Tile2Geo((tltile_x,
                                                                 tltile_y))
 
     def ZoomToLevel(self, level):
@@ -2294,19 +2323,15 @@ class PySlip(_BufferedCanvas):
         Returns True if all went well.
         """
 
-        log('ZoomToLevel: level=%d, self.min_level=%d, self.max_level=%d'
-            % (level, self.min_level, self.max_level))
-
         if self.min_level <= level <= self.max_level:
-            if not self.tileset.UseLevel(level):
+            if not self.tile_src.UseLevel(level):
                 # couldn't change level
-                log('ZoomToLevel: .UseLevel(%s) returned False' % level)
                 return False
             self.level = level
-            self.map_width = self.tileset.num_tiles_x * self.tileset.tile_size_x
-            self.map_height = self.tileset.num_tiles_y * self.tileset.tile_size_y
+            self.map_width = self.tile_src.num_tiles_x * self.tile_src.tile_size_x
+            self.map_height = self.tile_src.num_tiles_y * self.tile_src.tile_size_y
             (self.map_llon, self.map_rlon,
-             self.map_blat, self.map_tlat) = self.tileset.extent
+             self.map_blat, self.map_tlat) = self.tile_src.extent
 
             # to set some state variables
             self.OnSize()
@@ -3355,7 +3380,7 @@ class PySlip(_BufferedCanvas):
         x_off, y_off  offset from point
         dcw, dch      width, height of the view draw context (0 if map-rel)
 
-        Returns a tuple (x, y).
+        Returns a tuple (x, y) in view coordinates.
         """
 
         dcw2 = dcw/2

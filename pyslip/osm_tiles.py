@@ -112,7 +112,7 @@ class Tiles(tiles.BaseTiles):
     def Tile2Geo(self, tile):
         """Convert tile fractional coordinates to geo for level in use.
 
-        tile  a tupl;e (xtile,ytile) of tile fractional coordinates
+        tile  a tuple (xtile,ytile) of tile fractional coordinates
 
         Note that we assume the point *is* on the map!
 

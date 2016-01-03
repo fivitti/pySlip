@@ -418,8 +418,8 @@ class AppFrame(wx.Frame):
 
         # create gui objects
         sb = AppStaticBox(parent, '', style=wx.NO_BORDER)
-        self.pyslip = pyslip.PySlip(parent, tileset=self.tile_source,
-                                    min_level=MinTileLevel)
+        self.pyslip = pyslip.PySlip(parent, tile_src=self.tile_source)
+#                                    min_level=MinTileLevel)
 
         # lay out objects
         box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)

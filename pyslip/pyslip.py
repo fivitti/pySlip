@@ -442,16 +442,14 @@ class PySlip(_BufferedCanvas):
     (TypePoint, TypeImage, TypeText, TypePolygon, TypePolyline) = range(5)
 
 
-    def __init__(self, parent, tile_src, start_level=None,
-                 min_level=None, max_level=None, tiledirs=None, **kwargs):
+#    def __init__(self, parent, tile_src, start_level=None,
+#                 min_level=None, max_level=None, tiledirs=None, **kwargs):
+    def __init__(self, parent, tile_src, start_level=None, **kwargs):
         """Initialise a pySlip instance.
 
         parent       reference to parent object
         tile_src     the Tiles source object
         start_level  initial tile level to start at
-        min_level    the minimum tile level to use (IGNORED)
-        max_level    the maximum tile level to use (IGNORED)
-        tiledirs     optional list of user tileset directories
         **kwargs     keyword args for Panel
         """
 
@@ -473,10 +471,10 @@ class PySlip(_BufferedCanvas):
         self.map_height = None                  # set in UseLevel()
         self.map_rlon = None
         self.map_width = None                   # set in UseLevel()
-        self.max_level = None                   # maximum zoom level in tileset
+        self.tiles_max_level = None             # maximum level in current tile source
+        self.tiles_min_level = None             # minimum level in current tile source
         self.max_x_offset = None                # max view X offset (set in ResizeCallback())
         self.max_y_offset = None                # max view Y offset (set in ResizeCallback())
-        self.min_level = None                   # minimum zoom level in tileset
         self.mouse_position_event = True        # True if we send event to report mouse position in view
         self.next_layer_id = 1                  # source of unique layer IDs
         self.on_size_callback = self.ResizeCallback # set callback when parent resizes
@@ -537,14 +535,14 @@ class PySlip(_BufferedCanvas):
         self.Bind(wx.EVT_KEY_UP, self.OnKeyUp)
 
         # set tile levels stuff - allowed levels, etc
-        self.max_level = max(tile_src.levels)
-        self.min_level = min(tile_src.levels)
+        self.tiles_max_level = max(tile_src.levels)
+        self.tiles_min_level = min(tile_src.levels)
 
         # ditto for start_level
         if start_level is None:
-            start_level = self.min_level
+            start_level = self.tiles_min_level
         elif start_level not in tile_src.levels:
-            start_level = self.min_level
+            start_level = self.tiles_min_level
         self.level = start_level
 
         # fill in just enough state to get running
@@ -615,10 +613,10 @@ class PySlip(_BufferedCanvas):
         # set the new zoom level to the old
         if not tile_src.UseLevel(self.level):
             # can't use old level, make sensible choice
-            if self.level < min(tile_src.levels):
-                self.level = min(tile_src.levels)
-            elif self.level > max(tile_src.levels):
-                self.level = max(tile_src.levels)
+            if self.level < self.tiles_min_level:
+                self.level = self.tiles_min_level
+            elif self.level > self.tiles_max_level:
+                self.level = self.tiles_max_level
 
             # if we can't change level now, raise an error exception
             if not tile_src.UseLevel(self.level):
@@ -639,8 +637,8 @@ class PySlip(_BufferedCanvas):
         self.ppd_y = ppd_y
 
         # set tile levels stuff - allowed levels, etc
-        self.max_level = max(tile_src.levels)
-        self.min_level = min(tile_src.levels)
+        self.tiles_max_level = max(tile_src.levels)
+        self.tiles_min_level = min(tile_src.levels)
 
         # set callback from Tile source object when tile(s) available
         self.tile_src.SetAvailableCallback(self.OnTileAvailable)
@@ -1156,7 +1154,7 @@ class PySlip(_BufferedCanvas):
 
         # prepare the show_level value
         if show_levels is None:
-            show_levels = range(self.min_level, self.max_level + 1)[:]
+            show_levels = range(self.tiles_min_level, self.tiles_max_level)[:]
 
         # create layer, add unique ID to Z order list
         l = _Layer(id=id, painter=painter, data=data, map_rel=map_rel,
@@ -1229,7 +1227,8 @@ class PySlip(_BufferedCanvas):
 
             # if not given a 'show_levels' show all levels available
             if not show_levels:
-                show_levels = range(self.min_level, self.max_level + 1)[:]
+                show_levels = range(self.tiles_min_level,
+                                    self.tiles_max_level)[:]
 
             layer.show_levels = show_levels
 
@@ -1306,11 +1305,15 @@ class PySlip(_BufferedCanvas):
             pex = self.PexPoint
 
         # draw points on map/view
+        cache_colour = None     # speed up drawing mostly not changing colours
+
         for (x, y, place, radius, colour, x_off, y_off, udata) in data:
             (pt, ex) = pex(place, (x,y), x_off, y_off, radius)
             if ex and radius:  # don't draw if not on screen or zero radius
-                dc.SetPen(wx.Pen(colour))
-                dc.SetBrush(wx.Brush(colour))
+                if cache_colour != colour:
+                    dc.SetPen(wx.Pen(colour))
+                    cache_colour = colour
+                    dc.SetBrush(wx.Brush(colour))
                 (x, _, y, _) = ex
                 dc.DrawCircle(x+radius, y+radius, radius)
 
@@ -1332,6 +1335,8 @@ class PySlip(_BufferedCanvas):
             pex = self.PexExtent
 
         # draw the images
+        cache_colour = None     # speed up drawing mostly unchanging colours
+
         for (lon, lat, bmap, w, h, place,
                  x_off, y_off, radius, colour, idata) in images:
             (pt, ex) = pex(place, (lon, lat), x_off, y_off, w, h)
@@ -1340,8 +1345,10 @@ class PySlip(_BufferedCanvas):
                 dc.DrawBitmap(bmap, ix, iy, False)
 
             if pt and radius:
-                dc.SetPen(wx.Pen(colour))
-                dc.SetBrush(wx.Brush(colour))
+                if cache_colour != colour:
+                    dc.SetPen(wx.Pen(colour))
+                    dc.SetBrush(wx.Brush(colour))
+                    cache_colour = colour
                 (px, py) = pt
                 dc.DrawCircle(px, py, radius)
 
@@ -1364,17 +1371,23 @@ class PySlip(_BufferedCanvas):
             pex = self.PexExtent
 
         # draw text on map/view
-        last_setfont = None
+        cache_textcolour = None # speed up mostly unchanging data
+        cache_font = None
+        cache_colour = None
+
         for (lon, lat, tdata, place, radius, colour,
                 textcolour, fontname, fontsize, x_off, y_off, data) in text:
 
             # set font characteristics so we calculate text width/height
-            dc.SetTextForeground(textcolour)
-            if last_setfont != (fontname, fontsize):
+            if cache_textcolour != textcolour:
+                dc.SetTextForeground(textcolour)
+                cache_textcolour = textcolour
+
+            if cache_font != (fontname, fontsize):
                 font = wx.Font(fontsize, wx.SWISS, wx.NORMAL, wx.NORMAL,
                                False, fontname)
                 dc.SetFont(font)
-                last_setfont = (fontname, fontsize)
+                cache_font = (fontname, fontsize)
 
             (w, h, _, _) = dc.GetFullTextExtent(tdata)
 
@@ -1386,8 +1399,9 @@ class PySlip(_BufferedCanvas):
 
             if pt and radius:
                 (x, y) = pt
-                dc.SetPen(wx.Pen(colour))
-                dc.SetBrush(wx.Brush(colour))
+                if cache_colour != colour:
+                    dc.SetPen(wx.Pen(colour))
+                    dc.SetBrush(wx.Brush(colour))
                 dc.DrawCircle(x, y, radius)
 
     def DrawPolygonLayer(self, dc, data, map_rel):
@@ -1410,14 +1424,21 @@ class PySlip(_BufferedCanvas):
             pex = self.PexPolygon
 
         # draw polygons
+        cache_colour_width = None     # speed up mostly unchanging data
+        cache_fillcolour = None
+
         for (p, place, width, colour, closed,
                  filled, fillcolour, x_off, y_off, udata) in data:
             (poly, extent) = pex(place, p, x_off, y_off)
             if poly:
-                dc.SetPen(wx.Pen(colour, width=width))
+                if cache_colour_width != (colour, width):
+                    dc.SetPen(wx.Pen(colour, width=width))
+                    cache_colour = (colour, width)
 
                 if filled:
-                    dc.SetBrush(wx.Brush(fillcolour))
+                    if cache_fillcolour != fillcolour:
+                        dc.SetBrush(wx.Brush(fillcolour))
+                        cache_fillcolour = fillcolour
                 else:
                     dc.SetBrush(wx.TRANSPARENT_BRUSH)
 
@@ -1445,10 +1466,14 @@ class PySlip(_BufferedCanvas):
             pex = self.PexPolygon
 
         # draw polyline(s)
+        cache_colour_width = None       # speed up mostly unchanging data
+
         for (p, place, width, colour, x_off, y_off, udata) in data:
             (poly, extent) = pex(place, p, x_off, y_off)
             if poly:
-                dc.SetPen(wx.Pen(colour, width=width))
+                if cache_colour_width != (colour, width):
+                    dc.SetPen(wx.Pen(colour, width=width))
+                    cache_colour_width = (colour, width)
                 dc.SetBrush(wx.TRANSPARENT_BRUSH)
                 dc.DrawLines(poly)
 
@@ -2323,7 +2348,7 @@ class PySlip(_BufferedCanvas):
         Returns True if all went well.
         """
 
-        if self.min_level <= level <= self.max_level:
+        if self.tiles_min_level <= level <= self.tiles_max_level:
             if not self.tile_src.UseLevel(level):
                 # couldn't change level
                 return False

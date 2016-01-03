@@ -388,7 +388,8 @@ class BaseTiles(object):
 
         level  the level to get tile info for
 
-        Returns (num_tiles_x, num_tiles_y, ppd_x, ppd_y).
+        Returns (num_tiles_x, num_tiles_y, ppd_x, ppd_y) or None if 'level'
+        doesn't exist.
 
         Note that ppd_? may be meaningless for some tiles, so its
         value will be None.
@@ -396,6 +397,11 @@ class BaseTiles(object):
         This method is for internet tiles.  It will be overridden for GMT tiles.
         """
 
+        # is required level available?
+        if level not in self.levels:
+            return None
+
+        # otherwise get the information
         self.num_tiles_x = int(math.pow(2, level))
         self.num_tiles_y = int(math.pow(2, level))
 

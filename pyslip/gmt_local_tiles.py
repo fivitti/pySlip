@@ -102,8 +102,13 @@ class Tiles(tiles.BaseTiles):
 
         level  the level to get tile info for
 
-        Returns (num_tiles_x, num_tiles_y, ppd_x, ppd_y).
+        Returns (num_tiles_x, num_tiles_y, ppd_x, ppd_y) or None if 'levels'
+        doesn't exist.
         """
+
+         # is required level available?
+         if level not in self.levels:
+             return None
 
         # see if we can open the tile info file.
         info_file = os.path.join(self.tiles_dir, '%d' % level,

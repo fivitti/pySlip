@@ -179,112 +179,112 @@ class _Layer(object):
         return ('<pyslip Layer: id=%d, name=%s, map_rel=%s, visible=%s'
                 % (self.id, self.name, str(self.map_rel), str(self.visible)))
 
-###############################################################################
-# A Resource class that abstracts loading/storing resources from/to disk.
-###############################################################################
-
-class Resource(object):
-    """A class to allow the loading of layer data to/from disk as a resource.
-
-    An instance of Resource has the following attributes/methods:
-        .layers      a dictionary of named Layer objects
-        .AddLayer()  add a layer to the resource
-        .GetLayer()  get a layer resource by name and type
-        .Read()      read a resource from disk
-        .Write()     write resource to disk
-    """
-
-    def __init__(self, fname=None):
-        """Initialise a Resource object, optionally loading data from disk.
-
-        fname  path to a resource file to read
-        """
-
-        # set default attributes
-        self.layers = {}
-        self.filename = fname
-        if fname:
-            self.Read(fname)
-
-    def Read(self, fname):
-        """Read a resource from disk.
-
-        fname  path to file to read
-
-        fname overwrites self.filename.
-        """
-
-        self.filename = fname
-
-        try:
-            with open(fname) as fp:
-                self.layers = json.load(fp)
-        except IOError, e:
-            msg = 'Error opening %s: %s' % (fname, str(e))
-            raise IOError(msg)
-
-    def Write(self, fname=None):
-        """Write the Resource to disk.
-
-        fname  path to file to write (default is load self.filename)
-
-        If fname is supplied, it overwrites self.filename.
-        """
-
-        if fname:
-            self.filename = fname
-
-        if not self.filename:
-            raise Exception('Write() called but no filename supplied')
-
-        with open(self.filename, 'wb') as fp:
-            json.dump(self.layers, fp, ensure_ascii=False,
-                      indent=2, separators=(',', ':'))
-
-    def AddLayer(self, name, layer_type, data):
-        """Add a layer to the Resource.
-
-        name        name of the layer
-        layer_type  type of the layer
-        data        layer data
-        """
-
-        self.layers[name] = (layer_type, data)
-
-    def GetLayers(self):
-        """Get layers object.
-
-        Returns a dict: {'layer_name': <layer_data>, ...}
-        """
-
-        return self.layers
-
-    def GetLayerByName(self, name):
-        """Get a layer by name.
-
-        name  name of the layer to get
-
-        Returns a tuple (layer_type, data), or None if not found.
-        """
-
-        return self.layers.get(name, None)
-
-    def DeleteLayer(self, name):
-        """Delete a layer by name.
-
-        name  name of the layer to delete
-        """
-
-        try:
-            del self.layers[name]
-        except KeyError:
-            pass
-
-    def __len__(self):
-        """Makes len(Resource) return number of layers held."""
-
-        return len(self.layers)
-
+################################################################################
+## A Resource class that abstracts loading/storing resources from/to disk.
+################################################################################
+#
+#class Resource(object):
+#    """A class to allow the loading of layer data to/from disk as a resource.
+#
+#    An instance of Resource has the following attributes/methods:
+#        .layers      a dictionary of named Layer objects
+#        .AddLayer()  add a layer to the resource
+#        .GetLayer()  get a layer resource by name and type
+#        .Read()      read a resource from disk
+#        .Write()     write resource to disk
+#    """
+#
+#    def __init__(self, fname=None):
+#        """Initialise a Resource object, optionally loading data from disk.
+#
+#        fname  path to a resource file to read
+#        """
+#
+#        # set default attributes
+#        self.layers = {}
+#        self.filename = fname
+#        if fname:
+#            self.Read(fname)
+#
+#    def Read(self, fname):
+#        """Read a resource from disk.
+#
+#        fname  path to file to read
+#
+#        fname overwrites self.filename.
+#        """
+#
+#        self.filename = fname
+#
+#        try:
+#            with open(fname) as fp:
+#                self.layers = json.load(fp)
+#        except IOError, e:
+#            msg = 'Error opening %s: %s' % (fname, str(e))
+#            raise IOError(msg)
+#
+#    def Write(self, fname=None):
+#        """Write the Resource to disk.
+#
+#        fname  path to file to write (default is load self.filename)
+#
+#        If fname is supplied, it overwrites self.filename.
+#        """
+#
+#        if fname:
+#            self.filename = fname
+#
+#        if not self.filename:
+#            raise Exception('Write() called but no filename supplied')
+#
+#        with open(self.filename, 'wb') as fp:
+#            json.dump(self.layers, fp, ensure_ascii=False,
+#                      indent=2, separators=(',', ':'))
+#
+#    def AddLayer(self, name, layer_type, data):
+#        """Add a layer to the Resource.
+#
+#        name        name of the layer
+#        layer_type  type of the layer
+#        data        layer data
+#        """
+#
+#        self.layers[name] = (layer_type, data)
+#
+#    def GetLayers(self):
+#        """Get layers object.
+#
+#        Returns a dict: {'layer_name': <layer_data>, ...}
+#        """
+#
+#        return self.layers
+#
+#    def GetLayerByName(self, name):
+#        """Get a layer by name.
+#
+#        name  name of the layer to get
+#
+#        Returns a tuple (layer_type, data), or None if not found.
+#        """
+#
+#        return self.layers.get(name, None)
+#
+#    def DeleteLayer(self, name):
+#        """Delete a layer by name.
+#
+#        name  name of the layer to delete
+#        """
+#
+#        try:
+#            del self.layers[name]
+#        except KeyError:
+#            pass
+#
+#    def __len__(self):
+#        """Makes len(Resource) return number of layers held."""
+#
+#        return len(self.layers)
+#
 ###############################################################################
 # Define the events that are raised by the pySlip widget.
 ###############################################################################

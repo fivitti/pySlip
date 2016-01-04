@@ -545,8 +545,7 @@ class AppFrame(wx.Frame):
     def pointUpdate(self, event):
         """Display updated point."""
 
-        log('pointUpdate')
-
+        # remove existing point map-rel layer, if any
         if self.point_layer:
             self.pyslip.DeleteLayer(self.point_layer)
 

@@ -1412,6 +1412,16 @@ class PySlip(_BufferedCanvas):
         if self.ZoomToLevel(level):
             self.GotoPosition(geo)
 
+    def GotoLevel(self, level):
+        """Zoom to a map level.
+
+        level  the map level to use
+
+        Does nothing if we can't use desired level.
+        """
+
+        self.ZoomToLevel(level)
+
     def ZoomToArea(self, geo, size):
         """Set view to level and position to view an area.
 

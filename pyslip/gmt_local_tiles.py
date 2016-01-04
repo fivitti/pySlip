@@ -106,9 +106,9 @@ class Tiles(tiles.BaseTiles):
         doesn't exist.
         """
 
-         # is required level available?
-         if level not in self.levels:
-             return None
+        # is required level available?
+        if level not in self.levels:
+            return None
 
         # see if we can open the tile info file.
         info_file = os.path.join(self.tiles_dir, '%d' % level,

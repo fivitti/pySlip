@@ -456,7 +456,7 @@ class PySlip(_BufferedCanvas):
         self.OnSize()
 
         # finally, use the tile level the user wants
-        self.ZoomToLevel(self.level)
+        self.GotoLevel(self.level)
 
     def OnTileAvailable(self, level, x, y, img, bmp):
         """Callback routine: tile level/x/y is available.
@@ -1375,6 +1375,31 @@ class PySlip(_BufferedCanvas):
 # Positioning methods
 ######
 
+    def GotoLevel(self, level):
+        """Use a new tile level.
+
+        level  the new tile level to use.
+
+        Returns True if all went well.
+        """
+
+        if not self.tile_src.UseLevel(level):
+            return False        # couldn't change level
+
+        self.level = level
+        self.map_width = self.tile_src.num_tiles_x * self.tile_src.tile_size_x
+        self.map_height = self.tile_src.num_tiles_y * self.tile_src.tile_size_y
+        (self.map_llon, self.map_rlon,
+         self.map_blat, self.map_tlat) = self.tile_src.extent
+
+        # to set some state variables
+        self.OnSize()
+
+        # raise level change event
+        self.RaiseEventLevel(level)
+
+        return True
+
     def GotoPosition(self, geo):
         """Set view to centre on a geo position in the current level.
 
@@ -1409,18 +1434,8 @@ class PySlip(_BufferedCanvas):
         Does nothing if we can't use desired level.
         """
 
-        if self.ZoomToLevel(level):
+        if self.GotoLevel(level):
             self.GotoPosition(geo)
-
-    def GotoLevel(self, level):
-        """Zoom to a map level.
-
-        level  the map level to use
-
-        Does nothing if we can't use desired level.
-        """
-
-        self.ZoomToLevel(level)
 
     def ZoomToArea(self, geo, size):
         """Set view to level and position to view an area.
@@ -1945,11 +1960,11 @@ class PySlip(_BufferedCanvas):
 
         if self.shift_down:
             # zoom out if shift key also down
-            if self.ZoomToLevel(self.level - 1):
+            if self.GotoLevel(self.level - 1):
                 self.ZoomOut(gposn)
         else:
             # zoom in
-            if self.ZoomToLevel(self.level + 1):
+            if self.GotoLevel(self.level + 1):
                 self.ZoomIn(gposn)
 
     def OnMiddleDown(self, event):
@@ -2070,10 +2085,10 @@ class PySlip(_BufferedCanvas):
 
         # determine which way to zoom, & *can* we zoom?
         if event.GetWheelRotation() > 0:
-            if self.ZoomToLevel(self.level + 1):
+            if self.GotoLevel(self.level + 1):
                 self.ZoomIn(gposn)
         else:
-            if self.ZoomToLevel(self.level - 1):
+            if self.GotoLevel(self.level - 1):
                 self.ZoomOut(gposn)
 
 ######
@@ -2243,34 +2258,6 @@ class PySlip(_BufferedCanvas):
                         / self.tile_src.tile_size_y)
         (self.view_rlon, self.view_blat) = self.tile_src.Tile2Geo((tltile_x,
                                                                 tltile_y))
-
-    def ZoomToLevel(self, level):
-        """Use a new tile level.
-
-        level  the new tile level to use.
-
-        Returns True if all went well.
-        """
-
-        if self.tiles_min_level <= level <= self.tiles_max_level:
-            if not self.tile_src.UseLevel(level):
-                # couldn't change level
-                return False
-            self.level = level
-            self.map_width = self.tile_src.num_tiles_x * self.tile_src.tile_size_x
-            self.map_height = self.tile_src.num_tiles_y * self.tile_src.tile_size_y
-            (self.map_llon, self.map_rlon,
-             self.map_blat, self.map_tlat) = self.tile_src.extent
-
-            # to set some state variables
-            self.OnSize()
-
-            # raise level change event
-            self.RaiseEventLevel(level)
-
-            return True
-
-        return False
 
 ######
 # Select helpers - get objects that were selected

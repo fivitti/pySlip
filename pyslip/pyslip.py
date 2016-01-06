@@ -2105,7 +2105,7 @@ class PySlip(_BufferedCanvas):
         For the background map the idea is to create 4 things that define the
         tiles to be drawn and where to draw them:
             x_pix_start  view pixel coord of left side of top-left tile
-            y_pix_start  view pixel coord of top side of top-left tole
+            y_pix_start  view pixel coord of top side of top-left tile
             row_list     list (top -> bottom) of tile rows
             col_list     list (left -> right) of tile columns
 

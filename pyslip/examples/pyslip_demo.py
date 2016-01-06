@@ -55,7 +55,8 @@ DemoVersion = '3.1'
 MinTileLevel = 0
 
 # initial view level and position
-InitViewLevel = 4
+#InitViewLevel = 4
+InitViewLevel = 0
 
 # this will eventually be selectable within the app
 # a selection of cities, position from WikiPedia, etc

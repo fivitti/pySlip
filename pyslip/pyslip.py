@@ -1383,6 +1383,8 @@ class PySlip(_BufferedCanvas):
         Returns True if all went well.
         """
 
+        log('GotoLevel: level=%d' % level)
+
         if not self.tile_src.UseLevel(level):
             return False        # couldn't change level
 
@@ -2113,13 +2115,41 @@ class PySlip(_BufferedCanvas):
         if the view is smaller than the map.
         """
 
-        # figure out how to draw tiles
+        log('FUDGE'); self.tile_src.wrap = True
+        log('self.tile_src.wrap=%s' % str(self.tile_src.wrap))
+
+        # figure out how to draw tiles in the X direction
+        log('self.view_offset_x=%s' % str(self.view_offset_x))
         if self.view_offset_x < 0:
-            # View > Map in X - centre in X direction
-            col_list = range(self.tile_src.num_tiles_x)
-            x_pix_start = -self.view_offset_x
+            if self.tile_src.wrap:  # View > Map in X - wrap tiles so we fill view
+                # the number of tiles to the left of the virtual map
+                tiles_left = (-self.view_offset_x+self.tile_size_x-1)/self.tile_size_x
+                log('tiles_left=%s' % str(tiles_left))
+
+                tile_left_coord = tiles_left % self.tile_src.num_tiles_x
+                log('tile_left_coord=%s' % str(tile_left_coord))
+
+                x_pix_start = -(tiles_left*self.tile_size_x + self.view_offset_x)
+                log('x_pix_start=%s' % str(x_pix_start))
+                remaining = self.view_width + self.tile_size_x - self.view_offset_x
+                log('self.view_width=%d, self.tile_size_x=%d, self.view_offset_x=%d'
+                    % (self.view_width, self.tile_size_x, self.view_offset_x))
+                log('remaining=%s' % str(remaining))
+                log('self.tile_size_x=%d' % self.tile_size_x)
+
+                col_list = []
+                while remaining > 0:
+                    log('remaining=%d, appending %d' % (remaining, tile_left_coord))
+                    col_list.append(tile_left_coord)
+                    tile_left_coord = (tile_left_coord + 1) % self.tile_src.num_tiles_x
+                    remaining -= self.tile_size_x
+                log('col_list=%s' % str(col_list))
+            else:
+                # View > Map in X - centre in X direction
+                col_list = range(self.tile_src.num_tiles_x) # draw all X tiles
+                x_pix_start = -self.view_offset_x
         else:
-            # Map > View - determine layout in X direction
+            # Map > View in X - determine layout in X direction
             start_x_tile = int(self.view_offset_x / self.tile_size_x)
             stop_x_tile = int((self.view_offset_x + self.view_width
                                + self.tile_size_x - 1) / self.tile_size_x)
@@ -2127,6 +2157,7 @@ class PySlip(_BufferedCanvas):
             col_list = range(start_x_tile, stop_x_tile)
             x_pix_start = start_x_tile * self.tile_size_y - self.view_offset_x
 
+        # figure out how to draw tiles in the Y direction
         if self.view_offset_y < 0:
             # View > Map in Y - centre in Y direction
             row_list = range(self.tile_src.num_tiles_y)

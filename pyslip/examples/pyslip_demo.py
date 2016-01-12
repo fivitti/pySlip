@@ -56,12 +56,12 @@ MinTileLevel = 0
 
 # initial view level and position
 #InitViewLevel = 4
-InitViewLevel = 0
+InitViewLevel = 3
 
 # this will eventually be selectable within the app
 # a selection of cities, position from WikiPedia, etc
-InitViewPosition = (0.0, 51.48)             # Greenwich, England
-#InitViewPosition = (5.33, 60.389444)        # Bergen, Norway
+#InitViewPosition = (0.0, 51.48)             # Greenwich, England
+InitViewPosition = (5.33, 60.389444)        # Bergen, Norway
 #InitViewPosition = (153.033333, -27.466667)  # Brisbane, Australia
 #InitViewPosition = (98.3786761, 7.8627326)   # Phuket (), Thailand
 #InitViewPosition = (151.209444, -33.859972) # Sydney, Australia

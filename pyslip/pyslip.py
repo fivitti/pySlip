@@ -54,6 +54,9 @@ except ImportError as e:
 (EventLevel, EventPosition, EventSelect, EventBoxSelect,
     EventPolySelect, EventPolyBoxSelect, EventRightSelect) = range(7)
 
+# default usual cursor and cursor during a box select
+DefaultCursor = wx.CURSOR_DEFAULT
+BoxSelectCursor = wx.CURSOR_CROSS
 
 ######
 # Base class for the widget canvas - buffered and flicker-free.
@@ -351,7 +354,7 @@ class PySlip(_BufferedCanvas):
 
         # initialize all state variables to a 'vanilla' state
         self.change_level_event = True          # True if we send event on level change
-        self.default_cursor = wx.CURSOR_DEFAULT # initial and usual cursor
+        self.default_cursor = DefaultCursor     # initial and usual cursor
         self.ignore_next_right_up = False       # ignore next RIGHT UP event
         self.ignore_next_up = False             # ignore next LEFT UP event
         self.is_box_select = False              # True if box selection
@@ -377,13 +380,14 @@ class PySlip(_BufferedCanvas):
         self.sbox_w = None
         self.shift_down = False                 # state of the SHIFT key
         self.tile_src = None                    # source of tiles
-        self.tile_size_x = None                 # tile width
-        self.tile_size_y = None                 # tile height
+        self.tile_size_x = None                 # individual tile width
+        self.tile_size_y = None                 # individual tile height
         self.view_blat = None                   # view bottom lat (set in OnSize())
         self.view_height = None                 # view size in pixels, set in OnSize()
         self.view_llon = None                   # view left lon and top+bottom lat (set in OnSize())
-        self.view_offset_x = None               # map pixel offset at left of view
-        self.view_offset_y = None               # map pixel offset at top of view
+        self.mtile_tile_xy = (0, 0)             # tile coords of master tile: tuple (x,y)
+        self.mtile_offset_x = 0                 # master tile X position on view
+        self.mtile_offset_y = 0                 # master tile Y position on view
         self.view_rlon = None                   # view right lon (set in OnSize())
         self.view_tlat = None                   # view top lat (set in OnSize())
         self.view_width = None                  # view size in pixels, set in OnSize()
@@ -1387,8 +1391,8 @@ class PySlip(_BufferedCanvas):
             return False        # couldn't change level
 
         self.level = level
-        self.map_width = self.tile_src.num_tiles_x * self.tile_src.tile_size_x
-        self.map_height = self.tile_src.num_tiles_y * self.tile_src.tile_size_y
+        self.map_width = self.tile_src.num_tiles_x * self.tile_size_x
+        self.map_height = self.tile_src.num_tiles_y * self.tile_size_y
         (self.map_llon, self.map_rlon,
          self.map_blat, self.map_tlat) = self.tile_src.extent
 
@@ -1497,9 +1501,13 @@ class PySlip(_BufferedCanvas):
         Assume point is in view.
         """
 
-        (tx, ty) = self.tile_src.Geo2Tile(geo)
-        return ((tx * self.tile_src.tile_size_x) - self.view_offset_x,
-                (ty * self.tile_src.tile_size_y) - self.view_offset_y)
+        (tile_x, tile_y) = self.tile_src.Geo2Tile(geo)
+        (mtile_x, mtile_y) = self.mtile_tile_xy
+
+        view_x = float(mtile_x) + (tile_x - mtile_x) * self.tile_size_x
+        view_y = float(mtile_y) + (tile_y - mtile_y) * self.tile_size_y
+
+        return (view_x, view_y)
 
 
     def Geo2ViewMasked(self, geo):
@@ -1518,6 +1526,22 @@ class PySlip(_BufferedCanvas):
             return self.Geo2View(geo)
 
         return None
+
+    def View2Geo(self, view):
+        """Convert a view coords position to a geo coords position.
+
+        view  tuple of view coords (xview, yview)
+
+        Returns a tuple of geo coords (xgeo, ygeo);
+        """
+
+        (view_x, view_y) = view
+        (mtile_x, mtile_y) = self.mtile_tile_xy
+
+        tile_x = float(mtile_x) + (view_x - mtile_x) / self.tile_size_x
+        tile_y = float(mtile_y) + (view_y - mtile_y) / self.tile_size_y
+
+        return self.tile_src.Tile2Geo((tile_x, tile_y))
 
 ######
 # PEX - Point & EXtension.
@@ -1834,14 +1858,14 @@ class PySlip(_BufferedCanvas):
     def OnKeyDown(self, event):
         if event.m_keyCode == wx.WXK_SHIFT:
             self.shift_down = True
-            self.default_cursor = wx.CURSOR_CROSS
-            self.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
+            self.default_cursor = BoxSelectCursor
+            self.SetCursor(wx.StockCursor(BoxSelectCursor))
 
     def OnKeyUp(self, event):
         if event.m_keyCode == wx.WXK_SHIFT:
             self.shift_down = False
-            self.default_cursor = wx.CURSOR_DEFAULT
-            self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+            self.default_cursor = DefaultCursor
+            self.SetCursor(wx.StockCursor(DefaultCursor))
 
 
     def OnLeftDown(self, event):
@@ -1994,7 +2018,7 @@ class PySlip(_BufferedCanvas):
 
         if self.shift_down:
             self.is_box_select = True
-            self.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
+            self.SetCursor(wx.StockCursor(BoxSelectCursor))
             (self.sbox_w, self.sbox_h) = (0, 0)
             (self.sbox_1_x, self.sbox_1_y) = click_posn
         event.Skip()
@@ -2013,7 +2037,7 @@ class PySlip(_BufferedCanvas):
             self.ignore_next_right_up = False
             return
 
-        self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+        self.SetCursor(wx.StockCursor(DefaultCursor))
 
         # we need a repaint to remove any selection box, but NOT YET!
         delayed_paint = self.sbox_1_x       # True if box select active
@@ -2123,65 +2147,55 @@ class PySlip(_BufferedCanvas):
         if the view is smaller than the map.
         """
 
-# WRAP
-        log('DRAW'); self.tile_src.wrap = True
-        #log('DRAW'); self.tile_src.wrap = False
-        log('self.tile_src.wrap=%s' % str(self.tile_src.wrap))
+        log('DRAW')
+        self.tile_src.wrap_x = False
+        self.tile_src.wrap_y = False
+        log('.tile_src.wrap_x=%s, .mtile_tile_xy=%s'
+            % (str(self.tile_src.wrap_x), str(self.mtile_tile_xy)))
+        log('.mtile_offset_x=%s, .mtile_offset_y=%s'
+            % (str(self.mtile_offset_x), str(self.mtile_offset_y)))
+
+        # get X and Y coords of master tile
+        (mtile_x, mtile_y) = self.mtile_tile_xy
+
+#FUDGE hoist this data into self when changing tile source
+        # get number of tiles in X and Y direction
+        (num_tiles_x, num_tiles_y, _, _) = self.tile_src.GetInfo(self.level)
 
         # figure out how to draw tiles in the X direction
-        log('self.view_offset_x=%s' % str(self.view_offset_x))
-        if self.view_offset_x < 0:
-            # View > Map in X
-            if self.tile_src.wrap:  # wrap tiles so we fill view
-                # the number of tiles to the left of the virtual map
-                tiles_left = (-self.view_offset_x+self.tile_size_x-1)/self.tile_size_x
-                log('tiles_left=%s' % str(tiles_left))
-
-                tile_left_coord = tiles_left % self.tile_src.num_tiles_x
-                log('tile_left_coord=%s' % str(tile_left_coord))
-
-                x_pix_start = -(tiles_left*self.tile_size_x + self.view_offset_x)
-                log('x_pix_start=%s' % str(x_pix_start))
-                remaining = self.view_width + self.tile_size_x - self.view_offset_x
-                log('self.view_width=%d, self.tile_size_x=%d, self.view_offset_x=%d'
-                    % (self.view_width, self.tile_size_x, self.view_offset_x))
-                log('remaining=%s' % str(remaining))
-                log('self.tile_size_x=%d' % self.tile_size_x)
-
-                col_list = []
-                while remaining > 0:
-                    log('remaining=%d, appending %d' % (remaining, tile_left_coord))
-                    col_list.append(tile_left_coord)
-                    tile_left_coord = (tile_left_coord + 1) % self.tile_src.num_tiles_x
-                    remaining -= self.tile_size_x
-            else:
-                # centre in X direction
-                col_list = range(self.tile_src.num_tiles_x) # draw all X tiles
-                x_pix_start = -self.view_offset_x
-        else:
-            # Map > View in X - determine layout in X direction
-            start_x_tile = int(self.view_offset_x / self.tile_size_x)
-            stop_x_tile = int((self.view_offset_x + self.view_width
-                               + self.tile_size_x - 1) / self.tile_size_x)
-            stop_x_tile = min(self.tile_src.num_tiles_x-1, stop_x_tile) + 1
-            col_list = range(start_x_tile, stop_x_tile)
-            x_pix_start = start_x_tile * self.tile_size_y - self.view_offset_x
+        col_list = []
+        x_pix_start = left_edge = self.mtile_offset_x
+        while left_edge < self.view_width:
+            col_list.append(mtile_x)
+            left_edge += self.tile_size_x
+            mtile_x += 1
+            if mtile_x >= num_tiles_x:
+                if self.tile_src.wrap_x:
+                    mtile_x = 0
+                else:
+                    break
 
         # figure out how to draw tiles in the Y direction
-        if self.view_offset_y < 0:
-            # View > Map in Y - centre in Y direction
-            row_list = range(self.tile_src.num_tiles_y)
-            y_pix_start = -self.view_offset_y
-        else:
-            # Map > View - determine layout in Y direction
-            start_y_tile = int(self.view_offset_y / self.tile_size_y)
-            stop_y_tile = int((self.view_offset_y + self.view_height
-                               + self.tile_size_y - 1) / self.tile_size_y)
-            stop_y_tile = min(self.tile_src.num_tiles_y-1, stop_y_tile) + 1
-            row_list = range(start_y_tile, stop_y_tile)
-            y_pix_start = start_y_tile * self.tile_size_y - self.view_offset_y
+        row_list = []
+        y_pix_start = top_edge = self.mtile_offset_y
+        log('LOOP TOP: top_edge=%s, self.tile_size_y=%s' % (str(top_edge), str(self.tile_size_y)))
+        log('self.view_height=%d, self.tile_src.wrap_y=%s' % (self.view_height, str(self.tile_src.wrap_y)))
+        while top_edge < self.view_height:
+            row_list.append(mtile_y)
+            top_edge += self.tile_size_y
+            mtile_y += 1
+            log('in loop: mtile_y=%d, num_tiles_y=%d' % (mtile_y, num_tiles_y))
+            if mtile_y >= num_tiles_y:
+                log('over edge of map, wrap?')
+                if self.tile_src.wrap_y:
+                    mtile_y = 0
+                    log('YES!')
+                else:
+                    log('NO, finished')
+                    break
 
         log('col_list=%s' % str(col_list))
+        log('row_list=%s' % str(row_list))
 
         # start pasting tiles onto the view
         # use x_pix and y_pix to place tiles
@@ -2214,20 +2228,6 @@ class PySlip(_BufferedCanvas):
 ######
 # Miscellaneous
 ######
-
-    def View2Geo(self, view):
-        """Convert a view coords position to a geo coords position.
-
-        view  tuple of view coords (xview, yview)
-
-        Returns a tuple of geo coords (xgeo, ygeo);
-        """
-
-        (xview, yview) = view
-        xtile = float(self.view_offset_x + xview) / self.tile_size_x
-        ytile = float(self.view_offset_y + yview) / self.tile_size_y
-
-        return self.tile_src.Tile2Geo((xtile, ytile))
 
     def ResizeCallback(self, event=None):
         """Handle a window resize.
@@ -2280,27 +2280,50 @@ class PySlip(_BufferedCanvas):
     def RecalcViewLimits(self):
         """Recalculate the view geo extent values.
 
-        Assumes only:
-            self.view_offset_x
-            self.view_offset_y
-            self.tile_src.tile_size_x
-            self.tile_src.tile_size_y
+        Assumes only that the
+            self.mtile_offset_x
+            self.mtile_offset_y
+            self.tile_size_x
+            self.tile_size_y
         values have been set.  All are map pixel values.
+
+        Sets the
+            self.view_llon
+            self.view_tlat
+            self.view_rlon
+            self.view_blat
+        values.
         """
 
-        # get geo coords of top-left of view
-        tltile_x = float(self.view_offset_x) / self.tile_src.tile_size_x
-        tltile_y = float(self.view_offset_y) / self.tile_src.tile_size_y
-        (self.view_llon,
-         self.view_tlat) = self.tile_src.Tile2Geo((tltile_x, tltile_y))
+        # integer tile coords of the master tile
+        (mtile_x, mtile_y) = self.mtile_tile_xy
 
-        # then get geo coords of bottom-right of view
-        tltile_x = float(self.view_offset_x +
-                         self.view_width) / self.tile_src.tile_size_x
-        tltile_y = float(self.view_offset_y +
-                         self.view_height) / self.tile_src.tile_size_y
-        (self.view_rlon,
-         self.view_blat) = self.tile_src.Tile2Geo((tltile_x, tltile_y))
+        # number of tiles in X and Y directions
+        (num_tiles_x, num_tiles_y, _, _) = self.tile_src.GetInfo(self.level)
+
+        # get tile coords of top-left edge(s) of master tile in view
+        tltile_x = float(mtile_x)       # assume ALL of master tile in view
+        if self.mtile_offset_x >= 0:
+            # otherwise add in fractional tile not showing
+#            tltile_x += float(self.tile_size_x) / self.mtile_offset_x
+            tltile_x += float(self.mtile_offset_x) / self.tile_size_x
+
+        tltile_y = float(mtile_y)       # assume ALL of master tile in view
+        if self.mtile_offset_y >= 0:
+            # otherwise add in fractional tile not showing
+#            tltile_y += float(self.tile_size_y) / self.mtile_offset_y
+            tltile_y += float(self.mtile_offset_y) / self.tile_size_y
+
+        # now get left and top lon/lat limits
+        (self.view_llon, self.view_tlat) = self.tile_src.Tile2Geo((tltile_x, tltile_y))
+
+        # now figure out what is showing at bottom right
+        if self.mtile_offset_y >= 0:
+            tltile_y = tltile_y + num_tiles_y * self.tile_size_y
+        else:
+            tltile_y = tltile_y + float(self.view_height) / self.tile_size_y
+
+        (self.view_rlon, self.view_blat) = self.tile_src.Tile2Geo((tltile_x, tltile_y))
 
 ######
 # Select helpers - get objects that were selected

@@ -374,8 +374,8 @@ class BaseTiles(object):
         except KeyError:
             # if we are serving local tiles, this is an error
             if self.servers is None:
-                raise KeyError("Can't find tile for key '%s'"
-                               % str((self.level, x, y)))
+                raise KeyError("Can't find tile for key level=%d, x=%d, y=%d"
+                               % (self.level, x, y))
 
             # start process of getting tile from 'net, return 'pending' image
             self._get_internet_tile(self.level, x, y)

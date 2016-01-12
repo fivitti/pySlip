@@ -87,9 +87,7 @@ class _BufferedCanvas(wx.Panel):
         self.Bind(wx.EVT_SIZE, self.OnSize)
 
         # Disable background erasing (flicker-licious)
-        def disable_event(*args, **kwargs):
-            pass            # the sauce, please
-        self.Bind(wx.EVT_ERASE_BACKGROUND, disable_event)
+        self.Bind(wx.EVT_ERASE_BACKGROUND, lambda *args, **kwargs: None)
 
         # set callback upon onSize event
         self.on_size_callback = None
@@ -1793,7 +1791,11 @@ class PySlip(_BufferedCanvas):
                 # move the map in the view
                 self.view_offset_x += dx
                 self.view_offset_y += dy
-                self.view_offset_x %= self.tile_size_x
+#                self.view_offset_x %= self.tile_size_x
+                if self.view_offset_x > 0:
+                    self.view_offset_x %= self.tile_size_x
+                else:
+                    self.view_offset_x = -(-self.tile_size_x % self.tile_size_x)
                 log('OnMove: self.view_offset_x=%d' % self.view_offset_x)
 
 # WRAP
@@ -1863,6 +1865,9 @@ class PySlip(_BufferedCanvas):
         Could be end of a drag or point or box selection.  If it's the end of
         a drag we don't do a lot.  If a selection we process that.
         """
+
+        log('OnLeftUp: self.view_offset_x=%s' % str(self.view_offset_x))
+        return
 
         # turn off any dragging
         self.last_drag_x = self.last_drag_y = None
@@ -2119,7 +2124,8 @@ class PySlip(_BufferedCanvas):
         """
 
 # WRAP
-        log('FUDGE'); self.tile_src.wrap = True
+        log('DRAW'); self.tile_src.wrap = True
+        #log('DRAW'); self.tile_src.wrap = False
         log('self.tile_src.wrap=%s' % str(self.tile_src.wrap))
 
         # figure out how to draw tiles in the X direction
@@ -2148,7 +2154,6 @@ class PySlip(_BufferedCanvas):
                     col_list.append(tile_left_coord)
                     tile_left_coord = (tile_left_coord + 1) % self.tile_src.num_tiles_x
                     remaining -= self.tile_size_x
-                log('col_list=%s' % str(col_list))
             else:
                 # centre in X direction
                 col_list = range(self.tile_src.num_tiles_x) # draw all X tiles
@@ -2175,6 +2180,8 @@ class PySlip(_BufferedCanvas):
             stop_y_tile = min(self.tile_src.num_tiles_y-1, stop_y_tile) + 1
             row_list = range(start_y_tile, stop_y_tile)
             y_pix_start = start_y_tile * self.tile_size_y - self.view_offset_y
+
+        log('col_list=%s' % str(col_list))
 
         # start pasting tiles onto the view
         # use x_pix and y_pix to place tiles
@@ -2284,16 +2291,16 @@ class PySlip(_BufferedCanvas):
         # get geo coords of top-left of view
         tltile_x = float(self.view_offset_x) / self.tile_src.tile_size_x
         tltile_y = float(self.view_offset_y) / self.tile_src.tile_size_y
-        (self.view_llon, self.view_tlat) = self.tile_src.Tile2Geo((tltile_x,
-                                                                   tltile_y))
+        (self.view_llon,
+         self.view_tlat) = self.tile_src.Tile2Geo((tltile_x, tltile_y))
 
         # then get geo coords of bottom-right of view
-        tltile_x = (float(self.view_offset_x + self.view_width)
-                        / self.tile_src.tile_size_x)
-        tltile_y = (float(self.view_offset_y + self.view_height)
-                        / self.tile_src.tile_size_y)
-        (self.view_rlon, self.view_blat) = self.tile_src.Tile2Geo((tltile_x,
-                                                                tltile_y))
+        tltile_x = float(self.view_offset_x +
+                         self.view_width) / self.tile_src.tile_size_x
+        tltile_y = float(self.view_offset_y +
+                         self.view_height) / self.tile_src.tile_size_y
+        (self.view_rlon,
+         self.view_blat) = self.tile_src.Tile2Geo((tltile_x, tltile_y))
 
 ######
 # Select helpers - get objects that were selected

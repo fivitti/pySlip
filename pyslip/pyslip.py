@@ -27,6 +27,7 @@ import os
 import sys
 import glob
 import json
+import math
 try:
     import cPickle as pickle
 except ImportError:
@@ -447,8 +448,9 @@ class PySlip(_BufferedCanvas):
         self.tile_size_y = tile_src.tile_size_y
         self.view_width = 1
         self.view_height = 1
-        self.view_offset_x = 0
-        self.view_offset_y = 0
+        self.mtile_tile_xy = (0, 0)             # tile coords of master tile: tuple (x,y)
+        self.mtile_offset_x = 0                 # master tile X position on view
+        self.mtile_offset_y = 0                 # master tile Y position on view
 
         # set the tile source object
         self.ChangeTileset(tile_src)
@@ -1409,21 +1411,62 @@ class PySlip(_BufferedCanvas):
 
         geo  a tuple (xgeo,ygeo) to centre view on
 
-        Sets self.view_offset_x and self.view_offset_y and then calls
-        RecalcViewLimits(), redraws widget.
+        Sets self.mtile_tile_xy and self.mtile_offset_x and self.mtile_offset_y,
+        calls RecalcViewLimits(), redraws widget.
         """
 
         # get fractional tile coords of required centre of view
         (xtile, ytile) = self.tile_src.Geo2Tile(geo)
+        log('GotoPosition: xtile=%s, ytile=%s' % (str(xtile), str(ytile)))
 
-        # now calculate view offsets, top, left, bottom and right
-        half_width = self.view_width / 2
-        centre_pixels_from_map_left = int(xtile * self.tile_size_x)
-        self.view_offset_x = centre_pixels_from_map_left - half_width
+        # convert to integer tile coords and view coords of top-left of tile
+        (tile_int_x, tile_frac_x) = math.modf(xtile)
+        log('math.modf(xtile)=%s' % str((tile_int_x, tile_frac_x)))
+        mtile_offset_x = self.view_width/2 - self.tile_size_x*tile_frac_x
+        (tile_int_y, tile_frac_y) = math.modf(ytile)
+        mtile_offset_y = self.view_height/2 - self.tile_size_y*tile_frac_y
+        log('GotoPosition: tile_int_x=%s, mtile_offset_x=%s' % (str(tile_int_x), str(mtile_offset_x)))
+        log('GotoPosition: tile_int_y=%s, mtile_offset_y=%s' % (str(tile_int_y), str(mtile_offset_y)))
 
-        half_height = self.view_height / 2
-        centre_pixels_from_map_top = int(ytile * self.tile_size_y)
-        self.view_offset_y = centre_pixels_from_map_top - half_height
+        # work out the Master tile and offsets depending on wrap in X & Y
+        (num_tiles_x, num_tiles_y, _, _) = self.tile_src.GetInfo(self.level)
+
+        tiles_left = (mtile_offset_x+self.tile_size_x-1) / self.tile_size_x
+        log('tiles_left=%s' % str(tiles_left))
+        if self.tile_src.wrap_x:
+            self.mtile_offset_x = mtile_offset_x - tiles_left*self.tile_size_x
+            tile_int_x = tile_int_x - tiles_left
+            while tile_int_x < 0:
+                tile_int_x += num_tiles_x
+        else:
+            log('point X, tile_int_x=%s' % str(tile_int_x))
+            if mtile_offset_x < tile_int_x * self.tile_size_x:
+                log('point Y, tile_int_x=%s' % str(tile_int_x))
+                while mtile_offset_x >= 0:
+                    tile_int_x -= 1
+                    mtile_offset_x -= self.tile_size_x
+            else:
+                log('point Z')
+                mtile_offset_x -= tile_int_x * self.tile_size_x
+                tile_int_x = 0
+
+        tiles_top = (mtile_offset_y+self.tile_size_y-1) / self.tile_size_y
+        if self.tile_src.wrap_y:
+            self.mtile_offset_y = mtile_offset_y - tiles_top*self.tile_size_y
+            tile_int_y = tile_int_y - tiles_top
+            while tile_int_y < 0:
+                tile_int_y += num_tiles_y
+        else:
+            if mtile_offset_y < tile_int_y * self.tile_size_y:
+                while mtile_offset_y >= 0:
+                    tile_int_y -= 1
+                    mtile_offset_y -= self.tile_size_y
+            else:
+                mtile_offset_y -= tile_int_y * self.tile_size_y
+                tile_int_y = 0
+
+        self.mtile_tile_xy = (tile_int_x, tile_int_y)
+        log('GotoPosition: self.mtile_tile_xy=%s' % str(self.mtile_tile_xy))
 
         # set the left/right/top/bottom lon/lat extents and redraw view
         self.RecalcViewLimits()
@@ -1779,6 +1822,43 @@ class PySlip(_BufferedCanvas):
 # GUI stuff
 ######
 
+    def reset_master_tile(self):
+        """After map has been dragged, fix master tile state."""
+
+        (mtile_x, mtile_y) = self.mtile_tile_xy
+        log('reset_master_tile: self.mtile_tile_xy=%s' % str(self.mtile_tile_xy))
+        (num_tiles_x, num_tiles_y, _, _) = self.tile_src.GetInfo(self.level)
+
+        # fix X direction
+        if self.mtile_offset_x <= 0:
+            # dragged off view
+            while self.mtile_offset_x < -self.tile_size_x:
+                mtile_x += 1
+                self.mtile_offset_x += self.tile_size_x
+            mtile_x %= num_tiles_x
+        else:
+            # dragged into view
+            while self.mtile_offset_x > 0:
+                mtile_x -= 1
+                self.mtile_offset_x -= self.tile_size_x
+            while mtile_x < 0:
+                mtile_x += num_tiles_x
+
+        # fix Y direction
+        if self.mtile_offset_y <= 0:
+            # dragged off view
+            while self.mtile_offset_y < -self.tile_size_y:
+                mtile_y += 1
+                self.mtile_offset_y += self.tile_size_y
+            mtile_y %= num_tiles_y
+        else:
+            # dragged into view
+            while self.mtile_offset_y > 0:
+                mtile_y -= 1
+                self.mtile_offset_y -= self.tile_size_y
+            while mtile_y < 0:
+                mtile_y += num_tiles_y
+
     def OnMove(self, event):
         """Handle a mouse move (map drag or rectangle select).
 
@@ -1812,17 +1892,34 @@ class PySlip(_BufferedCanvas):
                 dx = self.last_drag_x - x
                 dy = self.last_drag_y - y
 
-                # move the map in the view
-                self.view_offset_x += dx
-                self.view_offset_y += dy
-#                self.view_offset_x %= self.tile_size_x
-                if self.view_offset_x > 0:
-                    self.view_offset_x %= self.tile_size_x
-                else:
-                    self.view_offset_x = -(-self.tile_size_x % self.tile_size_x)
-                log('OnMove: self.view_offset_x=%d' % self.view_offset_x)
+                (mtile_x, mtile_y) = self.mtile_tile_xy
 
-# WRAP
+                # decide if we can move map in the X or Y direction
+                # if master tile fully on map in X or Y, can't drag
+                if mtile_offset_x <= 0:
+                    self.mtile_offset_x += dx
+                if mtile_offset_y <= 0:
+                    self.mtile_offset_y += dy
+                self.reset_master_tile()    # mtile stuff back to canonical form
+
+# HERE
+
+#                if self.mtile_offset_x > 0:
+#                    num_tiles_moved = dx / self.tile_size_x
+#                    self.mtile_offset_x %= self.tile_size_x
+#                    
+#                else:
+#                    self.mtile_offset_x =
+#
+#                self.view_offset_x += dx
+#                self.view_offset_y += dy
+#                if self.view_offset_x > 0:
+#                    self.view_offset_x %= self.tile_size_x
+#                else:
+#                    self.view_offset_x = -(-self.tile_size_x % self.tile_size_x)
+#                log('OnMove: self.view_offset_x=%d' % self.view_offset_x)
+
+# WRAP - this is the old code
 #                # limit drag at edges of map
 #                if self.map_width > self.view_width:
 #                    # if map > view, don't allow edge to show background
@@ -1834,17 +1931,17 @@ class PySlip(_BufferedCanvas):
 #                    # else map < view, centre X
 #                    self.view_offset_x = (self.map_width
 #                                          - self.view_width) / 2
-
-                if self.map_height > self.view_height:
-                    # if map > view, don't allow edge to show background
-                    if self.view_offset_y < 0:
-                        self.view_offset_y = 0
-                    elif self.view_offset_y > self.max_y_offset:
-                        self.view_offset_y = self.max_y_offset
-                else:
-                    # else map < view, centre Y
-                    self.view_offset_y = (self.map_height
-                                          - self.view_height) / 2
+#
+#                if self.map_height > self.view_height:
+#                    # if map > view, don't allow edge to show background
+#                    if self.view_offset_y < 0:
+#                        self.view_offset_y = 0
+#                    elif self.view_offset_y > self.max_y_offset:
+#                        self.view_offset_y = self.max_y_offset
+#                else:
+#                    # else map < view, centre Y
+#                    self.view_offset_y = (self.map_height
+#                                          - self.view_height) / 2
 
                 # adjust remembered X,Y
                 self.last_drag_x = x
@@ -2250,29 +2347,29 @@ class PySlip(_BufferedCanvas):
         if self.map_width > self.view_width:
             # do nothing unless background is showing
             # if map left edge right of view edge
-            if self.view_offset_x < 0:
+            if self.mtile_offset_x < 0:
                 # move view to hide background at left
-                self.view_offset_x = 0
-            elif self.view_offset_x + self.view_width > self.map_width:
+                self.mtile_offset_x = 0
+            elif self.mtile_offset_x + self.view_width > self.map_width:
                 # move view to hide background at right
-                self.view_offset_x = self.map_width - self.view_width
+                self.mtile_offset_x = self.map_width - self.view_width
         else:
             # else view >= map - centre map in X direction
-            self.view_offset_x = self.max_x_offset / 2
+            self.mtile_offset_x = self.max_x_offset / 2
 
         # if map > view in Y axis
         if self.map_height > self.view_height:
             # do nothing unless background is showing
             # if map top edge below view edge
-            if self.view_offset_y < 0:
+            if self.mtile_offset_y < 0:
                 # move view to hide background at top
-                self.view_offset_y = 0
-            elif self.view_offset_y + self.view_height > self.map_height:
+                self.mtile_offset_y = 0
+            elif self.mtile_offset_y + self.view_height > self.map_height:
                 # move view to hide background at bottom
-                self.view_offset_y = self.map_height - self.view_height
+                self.mtile_offset_y = self.map_height - self.view_height
         else:
             # else view >= map - centre map in Y direction
-            self.view_offset_y = self.max_y_offset / 2
+            self.mtile_offset_y = self.max_y_offset / 2
 
         # set the left/right/top/bottom lon/lat extents
         self.RecalcViewLimits()
@@ -2964,6 +3061,57 @@ class PySlip(_BufferedCanvas):
 # Various pySlip utility routines
 ######
 
+    def geocentre2mtile(self, geo):
+        """Given a centre of the view (geo), update master tile info.
+
+        geo  geo coords of the view centre (geox, geoy)
+
+        Returns (mtile_tile_xy, mtile_offset_x, mtile_offset_y)
+        """
+
+        (num_tiles_x, num_tiles_y, _, _) = tile_src.GetInfo(self.level)
+
+        (ctx, cty) = self.Geo2View(geo)
+        log('geocentre2mtile: (ctx, cty)=%s' % str((ctx, cty)))
+
+        (ctx_int, ctx_frac) = math.modf(ctx)
+        (cty_int, cty_frac) = math.modf(cty)
+        log('ctx_int=%d, ctx_frac=%s, cty_int=%s, cty_frac=%s'
+            % (str(ctx_int), str(ctx_frac), str(cty_int), str(ctr_frac)))
+
+        vw2 = self.view_width / 2
+        vh2 = self.view_height / 2
+
+        lmarg = vw2 - ctx_frac * self.tile_size_x
+        tmarg = vh2 - cty_frac * self.tile_size_y
+
+        ltiles = (lmarg + self.tile_size_x - 1) / self.tile_size_x
+        ttiles = (tmarg + self.tile_size_y - 1) / self.tile_size_y
+        log('ltiles=%s, ttiles=%s' % (str(ltiles), str(ttiles)))
+
+        if ctx_int - ltiles < 0:
+            if self.tile_src.wrap_x:
+                mtile_x = ctx_int - ltiles
+                while mtile_x < 0:
+                    mtile_x += num_tiles_x
+                mtile_offset_x = -ltiles * self.tile_size_x - lmarg
+            else:
+                mtile_offset_x = lmarg - ctx_int * self.tile_size_x
+                mtile_x = 0
+
+        if cty_int - ttiles < 0:
+            if self.tile_src.wrap_y:
+                mtile_y = cty_int - ttiles
+                while mtile_y < 0:
+                    mtile_y += num_tiles_y
+                mtile_offset_y = -ttiles * self.tile_size_y - tmarg
+            else:
+                mtile_offset_y = tmarg - cty_int * self.tile_size_y
+                mtile_y = 0
+
+        return ((mtile_x, mtile_y), mtile_offset_x, mtile_offset_y)
+
+
     @staticmethod
     def point_inside_polygon(point, poly):
         """Decide if point is inside polygon.
@@ -3238,16 +3386,19 @@ class PySlip(_BufferedCanvas):
 
         (x, y) = posn
 
-        if self.view_offset_x < 0:
-            if x < -self.view_offset_x:
+#        if self.mtile_offset_x < 0 and self.mtile_offset_y < 0:
+#            return True
+
+        if self.mtile_offset_x > 0:
+            if x < self.mtile_offset_x:
                 return False
-            if x > self.view_width + self.view_offset_x:
+            if x > self.mtile_offset_x + self.num_tiles_x*self.tile_size_x:
                 return False
 
-        if self.view_offset_y < 0:
-            if y < -self.view_offset_y:
+        if self.mtile_offset_y > 0:
+            if y < self.mtile_offset_y:
                 return False
-            if y > self.view_height + self.view_offset_y:
+            if y > self.mtile_offset_y + self.num_tiles_y*self.tile_size_y:
                 return False
 
         return True

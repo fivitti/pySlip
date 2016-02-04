@@ -44,9 +44,13 @@ You can clone this repository, of course, and then do:
 
     python setup.py install
 
-Or you could install through pyPi:
+Or you could install through PyPI:
 
-    pip install pySlip
+    pip install pyslip
+
+Using pip is the recommended way to install pySlip as the cheese shop code
+is guaranteed to work.  The code in the GitHib repository is, unfortunately,
+a moving target.
 
 Map Tiles Licensing
 ===================

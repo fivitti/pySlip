@@ -37,6 +37,17 @@ Next, the pre-generated GMT tiles:
 
 .. image:: pyslip/examples/graphics/pyslip_demo_gmt.png
 
+Getting pySlip
+==============
+
+You can clone this repository, of course, and then do:
+
+    python setup.py install
+
+Or you could install through pyPi:
+
+    pip install pySlip
+
 Map Tiles Licensing
 ===================
 

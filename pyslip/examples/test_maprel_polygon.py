@@ -52,7 +52,7 @@ TextMapData = [(135, 5, 'open', {'placement': 'ce', 'radius': 0}),
 ################################################################################
 
 class TestFrame(wx.Frame):
-    def __init__(self, tile_dir):
+    def __init__(self):
         wx.Frame.__init__(self, None, size=DefaultAppSize,
                           title=('PySlip %s - map-relative polygon test'
                                  % pyslip.__version__))
@@ -62,13 +62,12 @@ class TestFrame(wx.Frame):
         self.panel.ClearBackground()
 
         # create the tile source object
-        self.tile_src = Tiles(tile_dir)
+        self.tile_src = Tiles.Tiles()
 
         # build the GUI
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(box)
-        self.pyslip = pyslip.PySlip(self.panel, tile_src=self.tile_src,
-                                    min_level=MinTileLevel)
+        self.pyslip = pyslip.PySlip(self.panel, tile_src=self.tile_src)
         box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
         self.panel.SetSizerAndFit(box)
         self.panel.Layout()
@@ -131,17 +130,15 @@ if __name__ == '__main__':
 
     # set up the appropriate tile source
     if tile_source == 'gmt':
-        from pyslip.gmt_local_tiles import GMTTiles as Tiles
-        tile_dir = 'gmt_tiles'
+        import pyslip.gmt_local_tiles as Tiles
     elif tile_source == 'osm':
-        from pyslip.osm_tiles import OSMTiles as Tiles
-        tile_dir = 'osm_tiles'
+        import pyslip.osm_tiles as Tiles
     else:
         usage('Bad tile source: %s' % tile_source)
         sys.exit(3)
 
     # start wxPython app
     app = wx.App()
-    TestFrame(tile_dir=tile_dir).Show()
+    TestFrame().Show()
     app.MainLoop()
 

@@ -15,15 +15,20 @@ between the two markers shows errors in the Geo2Tile() & Tile2GEO() functions.
 import os
 import wx
 import pyslip
-from pyslip.osm_tiles import OSMTiles as Tiles
+import pyslip.osm_tiles as tiles
 
 # If we have log.py, well and good.  Otherwise ...
 try:
     import pyslip.log as log
-    log = log.Log('pyslip.log', log.Log.DEBUG)
 except ImportError:
-    def log(*args, **kwargs):
+    def logit(*args, **kwargs):
         pass
+    log = logit
+    log.debug = logit
+    log.info = logit
+    log.warn = logit
+    log.error = logit
+    log.critical = logit
 
 ######
 # Various demo constants
@@ -39,9 +44,6 @@ InitViewPosition = (0.0, 0.0)
 
 # startup size of the application
 DefaultAppSize = (800, 665)
-
-# where OSM local tiles live
-TileDirectory = 'osm_tiles'
 
 # the number of decimal places in a lon/lat display
 LonLatPrecision = 3
@@ -104,15 +106,15 @@ class AppStaticBox(wx.StaticBox):
 ################################################################################
 
 class AppFrame(wx.Frame):
-    def __init__(self, tile_dir=TileDirectory):
+    def __init__(self):
         wx.Frame.__init__(self, None, size=DefaultAppSize, title=DemoName)
         self.SetMinSize(DefaultAppSize)
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.panel.SetBackgroundColour(wx.WHITE)
         self.panel.ClearBackground()
 
-        self.tile_directory = tile_dir
-        self.tile_source = Tiles(tile_dir)
+        self.tile_source = tiles.Tiles()
+        self.tile_directory = self.tile_source.tiles_dir
 
         # the data objects for map and view layers
         self.map_layer = None
@@ -166,7 +168,7 @@ class AppFrame(wx.Frame):
 
         # create gui objects
         sb = AppStaticBox(parent, '')
-        tile_object = Tiles(self.tile_directory)
+#        tile_object = tiles.Tiles(self.tile_directory)
         self.pyslip = pyslip.PySlip(parent, tile_src=self.tile_source)
 
         # lay out objects
@@ -332,10 +334,7 @@ if __name__ == '__main__':
 
     # start wxPython app
     app = wx.App()
-    if tile_dir:
-        app_frame = AppFrame(tile_dir=tile_dir)
-    else:
-        app_frame = AppFrame()
+    app_frame = AppFrame()
     app_frame.Show()
 
 ##    import wx.lib.inspection

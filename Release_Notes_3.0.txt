@@ -1,3 +1,13 @@
+Release 3.0.4 of pySlip fixes a packaging problem in 3.0.3.
+
+-------------------------------------------------------------------------------
+Release 3.0.3 of pySlip includes:
+
+1. An example of using multiple pySlip widgets in an application.
+
+2. Bug fixes.
+
+-------------------------------------------------------------------------------
 Release 3.0 of pySlip has some changes that adversely affect existing code:
 
 1. The pySlip() constructor has a slight change to its signature.  This is to

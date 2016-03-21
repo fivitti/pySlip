@@ -12,15 +12,12 @@ import os
 import glob
 import pickle
 import wx
-import pyslip.gmt_local_tiles as gmt_local_tiles
+import pyslip.gmt_local_tiles as tiles
 
 import unittest
 import shutil
 from wx.lib.embeddedimage import PyEmbeddedImage
 
-
-# where the pre-generated GMT tiles are
-TilesDir = './gmt_tiles'
 
 DefaultAppSize = (512, 512)
 DemoName = 'GMT Tiles Cache Test'
@@ -53,7 +50,7 @@ class TestGMTTiles(unittest.TestCase):
         """Simple tests."""
 
         # read all tiles in all rows of all levels
-        cache = gmt_local_tiles.GMTTiles(tiles_dir=TilesDir)
+        cache = tiles.Tiles()
         for level in cache.levels:
             cache.UseLevel(level)
             info = cache.GetInfo(level)
@@ -73,19 +70,15 @@ class TestGMTTiles(unittest.TestCase):
     def testErrors(self):
         """Test possible errors."""
 
-        # try to use on-disk cache that doesn't exist
-        with self.assertRaises(IOError):
-            cache = gmt_local_tiles.GMTTiles(tiles_dir='_=XYZZY=_')
-
-        # check that using level outside map levels returns None
-        cache = gmt_local_tiles.GMTTiles(tiles_dir=TilesDir)
+        # check that using level outside map levels returns False
+        cache = tiles.Tiles()
         level = cache.levels[-1] + 1      # get level # that DOESN'T exist
         msg = "Using bad level (%d) didn't raise exception?" % level
-        with self.assertRaises(Exception, msg=msg):
-            cache.UseLevel(level)
+        result = cache.UseLevel(level)
+        self.assertFalse(result, msg)
 
         # check that reading tile outside map returns None
-        cache = gmt_local_tiles.GMTTiles(tiles_dir=TilesDir)
+        cache = tiles.Tiles()
         level = cache.levels[0] # known good level
         cache.UseLevel(level)
         width_px = self.TileWidth * cache.num_tiles_x
@@ -94,10 +87,10 @@ class TestGMTTiles(unittest.TestCase):
         ppd_y = cache.ppd_y
         num_tiles_width = int(width_px / self.TileWidth)
         num_tiles_height = int(height_px / self.TileHeight)
-        bmp = cache.GetTile(num_tiles_width, num_tiles_height)
-        self.assertTrue(bmp is None,
-                        'Using bad coords (%d,%d) got bmp=%s'
-                        % (num_tiles_width, num_tiles_height, str(bmp)))
+        msg = ("Using bad coords (%d,%d), didn't raise KeyError"
+               % (num_tiles_width, num_tiles_height))
+        with self.assertRaises(KeyError, msg=msg):
+            bmp = cache.GetTile(num_tiles_width, num_tiles_height)
 
     def XtestConvert(self):
         """Test geo2map conversions.
@@ -105,7 +98,7 @@ class TestGMTTiles(unittest.TestCase):
         This is normally turned off as it is a "by hand" sort of check.
         """
 
-        cache = gmt_local_tiles.GMTTiles(tiles_dir=TilesDir)
+        cache = tiles.Tiles()
 
         # get tile covering Greenwich observatory
 #        xgeo = -0.0005  # Greenwich observatory

@@ -12,7 +12,7 @@ import os
 import glob
 import pickle
 import wx
-import pyslip.osm_tiles as osm_tiles
+import pyslip.osm_tiles as tiles
 
 import unittest
 import shutil
@@ -20,8 +20,7 @@ from wx.lib.embeddedimage import PyEmbeddedImage
 
 
 # where the OSM tiles are cached on disk
-TilesDir = 'osm_tiles'
-
+TilesDir = 'test_osm_tiles'
 
 DefaultAppSize = (512, 512)
 DemoName = 'OSM Tiles Cache Test'
@@ -54,7 +53,7 @@ class TestOSMTiles(unittest.TestCase):
         """Simple tests."""
 
         # read all tiles in all rows of all levels
-        cache = osm_tiles.OSMTiles(tiles_dir=TilesDir)
+        cache = tiles.Tiles(tiles_dir=TilesDir)
         for level in cache.levels:
             cache.UseLevel(level)
             info = cache.GetInfo(level)
@@ -75,14 +74,14 @@ class TestOSMTiles(unittest.TestCase):
         """Test possible errors."""
 
         # check that using level outside map levels returns None
-        cache = osm_tiles.OSMTiles(tiles_dir=TilesDir)
+        cache = tiles.Tiles(tiles_dir=TilesDir)
         level = cache.levels[-1] + 1      # get level # that DOESN'T exist
         info = cache.UseLevel(level)
         self.assertTrue(info is None,
                         'Using bad level (%d) got info=%s' % (level, str(info)))
 
         # check that reading tile outside map returns None
-        cache = osm_tiles.OSMTiles(tiles_dir=TilesDir)
+        cache = tiles.Tiles(tiles_dir=TilesDir)
         level = cache.levels[0]
         info = cache.UseLevel(level)
         (width_px, height_px, ppd_x, ppd_y) = info
@@ -114,7 +113,7 @@ class TestOSMTiles(unittest.TestCase):
 
         import time
 
-        cache = osm_tiles.OSMTiles(tiles_dir=TilesDir)
+        cache = tiles.Tiles(tiles_dir=TilesDir)
 
         # get tile covering Greenwich observatory
         #xgeo = -0.0005  # Greenwich observatory

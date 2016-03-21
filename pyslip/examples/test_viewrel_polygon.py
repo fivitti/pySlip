@@ -43,14 +43,14 @@ PolyViewData = [(arrow_cn, {'placement': 'cn'}),
                                'fillcolour': '#ff000020',
                                'colour': '#00ff0040',
                                'filled': True}),
-               ] 
+               ]
 
 ################################################################################
 # The main application frame
 ################################################################################
 
 class TestFrame(wx.Frame):
-    def __init__(self, tile_dir):
+    def __init__(self):
         wx.Frame.__init__(self, None, size=DefaultAppSize,
                           title=('PySlip %s - view-relative polygon test'
                                  % pyslip.__version__))
@@ -60,18 +60,17 @@ class TestFrame(wx.Frame):
         self.panel.ClearBackground()
 
         # create the tile source object
-        self.tile_src = Tiles(tile_dir)
+        self.tile_src = Tiles.Tiles()
 
-        # build the GUI                                                                                                             
-        box = wx.BoxSizer(wx.HORIZONTAL)                                                                                            
-        self.panel.SetSizer(box)                                                                                                    
-        self.pyslip = pyslip.PySlip(self.panel, tile_src=self.tile_src,                                                             
-                                    min_level=MinTileLevel)                                                                         
-        box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)                                                                
-        self.panel.SetSizer(box)                                                                                                    
-        self.panel.Layout()                                                                                                         
-        self.Centre()                                                                                                               
-        self.Show(True)              
+        # build the GUI
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel.SetSizer(box)
+        self.pyslip = pyslip.PySlip(self.panel, tile_src=self.tile_src)
+        box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
+        self.panel.SetSizer(box)
+        self.panel.Layout()
+        self.Centre()
+        self.Show(True)
 
         # set initial view position
         self.pyslip.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
@@ -90,10 +89,10 @@ if __name__ == '__main__':
     import getopt
     import traceback
 
-    # print some usage information                                                                                                  
-    def usage(msg=None):                                                                                                            
-        if msg:                                                                                                                     
-            print(msg+'\n')                                                                                                         
+    # print some usage information
+    def usage(msg=None):
+        if msg:
+            print(msg+'\n')
         print(__doc__)        # module docstring used
 
     # our own handler for uncaught exceptions
@@ -108,37 +107,35 @@ if __name__ == '__main__':
     # plug our handler into the python system
     sys.excepthook = excepthook
 
-    # decide which tiles to use, default is GMT                                                                                     
-    argv = sys.argv[1:]                                                                                                             
-    
-    try:                                                                                                                            
-        (opts, args) = getopt.getopt(argv, 'ht:', ['help', 'tiles='])                                                               
-    except getopt.error:                                                                                                            
-        usage()                                                                                                                     
-        sys.exit(1)                                                                                                                 
-    
-    tile_source = 'GMT'                                                                                                             
-    for (opt, param) in opts:                                                                                                       
-        if opt in ['-h', '--help']:                                                                                                 
-            usage()                                                                                                                 
-            sys.exit(0)                                                                                                             
-        elif opt in ('-t', '--tiles'):                                                                                              
-            tile_source = param                                                                                                     
-    tile_source = tile_source.lower()                                                                                               
-    
-    # set up the appropriate tile source                                                                                            
-    if tile_source == 'gmt':                                                                                                        
-        from pyslip.gmt_local_tiles import GMTTiles as Tiles                                                                        
-        tile_dir = 'gmt_tiles'                                                                                                      
-    elif tile_source == 'osm':                                                                                                      
-        from pyslip.osm_tiles import OSMTiles as Tiles                                                                                     
-        tile_dir = 'osm_tiles'                                                                                                      
-    else:                                                                                                                           
-        usage('Bad tile source: %s' % tile_source)                                                                                  
-        sys.exit(3)                                                                                                                 
-    
+    # decide which tiles to use, default is GMT
+    argv = sys.argv[1:]
+
+    try:
+        (opts, args) = getopt.getopt(argv, 'ht:', ['help', 'tiles='])
+    except getopt.error:
+        usage()
+        sys.exit(1)
+
+    tile_source = 'GMT'
+    for (opt, param) in opts:
+        if opt in ['-h', '--help']:
+            usage()
+            sys.exit(0)
+        elif opt in ('-t', '--tiles'):
+            tile_source = param
+    tile_source = tile_source.lower()
+
+    # set up the appropriate tile source
+    if tile_source == 'gmt':
+        import pyslip.gmt_local_tiles as Tiles
+    elif tile_source == 'osm':
+        import pyslip.osm_tiles as Tiles
+    else:
+        usage('Bad tile source: %s' % tile_source)
+        sys.exit(3)
+
     # start wxPython app
     app = wx.App()
-    TestFrame(tile_dir).Show()
+    TestFrame().Show()
     app.MainLoop()
 

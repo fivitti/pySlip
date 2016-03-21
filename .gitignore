@@ -6,3 +6,4 @@ osm_tiles
 build
 dist
 pyslip.egg-info
+gmt_tiles.tar.gz

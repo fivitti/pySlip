@@ -1,11 +1,11 @@
 from setuptools import setup
 
 def readme():
-    with open('README.md') as f:
+    with open('README.rst') as f:
         return f.read()
 
 setup(name='pyslip',
-      version='3.0.2',
+      version='3.1.0',
       description='A slipmap widget for wxPython',
       long_description=readme(),
       url='http://github.com/rzzzwilson/pySlip',
@@ -20,6 +20,6 @@ setup(name='pyslip',
                    'Operating System :: OS Independent',
                    'Programming Language :: Python :: 2 :: Only'],
       keywords='python wxpython slipmap map',
-      download_url='https://github.com/rzzzwilson/pySlip/releases/tag/3.0.2',
+      download_url='https://github.com/rzzzwilson/pySlip/releases/tag/3.1.0',
       include_package_data=True,
       zip_safe=False)

@@ -50,8 +50,8 @@ except ImportError as e:
 # set how old disk-cache tiles can be before we re-request them from the internet
 # this is the number of days old a tile is before we re-request
 # if 'None', never re-request tiles after first satisfied request
-#RefreshTilesAfterDays = 30
-RefreshTilesAfterDays = 0
+RefreshTilesAfterDays = 60
+
 
 ################################################################################
 # Worker class for internet tile retrieval
@@ -60,10 +60,11 @@ RefreshTilesAfterDays = 0
 class TileWorker(threading.Thread):
     """Thread class that gets request from queue, loads tile, calls callback."""
 
-    def __init__(self, server, tilepath, requests, callback,
+    def __init__(self, id, server, tilepath, requests, callback,
                  error_tile, content_type, filetype, rerequest_age):
         """Prepare the tile worker.
 
+        id            a unique nuer identifying the worker instance
         server        server URL
         tilepath      path to tile on server
         requests      the request queue
@@ -76,6 +77,7 @@ class TileWorker(threading.Thread):
 
         threading.Thread.__init__(self)
 
+        self.id = id
         self.server = server
         self.tilepath = tilepath
         self.requests = requests
@@ -84,7 +86,6 @@ class TileWorker(threading.Thread):
         self.content_type = content_type
         self.filetype = filetype
         self.daemon = True
-        self.rerequest_age = rerequest_age
 
     def run(self):
         while True:
@@ -101,8 +102,6 @@ class TileWorker(threading.Thread):
                     image = wx.ImageFromStream(f, self.filetype)
                 else:
                     error = True
-                    log("Expected tile data with content type of '%s', got '%s'"
-                        % (self.content_type, str(content_type)))
             except Exception as e:
                 error = True
                 log('%s exception getting tile %d,%d,%d from %s\n%s'
@@ -242,11 +241,10 @@ class BaseTiles(object):
         self.max_requests = max_server_requests
 
         # calculate a re-request age, if specified
-        self.rerequest_age = (time.time() -
-                                  RefreshTilesAfterDays * self.SecondsInADay)
-        log('BaseTiles: now=%s, self.rerequest_age=%s' % (str(time.time()), str(self.rerequest_age)))
-        days = (time.time() - self.rerequest_age)/60/60/24
-        log("That's about %d days ago" % days)
+        self.rerequest_age = 0
+        if RefreshTilesAfterDays is not None:
+            self.rerequest_age = (time.time() -
+                                      RefreshTilesAfterDays * self.SecondsInADay)
 
         # set min and max tile levels and current level
         self.min_level = min(self.levels)
@@ -342,10 +340,10 @@ class BaseTiles(object):
         self.workers = []
         for server in self.servers:
             for num_threads in range(self.max_requests):
-                worker = TileWorker(server, self.url_path, self.request_queue,
-                                    self._tile_available, self.error_tile_image,
-                                    self.content_type, self.filetype,
-                                    self.rerequest_age)
+                worker = TileWorker(num_threads, server, self.url_path,
+                                    self.request_queue, self._tile_available,
+                                    self.error_tile_image, self.content_type,
+                                    self.filetype, self.rerequest_age)
                 self.workers.append(worker)
                 worker.start()
 
@@ -407,23 +405,21 @@ class BaseTiles(object):
         try:
             # get tile from cache
             tile = self.cache[(self.level, x, y)]
-            # if we are using internet tiles, check for update on server
-            if self.servers is not None:
-                tile_date = self.cache.tile_date((self.level, x, y))
-                log('GetTile: tile level=%d, x=%d, y=%d, tile_date=%d, self.rerequest_age=%s'
-                    % (self.level, x, y, tile_date, self.rerequest_age))
-                if tile_date < self.rerequest_age:
-                    log('GetTile: rerequesting old tile level=%d, x=%d, y=%d', (self.level, x, y))
-                    self._get_internet_tile(self.level, x, y)
-        except KeyError:
+        except KeyError as e:
             # if we are serving local tiles, this is an error
             if self.servers is None:
                 raise KeyError("Can't find tile for key '%s'"
                                % str((self.level, x, y)))
 
-            # start process of getting tile from 'net, return 'pending' image
+            # otherwise, start process of getting tile from 'net, return 'pending' image
             self._get_internet_tile(self.level, x, y)
             tile = self.pending_tile
+        else:
+            # get tile from cache, if using internet check date
+            if self.servers is not None:
+                tile_date = self.cache.tile_date((self.level, x, y))
+                if tile_date < self.rerequest_age:
+                    self._get_internet_tile(self.level, x, y)
 
         return tile
 
@@ -500,7 +496,6 @@ class BaseTiles(object):
             pass
 
         # tell the world a new tile is available
-        log('_tile_available: tile level=%d, x=%d, y=%d is now available' % (level, x, y))
         wx.CallAfter(self.available_callback, level, x, y, image, bitmap)
 
     def _cache_tile(self, image, bitmap, level, x, y):

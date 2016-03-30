@@ -214,7 +214,7 @@ class BaseTiles(object):
     def __init__(self, levels, tile_width, tile_height, servers=None,
                  url_path=None, max_server_requests=MaxServerRequests,
                  callback=None, max_lru=MaxLRU, tiles_dir=None,
-                 http_proxy=None):
+                 http_proxy=None, refetch_days=None):
         """Initialise a Tiles instance.
 
         levels               a list of level numbers that are to be served
@@ -245,6 +245,8 @@ class BaseTiles(object):
         if RefreshTilesAfterDays is not None:
             self.rerequest_age = (time.time() -
                                       RefreshTilesAfterDays * self.SecondsInADay)
+        if refetch_days is not None:
+            self.rerequest_age = (time.time() - refetch_days * self.SecondsInADay)
 
         # set min and max tile levels and current level
         self.min_level = min(self.levels)
@@ -513,6 +515,23 @@ class BaseTiles(object):
 
         self.cache[(level, x, y)] = bitmap
         self.cache._put_to_back((level, x, y), image)
+
+    def SetAgeThresholdDays(self, num_days):
+        """Set the tile refetch threshold time.
+
+        num_days  number of days before refetching tiles
+
+        If 'num_days' is 0 refetching is inhibited.
+        """
+
+        global RefreshTilesAfterDays
+
+        # update the global in case we instantiate again
+        RefreshTilesAfterDays = num_days
+
+        # recalculate this instance's age threshold in UNIX time
+        self.rerequest_age = (time.time() -
+                                  RefreshTilesAfterDays * self.SecondsInADay)
 
     def Geo2Tile(self, xgeo, ygeo):
         """Convert geo to tile fractional coordinates for level in use.

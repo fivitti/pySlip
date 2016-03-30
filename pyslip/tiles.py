@@ -15,6 +15,8 @@ is required.
 """
 
 import os
+import os.path
+import time
 import math
 import threading
 import traceback
@@ -45,6 +47,12 @@ except ImportError as e:
     log.error = logit
     log.critical = logit
 
+# set how old disk-cache tiles can be before we re-request them from the internet
+# this is the number of days old a tile is before we re-request
+# if 'None', never re-request tiles after first satisfied request
+#RefreshTilesAfterDays = 30
+RefreshTilesAfterDays = 0
+
 ################################################################################
 # Worker class for internet tile retrieval
 ################################################################################
@@ -53,7 +61,7 @@ class TileWorker(threading.Thread):
     """Thread class that gets request from queue, loads tile, calls callback."""
 
     def __init__(self, server, tilepath, requests, callback,
-                 error_tile, content_type, filetype):
+                 error_tile, content_type, filetype, rerequest_age):
         """Prepare the tile worker.
 
         server        server URL
@@ -76,6 +84,7 @@ class TileWorker(threading.Thread):
         self.content_type = content_type
         self.filetype = filetype
         self.daemon = True
+        self.rerequest_age = rerequest_age
 
     def run(self):
         while True:
@@ -123,6 +132,20 @@ class Cache(pycacheback.pyCacheBack):
     # tiles stored on disk at <self.tiles_dir>/<TilePath>
     TilePath = '{Z}/{X}/{Y}.tile'
 
+    def tile_date(self, key):
+        """Return the creation date of a tile given its key."""
+
+        tile_path = self.tile_path(key)
+        return os.path.getctime(tile_path)
+
+    def tile_path(self, key):
+        """Return path to a tile file given its key."""
+
+        (level, x, y) = key
+        file_path = os.path.join(self._tiles_dir,
+                                 self.TilePath.format(Z=level, X=x, Y=y))
+        return file_path
+
     def _get_from_back(self, key):
         """Retrieve value for 'key' from backing storage.
 
@@ -134,16 +157,14 @@ class Cache(pycacheback.pyCacheBack):
         """
 
         # look for item in disk cache
-        (level, x, y) = key
-        tile_path = os.path.join(self._tiles_dir,
-                                 self.TilePath.format(Z=level, X=x, Y=y))
-        if not os.path.exists(tile_path):
+        file_path = self.tile_path(key)
+        if not os.path.exists(file_path):
             # tile not there, raise KeyError
             raise KeyError("Item with key '%s' not found in on-disk cache"
                            % str(key))
 
         # we have the tile file - read into memory & return
-        return wx.Image(tile_path, self.TileDiskFormat).ConvertToBitmap()
+        return wx.Image(file_path, self.TileDiskFormat).ConvertToBitmap()
 
     def _put_to_back(self, key, image):
         """Put a image into on-disk cache.
@@ -188,6 +209,9 @@ class BaseTiles(object):
                         'png': wx.BITMAP_TYPE_PNG,
                        }
 
+    # the number of seconds in a day
+    SecondsInADay = 60 * 60 * 24
+
     def __init__(self, levels, tile_width, tile_height, servers=None,
                  url_path=None, max_server_requests=MaxServerRequests,
                  callback=None, max_lru=MaxLRU, tiles_dir=None,
@@ -216,6 +240,13 @@ class BaseTiles(object):
         self.tiles_dir = tiles_dir
         self.available_callback = callback
         self.max_requests = max_server_requests
+
+        # calculate a re-request age, if specified
+        self.rerequest_age = (time.time() -
+                                  RefreshTilesAfterDays * self.SecondsInADay)
+        log('BaseTiles: now=%s, self.rerequest_age=%s' % (str(time.time()), str(self.rerequest_age)))
+        days = (time.time() - self.rerequest_age)/60/60/24
+        log("That's about %d days ago" % days)
 
         # set min and max tile levels and current level
         self.min_level = min(self.levels)
@@ -313,7 +344,8 @@ class BaseTiles(object):
             for num_threads in range(self.max_requests):
                 worker = TileWorker(server, self.url_path, self.request_queue,
                                     self._tile_available, self.error_tile_image,
-                                    self.content_type, self.filetype)
+                                    self.content_type, self.filetype,
+                                    self.rerequest_age)
                 self.workers.append(worker)
                 worker.start()
 
@@ -367,10 +399,22 @@ class BaseTiles(object):
 
         We override the existing GetTile() method to add code to retrieve
         tiles from the internet if not in on-disk cache.
+
+        We also check the date on the tile from disk-cache.  If "too old",
+        return it after starting the process to get new tile from internet.
         """
 
         try:
+            # get tile from cache
             tile = self.cache[(self.level, x, y)]
+            # if we are using internet tiles, check for update on server
+            if self.servers is not None:
+                tile_date = self.cache.tile_date((self.level, x, y))
+                log('GetTile: tile level=%d, x=%d, y=%d, tile_date=%d, self.rerequest_age=%s'
+                    % (self.level, x, y, tile_date, self.rerequest_age))
+                if tile_date < self.rerequest_age:
+                    log('GetTile: rerequesting old tile level=%d, x=%d, y=%d', (self.level, x, y))
+                    self._get_internet_tile(self.level, x, y)
         except KeyError:
             # if we are serving local tiles, this is an error
             if self.servers is None:
@@ -456,6 +500,7 @@ class BaseTiles(object):
             pass
 
         # tell the world a new tile is available
+        log('_tile_available: tile level=%d, x=%d, y=%d is now available' % (level, x, y))
         wx.CallAfter(self.available_callback, level, x, y, image, bitmap)
 
     def _cache_tile(self, image, bitmap, level, x, y):

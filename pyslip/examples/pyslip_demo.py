@@ -61,8 +61,8 @@ InitViewLevel = 4
 # a selection of cities, position from WikiPedia, etc
 InitViewPosition = (0.0, 51.48)             # Greenwich, England
 #InitViewPosition = (5.33, 60.389444)        # Bergen, Norway
-#InitViewPosition = (153.033333, -27.466667)  # Brisbane, Australia
-#InitViewPosition = (98.3786761, 7.8627326)   # Phuket (??????), Thailand
+#InitViewPosition = (153.033333, -27.466667) # Brisbane, Australia
+#InitViewPosition = (98.3786761, 7.8627326)  # Phuket (), Thailand
 #InitViewPosition = (151.209444, -33.859972) # Sydney, Australia
 #InitViewPosition = (-77.036667, 38.895111)  # Washington, DC, USA
 #InitViewPosition = (132.455278, 34.385278)  # Hiroshima, Japan

@@ -14,3 +14,6 @@ Release 3.1 of pySlip has the following changes:
    See the API documentation for more details.
    The examples/pyslip_demo.py program has been extended to exercise
    this new functionality.
+
+4. A mechanism to update tiles sourced from a server.  See the API
+   documentation for details on managing this feature.

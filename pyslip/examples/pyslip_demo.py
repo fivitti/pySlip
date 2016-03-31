@@ -18,8 +18,6 @@ where <options> is zero or more of:
             CRITICAL 50     less than ERROR
     -h|--help
         prints this help and stops
-    -t|--tiles (GMT|OSM)
-        selects either GMT or OSM tiles (GMT is  default)
     -x
         turns on the wxPython InspectionTool
 """

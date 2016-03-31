@@ -2038,7 +2038,7 @@ class AppFrame(wx.Frame):
     def handle_level_change(self, event):
         """Handle a pySlip LEVEL event."""
 
-        self.map_level.SetLabel('%d' % event.level)
+        self.map_level.SetValue('%d' % event.level)
 
     ######
     # Handle adding/removing select handler functions.

@@ -54,6 +54,9 @@ except ImportError as e:
 (EventLevel, EventPosition, EventSelect, EventBoxSelect,
     EventPolySelect, EventPolyBoxSelect, EventRightSelect) = range(7)
 
+# diiferent cursors for different states
+DefaultCursor = wx.CURSOR_DEFAULT
+BoxSelectCursor = wx.CURSOR_CROSS
 
 ######
 # Base class for the widget canvas - buffered and flicker-free.
@@ -353,7 +356,7 @@ class PySlip(_BufferedCanvas):
 
         # initialize all state variables to a 'vanilla' state
         self.change_level_event = True          # True if we send event on level change
-        self.default_cursor = wx.CURSOR_DEFAULT # initial and usual cursor
+        self.default_cursor = DefaultCursor     # initial and usual cursor
         self.ignore_next_right_up = False       # ignore next RIGHT UP event
         self.ignore_next_up = False             # ignore next LEFT UP event
         self.is_box_select = False              # True if box selection
@@ -1825,16 +1828,25 @@ class PySlip(_BufferedCanvas):
             self.Update()
 
     def OnKeyDown(self, event):
+        """Handle pressing a key down.
+
+        Only look at the SHIFT key, for box select or zoom out.
+        """
+
         if event.m_keyCode == wx.WXK_SHIFT:
             self.shift_down = True
-            self.default_cursor = wx.CURSOR_CROSS
-            self.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
+            self.default_cursor = BoxSelectCursor
+            self.SetCursor(wx.StockCursor(BoxSelectCursor))
 
     def OnKeyUp(self, event):
+        """Handle pressing a key down.
+
+        Only look at the SHIFT key, for box select or zoom out.
+        """
         if event.m_keyCode == wx.WXK_SHIFT:
             self.shift_down = False
-            self.default_cursor = wx.CURSOR_DEFAULT
-            self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+            self.default_cursor = DefaultCursor
+            self.SetCursor(wx.StockCursor(DefaultCursor))
 
 
     def OnLeftDown(self, event):
@@ -1984,7 +1996,7 @@ class PySlip(_BufferedCanvas):
 
         if self.shift_down:
             self.is_box_select = True
-            self.SetCursor(wx.StockCursor(wx.CURSOR_CROSS))
+            self.SetCursor(wx.StockCursor(BoxSelectCursor))
             (self.sbox_w, self.sbox_h) = (0, 0)
             (self.sbox_1_x, self.sbox_1_y) = click_posn
         event.Skip()
@@ -2003,7 +2015,7 @@ class PySlip(_BufferedCanvas):
             self.ignore_next_right_up = False
             return
 
-        self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+        self.SetCursor(wx.StockCursor(DefaultCursor))
 
         # we need a repaint to remove any selection box, but NOT YET!
         delayed_paint = self.sbox_1_x       # True if box select active

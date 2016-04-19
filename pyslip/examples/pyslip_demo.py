@@ -18,8 +18,6 @@ where <options> is zero or more of:
             CRITICAL 50     less than ERROR
     -h|--help
         prints this help and stops
-    -t|--tiles (GMT|OSM)
-        selects either GMT or OSM tiles (GMT is  default)
     -x
         turns on the wxPython InspectionTool
 """
@@ -61,8 +59,8 @@ InitViewLevel = 4
 # a selection of cities, position from WikiPedia, etc
 InitViewPosition = (0.0, 51.48)             # Greenwich, England
 #InitViewPosition = (5.33, 60.389444)        # Bergen, Norway
-#InitViewPosition = (153.033333, -27.466667)  # Brisbane, Australia
-#InitViewPosition = (98.3786761, 7.8627326)   # Phuket (), Thailand
+#InitViewPosition = (153.033333, -27.466667) # Brisbane, Australia
+#InitViewPosition = (98.3786761, 7.8627326)  # Phuket (ภูเก็ต), Thailand
 #InitViewPosition = (151.209444, -33.859972) # Sydney, Australia
 #InitViewPosition = (-77.036667, 38.895111)  # Washington, DC, USA
 #InitViewPosition = (132.455278, 34.385278)  # Hiroshima, Japan
@@ -2040,7 +2038,7 @@ class AppFrame(wx.Frame):
     def handle_level_change(self, event):
         """Handle a pySlip LEVEL event."""
 
-        self.map_level.SetLabel('%d' % event.level)
+        self.map_level.SetValue('%d' % event.level)
 
     ######
     # Handle adding/removing select handler functions.

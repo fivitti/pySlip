@@ -40,9 +40,13 @@ Getting pySlip
 
 You can clone this repository, of course, and then do:
 
+::
+
     python setup.py install
 
 Or you could install through PyPI:
+
+::
 
     pip install pyslip
 

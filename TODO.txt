@@ -1,0 +1,8 @@
+Implement the 'aging' feature for internet tiles.  Have a configurable age for
+tiles.  When a tile is requested from the cache and the tile exists only on disk
+then access the disk tile and return to the caller.  However, if the tile is
+older than allowed than the allowed age then start a parallel request to thexi
+provider for that tile.  When the tile is returned provide it to the user using
+the 'update' mechanism and then write tile to in-memory and disk cache.
+
+

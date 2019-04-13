@@ -1,0 +1,23 @@
+Release 4.0 of pySlip has the following changes:
+
+1. Uses wxPython 4.0.
+
+2. Uses python 3.6.
+
+2. A more streamlined way to define tile sources.
+
+3. Additional tile source modules:
+     Blue Marble tiles          (bm_tiles.py)
+     Modest Maps tiles          (mm_tiles.py)
+     Map Quest tiles            (mq_tiles.py)
+     Stamen Toner tiles         (stmt_tiles.py)
+     Stamen Transport tiles     (stmtr_tiles.py)
+     Stamen Watercolor tiles    (stmw_tiles.py)
+
+4. A method of changing the tile source for an existing pySlip instance.
+   See the API documentation for more details.
+   The examples/pyslip_demo.py program has been extended to exercise
+   this new functionality.
+
+5. A mechanism to update tiles sourced from a server.  See the API
+   documentation for details on managing this feature.

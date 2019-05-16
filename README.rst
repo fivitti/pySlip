@@ -3,6 +3,8 @@
 pySlip
 ======
 
+The python 3, wxpython 4 version is currently under construction.
+
 pySlip is a 'slip map' widget for wxPython.
 
 During my work writing geophysical applications in python I often wanted to

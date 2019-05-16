@@ -73,8 +73,10 @@ DefaultViewOffsetY = 0
 ######
 
 # sizes of various spacers
-HSpacerSize = (0,1)         # horizontal in application screen
-VSpacerSize = (1,1)         # vertical in control pane
+#HSpacerSize = (0,1)         # horizontal in application screen
+#VSpacerSize = (1,1)         # vertical in control pane
+HSpacerSize = 5         # horizontal in application screen
+VSpacerSize = 5         # vertical in control pane
 
 # border width when packing GUI elements
 PackBorder = 0

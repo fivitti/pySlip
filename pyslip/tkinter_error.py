@@ -37,7 +37,7 @@ def tkinter_error(msg, title=None):
 
     class Application(Frame):
         def createWidgets(self):
-            self.LABEL = Label(self, text=self.text, font=("Courier", 14))
+            self.LABEL = Label(self, text=self.text, font=("Courier", 12))
             self.LABEL["fg"] = "black"
             self.LABEL["bg"] = "yellow"
             self.LABEL["justify"] = "left"

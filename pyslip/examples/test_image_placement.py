@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding= utf-8 -*-
 
 """
 Program to test image map-relative and view-relative placement.
@@ -10,7 +9,13 @@ Usage: test_image_placement.py [-h|--help] [-d] [(-t|--tiles) (GMT|OSM)]
 
 
 import os
-import pyslip.tkinter_error as tkinter_error
+import sys
+
+# prepare sys.path to import from one directory up
+path_up = os.path.abspath('..')
+sys.path.insert(0, path_up)
+import __init__ as pyslip_init
+import tkinter_error
 try:
     import wx
 except ImportError:
@@ -18,7 +23,8 @@ except ImportError:
     tkinter_error.tkinter_error(msg)
 
 import pyslip
-import pyslip.log as log
+import logger
+logger = logger.Logger('pyslip.log')
 
 
 ######
@@ -26,8 +32,8 @@ import pyslip.log as log
 ######
 
 # demo name/version
-DemoName = 'Test image placement, pySlip %s' % pyslip.__version__
-DemoVersion = '1.0'
+DemoName = 'Test image placement, pySlip %s' % pyslip_init.__version__
+DemoVersion = '1.1'
 
 # initial values
 InitialViewLevel = 4
@@ -716,7 +722,7 @@ if __name__ == '__main__':
         msg += '\nUncaught exception:\n'
         msg += ''.join(traceback.format_exception(type, value, tb))
         msg += '=' * 80 + '\n'
-        log(msg)
+        logger(msg)
         tkinter_error.tkinter_error(msg)
         sys.exit(1)
 
@@ -752,9 +758,9 @@ if __name__ == '__main__':
 
     # set up the appropriate tile source
     if tile_source == 'gmt':
-        import pyslip.gmt_local_tiles as Tiles
+        import gmt_local_tiles as Tiles
     elif tile_source == 'osm':
-        import pyslip.osm_tiles as Tiles
+        import osm_tiles as Tiles
     else:
         usage('Bad tile source: %s' % tile_source)
         sys.exit(3)
@@ -766,7 +772,7 @@ if __name__ == '__main__':
     app_frame.Show()
 
     if debug:
-        log('Showing wxpython inspector')
+        logger('Showing wxpython inspector')
         import wx.lib.inspection
         wx.lib.inspection.InspectionTool().Show()
 

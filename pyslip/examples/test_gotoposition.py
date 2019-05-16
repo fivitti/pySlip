@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding= utf-8 -*-
 
 """
 Test PySlip GototPosition() function.
@@ -35,7 +34,7 @@ except ImportError:
 ######
 
 # demo name/version
-DemoVersion = '1.0'
+DemoVersion = '1.1'
 DemoName = "pySlip %s - GotoPosition() test %s" % (pyslip.__version__, DemoVersion)
 
 # initial level and position

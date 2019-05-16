@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding= utf-8 -*-
 
 """
 Program to test point map-relative and view-relative placement.
@@ -27,7 +26,7 @@ import pyslip.log as log
 
 # demo name/version
 DemoName = 'Test point placement, pySlip %s' % pyslip.__version__
-DemoVersion = '1.0'
+DemoVersion = '1.1'
 
 # initial values
 InitialViewLevel = 4

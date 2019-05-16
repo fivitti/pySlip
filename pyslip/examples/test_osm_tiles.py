@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Test the OSM tiles code.
@@ -24,7 +23,7 @@ TilesDir = 'test_osm_tiles'
 
 DefaultAppSize = (512, 512)
 DemoName = 'OSM Tiles Cache Test'
-DemoVersion = '0.1'
+DemoVersion = '0.2'
 
 
 class AppFrame(wx.Frame):

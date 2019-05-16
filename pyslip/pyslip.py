@@ -33,19 +33,19 @@ import traceback
 import wx
 
 try:
-    from . import log
-    log = log.Log('pyslip.log')
+    from . import logger
+    logger = logger.Logger('pyslip.log')
 except ImportError as e:
     # if we don't have log.py, don't crash
     # fake all log(), log.debug(), ... calls
     def logit(*args, **kwargs):
         pass
-    log = logit
-    log.debug = logit
-    log.info = logit
-    log.warn = logit
-    log.error = logit
-    log.critical = logit
+    logger = logit
+    logger.debug = logit
+    logger.info = logit
+    logger.warn = logit
+    logger.error = logit
+    logger.critical = logit
 
 
 # type of SELECT events
@@ -97,6 +97,7 @@ class _BufferedCanvas(wx.Panel):
 
         # allocate bitmap buffer for display
         (width, height) = size
+        print(f'width={width}, height={height}')
         self.buffer = wx.EmptyBitmap(width, height)
 
     def Draw(self, dc):
@@ -3223,9 +3224,9 @@ class PySlip(_BufferedCanvas):
         length = len(log_msg)
         prefix = '#### Information '
         banner = prefix + '#'*(80 - len(log_msg) - len(prefix))
-        log(banner)
-        log(log_msg)
-        log(banner)
+        logger(banner)
+        logger(log_msg)
+        logger(banner)
 
         wx.MessageBox(msg, 'Warning', wx.OK | wx.ICON_INFORMATION)
 
@@ -3236,9 +3237,9 @@ class PySlip(_BufferedCanvas):
         length = len(log_msg)
         prefix = '#### Warning '
         banner = prefix + '#'*(80 - len(log_msg) - len(prefix))
-        log(banner)
-        log(log_msg)
-        log(banner)
+        logger(banner)
+        logger(log_msg)
+        logger(banner)
 
         wx.MessageBox(msg, 'Warning', wx.OK | wx.ICON_ERROR)
 

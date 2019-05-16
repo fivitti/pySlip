@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding= utf-8 -*-
 
 """
 pySlip demonstration program with either GMT or OSM tiles.
@@ -38,7 +37,6 @@ except ImportError:
 
 import pyslip
 import pyslip.log as log
-#import pyslip.osm_tiles as tiles
 import pyslip.gmt_local_tiles as tiles
 
 ######
@@ -47,7 +45,7 @@ import pyslip.gmt_local_tiles as tiles
 
 # demo name/version
 DemoName = 'pySlip %s - Demonstration' % pyslip.__version__
-DemoVersion = '3.1'
+DemoVersion = '4.0'
 
 # tiles info
 MinTileLevel = 0

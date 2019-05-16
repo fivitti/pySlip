@@ -72,13 +72,13 @@ class TestAssumptions(unittest.TestCase):
 
         # time list() approach
         start = time.time()
-        for _ in xrange(loops):
+        for _ in range(loops):
             new_list = list(old_list)
         list_delta = time.time() - start
 
         # time copy approach
         start = time.time()
-        for _ in xrange(loops):
+        for _ in range(loops):
             new_list = old_list[:]
         copy_delta = time.time() - start
 
@@ -99,7 +99,7 @@ class TestAssumptions(unittest.TestCase):
                     'bc': 'x+=2;y+=3',
                     ...
                    }
-            exec test['ab']
+            exec(test['ab'])
 
         Compare the above with something like:
             def test(x, y, place, x_off, y_off):
@@ -137,7 +137,7 @@ class TestAssumptions(unittest.TestCase):
             test[key] = compile(test[key], 'string', 'exec')
 
         start = time.time()
-        for _ in xrange(LOOPS):
+        for _ in range(LOOPS):
             x = 0
             y = 0
             place = 'nw'
@@ -147,7 +147,7 @@ class TestAssumptions(unittest.TestCase):
             w2 = w/2
             h = 100
             h2 = h/2
-            exec test[place]
+            exec(test[place])
         exec_delta = time.time() - start
 
         # now for function equivalent
@@ -176,7 +176,7 @@ class TestAssumptions(unittest.TestCase):
             return (x, y)
 
         start = time.time()
-        for _ in xrange(LOOPS):
+        for _ in range(LOOPS):
             x = 0
             y = 0
             place = 'nw'
@@ -187,7 +187,7 @@ class TestAssumptions(unittest.TestCase):
             (x, y) = test(x, y, place, w, h, x_off, y_off)
         func_delta = time.time() - start
 
-        msg = ("Function if/else is slower than 'exec dispatch[i]'?\n"
+        msg = ("Function if/else is slower than 'exec(dispatch[i])'?\n"
                    "exec=%.2fs, function=%.2fs (exec is %.1f times faster)"
                % (exec_delta, func_delta, func_delta/exec_delta))
         self.assertTrue(exec_delta > func_delta, msg)
@@ -202,12 +202,12 @@ class TestAssumptions(unittest.TestCase):
         a = [1,2,3,4,5,6,7,8,9,0]   # fake a Z-order list
 
         start = time.time()
-        for _ in xrange(loops):
+        for _ in range(loops):
             b = copy.deepcopy(a)
         copy_delta = time.time() - start
 
         start = time.time()
-        for _ in xrange(loops):
+        for _ in range(loops):
             b = a[:]
         clone_delta = time.time() - start
 
@@ -235,13 +235,13 @@ class TestAssumptions(unittest.TestCase):
 
         # time tuple object
         start = time.time()
-        for _ in xrange(loops):
+        for _ in range(loops):
             (one, two, three, four, five, six, seven, eight, nine, ten) = tuple_obj
         tuple_delta = time.time() - start
 
         # time data object
         start = time.time()
-        for _ in xrange(loops):
+        for _ in range(loops):
             one = data_obj.one
             two = data_obj.two
             three = data_obj.three

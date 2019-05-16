@@ -4,10 +4,10 @@
 A simple logger.
 
 Simple usage:
-    import log
-    log('A line in the log at the default level (DEBUG)')
-    log('A log line at WARN level', Log.WARN)
-    log.info('log line issued at INFO level')
+    import logger
+    logger('A line in the log at the default level (DEBUG)')
+    logger('A log line at WARN level', Logger.WARN)
+    logger.info('log line issued at INFO level')
 
 Based on the 'borg' recipe from [http://code.activestate.com/recipes/66531/].
 
@@ -26,7 +26,7 @@ import traceback
 # A simple (?) logger.
 ################################################################################
 
-class Log(object):
+class Logger(object):
 
     __shared_state = {}                # this __dict__ shared by ALL instances
 
@@ -59,7 +59,7 @@ class Log(object):
         """
 
         # make sure we have same state as all other log objects
-        self.__dict__ = Log.__shared_state
+        self.__dict__ = Logger.__shared_state
 
         self.max_fname = max_fname
 

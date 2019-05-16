@@ -19,8 +19,8 @@ import time
 import math
 import threading
 import traceback
-import urllib2
-import Queue
+import urllib
+import queue
 import wx
 
 import pycacheback
@@ -95,7 +95,7 @@ class TileWorker(threading.Thread):
             error = False       # True if we get an error
             try:
                 tile_url = self.server + self.tilepath.format(Z=level, X=x, Y=y)
-                f = urllib2.urlopen(urllib2.Request(tile_url))
+                f = urllib.request.urlopen(urllib.request.Request(tile_url))
                 content_type = f.info().getheader('Content-Type')
                 if content_type == self.content_type:
                     image = wx.ImageFromStream(f, self.filetype)
@@ -110,7 +110,7 @@ class TileWorker(threading.Thread):
             # error is False if we want to cache this tile on-disk
             wx.CallAfter(self.callback, level, x, y, image, error)
 
-            # finally, removes request from Queue
+            # finally, removes request from queue
             self.requests.task_done()
 
 ################################################################################
@@ -315,18 +315,18 @@ class BaseTiles(object):
         # test for firewall - use proxy (if supplied)
         test_url = self.servers[0] + self.url_path.format(Z=0, X=0, Y=0)
         try:
-            urllib2.urlopen(test_url)
+            urllib.request.urlopen(test_url)
         except Exception as e:
             log('%s exception doing simple connection to: %s'
                 % (type(e).__name__, test_url))
             log(''.join(traceback.format_exc()))
 
             if http_proxy:
-                proxy = urllib2.ProxyHandler({'http': http_proxy})
-                opener = urllib2.build_opener(proxy)
-                urllib2.install_opener(opener)
+                proxy = urllib.request.ProxyHandler({'http': http_proxy})
+                opener = urllib.request.build_opener(proxy)
+                urllib.request.install_opener(opener)
                 try:
-                    urllib2.urlopen(test_url)
+                    urllib.request.urlopen(test_url)
                 except:
                     msg = ("Using HTTP proxy %s, "
                            "but still can't get through a firewall!")
@@ -337,7 +337,7 @@ class BaseTiles(object):
                 raise Exception(msg)
 
         # set up the request queue and worker threads
-        self.request_queue = Queue.Queue()  # entries are (level, x, y)
+        self.request_queue = queue.Queue()  # entries are (level, x, y)
         self.workers = []
         for server in self.servers:
             for num_threads in range(self.max_requests):
@@ -463,7 +463,7 @@ class BaseTiles(object):
 
         If we don't already have this tile (or getting it), queue a request and
         also put the request into a 'queued request' dictionary.  We
-        do this since we can't peek into a Queue to see what's there.
+        do this since we can't peek into a queue to see what's there.
         """
 
         tile_key = (level, x, y)

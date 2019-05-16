@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Test the local GMT tiles code.
@@ -21,7 +20,7 @@ from wx.lib.embeddedimage import PyEmbeddedImage
 
 DefaultAppSize = (512, 512)
 DemoName = 'GMT Tiles Cache Test'
-DemoVersion = '0.1'
+DemoVersion = '0.2'
 
 
 class AppFrame(wx.Frame):

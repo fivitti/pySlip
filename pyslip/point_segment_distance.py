@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Module to test the point_segment_distance() and point_near_polyline() functions.
@@ -99,13 +98,13 @@ if __name__ == '__main__':
     Loops = 10000000
 
     start = time.time()
-    for i in xrange(Loops):
+    for i in range(Loops):
         a = point_segment_distance_OLD((1,1), (0,1), (0,-1))
     delta = time.time() - start
     print('Orig: %.2fs' % delta)
 
     start = time.time()
-    for i in xrange(Loops):
+    for i in range(Loops):
         a = point_segment_distance((1,1), (0,1), (0,-1))
     delta = time.time() - start
     print('   Y: %.2fs' % delta)
@@ -116,6 +115,9 @@ if __name__ == '__main__':
 
 
     class TestAssumptions(unittest.TestCase):                                        
+
+	def test_speed(self):
+
                                                                                          
         def test_simple1(self):                                                    
             """Check simple point/segment cases.

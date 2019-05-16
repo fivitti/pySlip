@@ -16,7 +16,7 @@ tile_cycle_c1 = list(tile_cycle(20, 10))
 #print('list(tile_cycle(20, 10))=%s' % str(tile_cycle_c1))
 
 start = time.time()
-for _ in xrange(LOOP):
+for _ in range(LOOP):
     c = list(tile_cycle(20, 10))
 delta = time.time() - start
 print('%d times, list(tile_cycle(20, 10)) took %.2fs' % (LOOP, delta))
@@ -25,7 +25,7 @@ tile_cycle_c2 = list(tile_cycle(20, 10, 3))
 #print('list(tile_cycle(20, 10, 3))=%s' % str(tile_cycle_c2))
 
 start = time.time()
-for _ in xrange(LOOP):
+for _ in range(LOOP):
     c = list(tile_cycle(20, 10, 3))
 delta = time.time() - start
 print('%d times, list(tile_cycle(20, 10, 3)) took %.2fs' % (LOOP, delta))
@@ -46,7 +46,7 @@ tile_cycle_list_c1 = tile_cycle_list(20, 10)
 #print('tile_cycle_list(20, 10)=%s' % str(tile_cycle_list_c1))
 
 start = time.time()
-for _ in xrange(LOOP):
+for _ in range(LOOP):
     c = tile_cycle_list(20, 10)
 delta = time.time() - start
 print('%d times, tile_cycle_list(20, 10) took %.2fs' % (LOOP, delta))
@@ -55,7 +55,7 @@ tile_cycle_list_c2 = tile_cycle_list(20, 10, 3)
 #print('tile_cycle_list(20, 10, 3)=%s' % str(tile_cycle_list_c2))
 
 start = time.time()
-for _ in xrange(LOOP):
+for _ in range(LOOP):
     c = tile_cycle_list(20, 10, 3)
 delta = time.time() - start
 print('%d times, tile_cycle_list(20, 10, 3) took %.2fs' % (LOOP, delta))
@@ -74,7 +74,7 @@ tile_cycle_list2_c1 = tile_cycle_list2(20, 10)
 #print('tile_cycle_list2(20, 10)=%s' % str(tile_cycle_list2_c1))
 
 start = time.time()
-for _ in xrange(LOOP):
+for _ in range(LOOP):
     c = tile_cycle_list2(20, 10)
 delta = time.time() - start
 print('%d times, tile_cycle_list2(20, 10) took %.2fs' % (LOOP, delta))
@@ -83,7 +83,7 @@ tile_cycle_list2_c2 = tile_cycle_list2(20, 10, 3)
 #print('tile_cycle_list2(20, 10, 3)=%s' % str(tile_cycle_list2_c2))
 
 start = time.time()
-for _ in xrange(LOOP):
+for _ in range(LOOP):
     c = tile_cycle_list2(20, 10, 3)
 delta = time.time() - start
 print('%d times, tile_cycle_list2(20, 10, 3) took %.2fs' % (LOOP, delta))
@@ -104,7 +104,7 @@ tile_iter_list_c1 = tile_iter_list(L, 20)
 #print('tile_iter_list(L, 20)=%s' % str(tile_iter_list_c1))
 
 start = time.time()
-for _ in xrange(LOOP):
+for _ in range(LOOP):
     c = tile_iter_list(L, 20)
 delta = time.time() - start
 print('%d times, tile_iter_list(L, 20) took %.2fs' % (LOOP, delta))
@@ -113,7 +113,7 @@ tile_iter_list_c2 = tile_iter_list(L, 20, 3)
 #print('tile_iter_list(L, 20, 3)=%s' % str(tile_iter_list_c2))
 
 start = time.time()
-for _ in xrange(LOOP):
+for _ in range(LOOP):
     c = tile_iter_list(L, 20, 3)
 delta = time.time() - start
 print('%d times, tile_iter_list(L, 20, 3) took %.2fs' % (LOOP, delta))

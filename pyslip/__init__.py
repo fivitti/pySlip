@@ -5,6 +5,6 @@
 import os
 import sys
 
-__version__ = '3.1'
+__version__ = '4.0'
 
 from pyslip import *

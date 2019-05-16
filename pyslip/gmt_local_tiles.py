@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 A tile source that serves OpenStreetMap tiles from the internet.
@@ -40,7 +39,7 @@ except ImportError as e:
 # names must be unique amongst tile modules
 tileset_name = 'GMT local tiles'
 tileset_shortname = 'GMT tiles'
-tileset_version = '1.0'
+tileset_version = '2.0'
 
 # the pool of tile servers used
 TileServers = None

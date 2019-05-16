@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 An extended dictionary offering limited LRU entries in the dictionary

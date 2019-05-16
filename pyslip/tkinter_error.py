@@ -1,14 +1,13 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
-'''
+"""
 A small function to put an error message on the screen with Tkinter.
 
 Used by GUI programs started from a desktop icon.
-'''
+"""
 
 import string
-from Tkinter import *
+from tkinter import *
 
 
 def tkinter_error(msg, title=None):
@@ -59,8 +58,8 @@ def tkinter_error(msg, title=None):
     # get the message text
     msg = '\n' + msg.strip() + '\n'
 
-    msg = string.replace(msg, '\r', '')
-    msg = string.replace(msg, '\n', '   \n   ')
+    msg = msg.replace('\r', '')
+    msg = msg.replace('\n', '   \n   ')
 
     app = Application(msg)
     app.master.title(title)

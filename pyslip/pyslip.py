@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 A 'slippy map' widget for wxPython.
 

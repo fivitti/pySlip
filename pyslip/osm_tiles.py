@@ -9,26 +9,8 @@ Uses pyCacheBack to provide in-memory and on-disk caching.
 import math
 
 import tiles
-
-
-# if we don't have log.py, don't crash
-try:
-    from . import log
-    log = log.Log('pyslip.log')
-except AttributeError:
-    # means log already set up
-    pass
-except ImportError as e:
-    # if we don't have log.py, don't crash
-    # fake all log(), log.debug(), ... calls
-    def logit(*args, **kwargs):
-        pass
-    log = logit
-    log.debug = logit
-    log.info = logit
-    log.warn = logit
-    log.error = logit
-    log.critical = logit
+import logger
+logger = logger.Logger('pyslip.log')
 
 
 ###############################################################################
@@ -39,18 +21,18 @@ except ImportError as e:
 # names must be unique amongst tile modules
 TilesetName = 'OpenStreetMap Tiles'
 TilesetShortName = 'OSM Tiles'
-TilesetVersion = '1.0'
+TilesetVersion = '1.1'
 
 # the pool of tile servers used
-TileServers = ['http://otile1.mqcdn.com',
-               'http://otile2.mqcdn.com',
-               'http://otile3.mqcdn.com',
-               'http://otile4.mqcdn.com',
+TileServers = [
+               'https://a.tile.openstreetmap.org',
+               'https://b.tile.openstreetmap.org',
+               'https://c.tile.openstreetmap.org',
               ]
 
 # the path on the server to a tile
 # {} params are Z=level, X=column, Y=row, origin at map top-left
-TileURLPath = '/tiles/1.0.0/osm/{Z}/{X}/{Y}.jpg'
+TileURLPath = '/{Z}/{X}/{Y}.png'
 
 # tile levels to be used
 TileLevels = range(17)

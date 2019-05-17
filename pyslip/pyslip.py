@@ -1832,7 +1832,7 @@ class PySlip(_BufferedCanvas):
         if event.KeyCode == wx.WXK_SHIFT:
             self.shift_down = True
             self.default_cursor = BoxSelectCursor
-            self.SetCursor(wx.StockCursor(BoxSelectCursor))
+            self.SetCursor(wx.Cursor(BoxSelectCursor))
 
     def OnKeyUp(self, event):
         """Handle pressing a key down.
@@ -1842,7 +1842,7 @@ class PySlip(_BufferedCanvas):
         if event.KeyCode == wx.WXK_SHIFT:
             self.shift_down = False
             self.default_cursor = DefaultCursor
-            self.SetCursor(wx.StockCursor(DefaultCursor))
+            self.SetCursor(wx.Cursor(DefaultCursor))
 
 
     def OnLeftDown(self, event):
@@ -1856,7 +1856,7 @@ class PySlip(_BufferedCanvas):
             (self.sbox_1_x, self.sbox_1_y) = click_posn
         else:
             self.is_box_select = False
-            self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+            self.SetCursor(wx.Cursor(wx.CURSOR_HAND))
             (self.last_drag_x, self.last_drag_y) = click_posn
         event.Skip()
 
@@ -1876,7 +1876,7 @@ class PySlip(_BufferedCanvas):
             return
 
         # cursor back to normal
-        self.SetCursor(wx.StockCursor(self.default_cursor))
+        self.SetCursor(wx.Cursor(self.default_cursor))
 
         # we need a repaint to remove any selection box, but NOT YET!
         delayed_paint = self.sbox_1_x       # True if box select active
@@ -1992,7 +1992,7 @@ class PySlip(_BufferedCanvas):
 
         if self.shift_down:
             self.is_box_select = True
-            self.SetCursor(wx.StockCursor(BoxSelectCursor))
+            self.SetCursor(wx.Cursor(BoxSelectCursor))
             (self.sbox_w, self.sbox_h) = (0, 0)
             (self.sbox_1_x, self.sbox_1_y) = click_posn
         event.Skip()
@@ -2011,7 +2011,7 @@ class PySlip(_BufferedCanvas):
             self.ignore_next_right_up = False
             return
 
-        self.SetCursor(wx.StockCursor(DefaultCursor))
+        self.SetCursor(wx.Cursor(DefaultCursor))
 
         # we need a repaint to remove any selection box, but NOT YET!
         delayed_paint = self.sbox_1_x       # True if box select active

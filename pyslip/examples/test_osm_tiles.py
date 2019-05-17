@@ -8,14 +8,16 @@ If we can create a bitmap without wxPython, we could remove this dependency.
 """
 
 import os
-import glob
-import pickle
+import sys
 import wx
-import pyslip.osm_tiles as tiles
-
-import unittest
-import shutil
 from wx.lib.embeddedimage import PyEmbeddedImage
+import unittest
+
+# prepare sys.path to import from one directory up
+path_up = os.path.abspath('..')
+sys.path.insert(0, path_up)
+
+import osm_tiles as tiles
 
 
 # where the OSM tiles are cached on disk

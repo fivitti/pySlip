@@ -10,19 +10,15 @@ Usage: test_image_placement.py [-h|--help] [-d] [(-t|--tiles) (GMT|OSM)]
 
 import os
 import sys
+import wx
 
 # prepare sys.path to import from one directory up
 path_up = os.path.abspath('..')
 sys.path.insert(0, path_up)
-import __init__ as pyslip_init
-import tkinter_error
-try:
-    import wx
-except ImportError:
-    msg = 'Sorry, you must install wxPython'
-    tkinter_error.tkinter_error(msg)
 
 import pyslip
+import __init__ as pyslip_init
+import tkinter_error
 import logger
 logger = logger.Logger('pyslip.log')
 
@@ -162,7 +158,7 @@ class LayerControl(wx.Panel):
 
         box = AppStaticBox(self, title)
         sbs = wx.StaticBoxSizer(box, orient=wx.VERTICAL)
-        gbs = wx.GridBagSizer(vgap=2, hgap=2)
+        gbs = wx.GridBagSizer(vgap=10, hgap=10)
 
         # row 0
         row = 0

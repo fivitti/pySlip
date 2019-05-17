@@ -19,32 +19,15 @@ import time
 import math
 import threading
 import traceback
-import urllib
+import urllib.request
 import queue
 import wx
 
 import pycacheback
 import sys_tile_data as std
+import logger
+logger = logger.Logger('pyslip.log')
 
-
-# if we don't have log.py, don't crash
-try:
-    from . import log
-    log = log.Log('pyslip.log')
-except AttributeError:
-    # means log already set up
-    pass
-except ImportError as e:
-    # if we don't have log.py, don't crash
-    # fake all log(), log.debug(), ... calls
-    def logit(*args, **kwargs):
-        pass
-    log = logit
-    log.debug = logit
-    log.info = logit
-    log.warn = logit
-    log.error = logit
-    log.critical = logit
 
 # set how old disk-cache tiles can be before we re-request them from the internet
 # this is the number of days old a tile is before we re-request
@@ -103,8 +86,8 @@ class TileWorker(threading.Thread):
                     error = True
             except Exception as e:
                 error = True
-                log('%s exception getting tile %d,%d,%d from %s\n%s'
-                    % (type(e).__name__, level, x, y, tile_url, e.message))
+                logger('%s exception getting tile %d,%d,%d from %s\n%s'
+                       % (type(e).__name__, level, x, y, tile_url, e.message))
 
             # call the callback function passing level, x, y and image data
             # error is False if we want to cache this tile on-disk
@@ -317,9 +300,9 @@ class BaseTiles(object):
         try:
             urllib.request.urlopen(test_url)
         except Exception as e:
-            log('%s exception doing simple connection to: %s'
-                % (type(e).__name__, test_url))
-            log(''.join(traceback.format_exc()))
+            logger('%s exception doing simple connection to: %s'
+                   % (type(e).__name__, test_url))
+            logger(''.join(traceback.format_exc()))
 
             if http_proxy:
                 proxy = urllib.request.ProxyHandler({'http': http_proxy})

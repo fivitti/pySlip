@@ -8,14 +8,16 @@ If we can create a bitmap without wxPython, we could remove this dependency.
 """
 
 import os
-import glob
-import pickle
-import wx
-import pyslip.gmt_local_tiles as tiles
-
+import sys
 import unittest
-import shutil
+import wx
 from wx.lib.embeddedimage import PyEmbeddedImage
+
+# prepare sys.path to import from one directory up
+path_up = os.path.abspath('..')
+sys.path.insert(0, path_up)
+
+import gmt_local_tiles as tiles
 
 
 DefaultAppSize = (512, 512)
@@ -64,7 +66,7 @@ class TestGMTTiles(unittest.TestCase):
                     for y in range(num_tiles_height):
                         bmp = cache.GetTile(x, y)
                         msg = "Can't find tile (%d,%d,%d)!?" % (level, x, y)
-                        self.failIf(bmp is None, msg)
+                        self.assertFalse(bmp is None, msg)
 
     def testErrors(self):
         """Test possible errors."""

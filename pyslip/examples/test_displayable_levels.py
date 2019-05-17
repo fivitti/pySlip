@@ -2,19 +2,27 @@
 
 """Test PySlip "zoom cancel" AFTER zoom has occurred.
 
-Usage: test_displayable_levels.py [-h] [-t (OSM|GMT)]
+Usage: test_displayable_levels.py [-d] [-h] [-t (OSM|GMT)]
 """
 
 
+import os
+import sys
 import wx
+
+# prepare sys.path to import from one directory up
+path_up = os.path.abspath('..')
+sys.path.insert(0, path_up)
+
 import pyslip
+import __init__ as pyslip_init
 
 
 ######
 # Various constants
 ######
 
-DefaultAppSize = (600, 400)
+DefaultAppSize = (800, 600)
 
 InitViewLevel = 2
 InitViewPosition = (158.0, -20.0)
@@ -27,7 +35,7 @@ class TestFrame(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, None, size=DefaultAppSize,
                           title=('PySlip %s - zoom undo test'
-                                 % pyslip.__version__))
+                                 % pyslip_init.__version__))
         self.SetMinSize(DefaultAppSize)
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.panel.SetBackgroundColour(wx.WHITE)
@@ -94,7 +102,7 @@ if __name__ == '__main__':
         msg += '\nUncaught exception:\n'
         msg += ''.join(traceback.format_exception(type, value, tb))
         msg += '=' * 80 + '\n'
-        print msg
+        print(msg)
         sys.exit(1)
     sys.excepthook = excepthook
 
@@ -118,9 +126,9 @@ if __name__ == '__main__':
 
     # set up the appropriate tile source
     if tile_source == 'gmt':
-        import pyslip.gmt_local_tiles as Tiles
+        import gmt_local_tiles as Tiles
     elif tile_source == 'osm':
-        import pyslip.osm_tiles as Tiles
+        import osm_tiles as Tiles
     else:
         usage('Bad tile source: %s' % tile_source)
         sys.exit(3)

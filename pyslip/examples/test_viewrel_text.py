@@ -5,8 +5,14 @@
 Usage: test_maprel_image.py [-h] [-t (OSM|GMT)]
 """
 
-
+import os
+import sys
 import wx
+
+# prepare sys.path to import from one directory up
+path_up = os.path.abspath('..')
+sys.path.insert(0, path_up)
+
 import pyslip
 
 
@@ -87,7 +93,7 @@ if __name__ == '__main__':
         msg += '\nUncaught exception:\n'
         msg += ''.join(traceback.format_exception(type, value, tb))
         msg += '=' * 80 + '\n'
-        print msg
+        print(msg)
         sys.exit(1)
 
     # plug our handler into the python system
@@ -113,9 +119,9 @@ if __name__ == '__main__':
 
     # set up the appropriate tile source
     if tile_source == 'gmt':
-        import pyslip.gmt_local_tiles as Tiles
+        import gmt_local_tiles as Tiles
     elif tile_source == 'osm':
-        import pyslip.osm_tiles as Tiles
+        import osm_tiles as Tiles
     else:
         usage('Bad tile source: %s' % tile_source)
         sys.exit(3)

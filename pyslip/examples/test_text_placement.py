@@ -9,15 +9,18 @@ Usage: test_text_placement.py [-h|--help] [-d] [(-t|--tiles) (GMT|OSM)]
 
 
 import os
-import pyslip.tkinter_error as tkinter_error
-try:
-    import wx
-except ImportError:
-    msg = 'Sorry, you must install wxPython'
-    tkinter_error.tkinter_error(msg)
+import sys
+import wx
+
+# prepare sys.path to import from one directory up
+path_up = os.path.abspath('..')
+sys.path.insert(0, path_up)
 
 import pyslip
-import pyslip.log as log
+import __init__ as pyslip_init
+import tkinter_error
+import logger
+logger = logger.Logger('pyslip.log')
 
 
 ######
@@ -25,7 +28,7 @@ import pyslip.log as log
 ######
 
 # demo name/version
-DemoName = 'Test text placement, pySlip %s' % pyslip.__version__
+DemoName = 'Test text placement, pySlip %s' % pyslip_init.__version__
 DemoVersion = '1.1'
 
 # initial values
@@ -69,8 +72,10 @@ DefaultViewOffsetY = 0
 ######
 
 # sizes of various spacers
-HSpacerSize = (0,1)         # horizontal in application screen
-VSpacerSize = (1,1)         # vertical in control pane
+#HSpacerSize = (0,1)         # horizontal in application screen
+#VSpacerSize = (1,1)         # vertical in control pane
+HSpacerSize = 5         # horizontal in application screen
+VSpacerSize = 5         # vertical in control pane
 
 # border width when packing GUI elements
 PackBorder = 0
@@ -745,22 +750,13 @@ if __name__ == '__main__':
 
         FontChoices = [x for x in elist if x[0] != '.']
 
-#vvvvvvvvvvvvvvvvvvvvv test code - can go away once __init__.py works
-#    DefaultTilesets = 'tilesets'
-#    CurrentPath = os.path.dirname(os.path.abspath(__file__))
-#
-#    sys.path.append(os.path.join(CurrentPath, DefaultTilesets))
-#
-#    log(str(sys.path))
-#^^^^^^^^^^^^^^^^^^^^^ test code - can go away once __init__.py works
-
     # our own handler for uncaught exceptions
     def excepthook(type, value, tb):
         msg = '\n' + '=' * 80
         msg += '\nUncaught exception:\n'
         msg += ''.join(traceback.format_exception(type, value, tb))
         msg += '=' * 80 + '\n'
-        log(msg)
+        logger(msg)
         tkinter_error.tkinter_error(msg)
         sys.exit(1)
 
@@ -796,9 +792,9 @@ if __name__ == '__main__':
 
     # set up the appropriate tile source
     if tile_source == 'gmt':
-        import pyslip.gmt_local_tiles as Tiles
+        import gmt_local_tiles as Tiles
     elif tile_source == 'osm':
-        import pyslip.osm_tiles as Tiles
+        import osm_tiles as Tiles
     else:
         usage('Bad tile source: %s' % tile_source)
         sys.exit(3)

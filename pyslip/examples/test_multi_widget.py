@@ -9,11 +9,18 @@ the widget instances.
 """
 
 
+import os
+import sys
 import wx
-import pyslip
 
-import pyslip.gmt_local_tiles as GMTTiles
-import pyslip.osm_tiles as NetTiles
+# prepare sys.path to import from one directory up
+path_up = os.path.abspath('..')
+sys.path.insert(0, path_up)
+
+import pyslip
+import __init__ as pyslip_init
+import gmt_local_tiles as GMTTiles
+import osm_tiles as NetTiles
 
 
 ######
@@ -40,7 +47,7 @@ class TestFrame(wx.Frame):
 
         wx.Frame.__init__(self, None, size=DefaultAppSize,
                           title=('PySlip %s - multiwidget test'
-                                 % pyslip.__version__))
+                                 % pyslip_init.__version__))
         self.SetMinSize(DefaultAppSize)
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.panel.SetBackgroundColour(wx.WHITE)
@@ -86,7 +93,6 @@ class TestFrame(wx.Frame):
 ################################################################################
 
 if __name__ == '__main__':
-    import sys
     import getopt
     import traceback
 
@@ -102,7 +108,7 @@ if __name__ == '__main__':
         msg += '\nUncaught exception:\n'
         msg += ''.join(traceback.format_exception(type, value, tb))
         msg += '=' * 80 + '\n'
-        print msg
+        print(msg)
         sys.exit(1)
 
     # plug our handler into the python system

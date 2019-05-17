@@ -130,7 +130,8 @@ class _BufferedCanvas(wx.Panel):
         self.view_height = height
 
         # new off-screen buffer
-        self.buffer = wx.EmptyBitmap(width, height)
+#        self.buffer = wx.EmptyBitmap(width, height)
+        self.buffer = wx.Bitmap(width, height)
 
         # call onSize callback, if registered
         if self.on_size_callback:

@@ -12,22 +12,19 @@ between the two markers shows errors in the Geo2Tile() & Tile2GEO() functions.
 
 
 import os
+import sys
 import wx
-import pyslip
-import pyslip.osm_tiles as tiles
 
-# If we have log.py, well and good.  Otherwise ...
-try:
-    import pyslip.log as log
-except ImportError:
-    def logit(*args, **kwargs):
-        pass
-    log = logit
-    log.debug = logit
-    log.info = logit
-    log.warn = logit
-    log.error = logit
-    log.critical = logit
+# prepare sys.path to import from one directory up
+path_up = os.path.abspath('..')
+sys.path.insert(0, path_up)
+
+import pyslip
+import __init__ as pyslip_init
+import osm_tiles as tiles
+import logger
+logger = logger.Logger('pyslip.log')
+
 
 ######
 # Various demo constants
@@ -35,7 +32,7 @@ except ImportError:
 
 # demo name/version
 DemoVersion = '1.1'
-DemoName = "pySlip %s - GotoPosition() test %s" % (pyslip.__version__, DemoVersion)
+DemoName = "pySlip %s - GotoPosition() test %s" % (pyslip_init.__version__, DemoVersion)
 
 # initial level and position
 InitViewLevel = 3
@@ -313,7 +310,7 @@ class AppFrame(wx.Frame):
 if __name__ == '__main__':
     import sys
     import traceback
-    import pyslip.tkinter_error as tkinter_error
+    import tkinter_error
 
     # our own handler for uncaught exceptions
     def excepthook(type, value, tb):
@@ -321,7 +318,7 @@ if __name__ == '__main__':
         msg += '\nUncaught exception:\n'
         msg += ''.join(traceback.format_exception(type, value, tb))
         msg += '=' * 80 + '\n'
-        log(msg)
+        logger(msg)
         tkinter_error.tkinter_error(msg)
         sys.exit(1)
 
@@ -337,9 +334,6 @@ if __name__ == '__main__':
     app = wx.App()
     app_frame = AppFrame()
     app_frame.Show()
-
-##    import wx.lib.inspection
-##    wx.lib.inspection.InspectionTool().Show()
 
     app.MainLoop()
 

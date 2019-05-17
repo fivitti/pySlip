@@ -23,9 +23,9 @@ import urllib.request
 import queue
 import wx
 
-import pycacheback
-import sys_tile_data as std
-import logger
+from . import pycacheback
+from . import sys_tile_data as std
+from . import logger
 logger = logger.Logger('pyslip.log')
 
 

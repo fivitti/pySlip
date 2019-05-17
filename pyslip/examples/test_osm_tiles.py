@@ -67,7 +67,7 @@ class TestOSMTiles(unittest.TestCase):
 #                    for y in range(num_tiles_height):
                         bmp = cache.GetTile(x, y)
                         msg = "Can't find tile (%d,%d,%d)!?" % (level, x, y)
-                        self.failIf(bmp is None, msg)
+                        self.assertFalse(bmp is None, msg)
             else:
                 print('level %d not available' % level)
 

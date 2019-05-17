@@ -36,8 +36,11 @@ except ImportError:
     tkinter_error(msg)
 
 import pyslip
-import pyslip.log as log
+print(dir(pyslip))
 import pyslip.gmt_local_tiles as tiles
+import pyslip.logger as logger
+logger = logger.Logger('pyslip.log')
+
 
 ######
 # Various demo constants
@@ -368,7 +371,7 @@ class AppFrame(wx.Frame):
         if new_tile_obj is None:
             # haven't seen this tileset before, import and instantiate
             module_name = self.id2tiledata[menu_id][1]
-            exec 'import %s as tiles' % module_name
+            exec('import %s as tiles' % module_name)
             new_tile_obj = tiles.Tiles()
 
             # update the self.id2tiledata element
@@ -2070,7 +2073,7 @@ if __name__ == '__main__':
         msg += '\nUncaught exception:\n'
         msg += ''.join(traceback.format_exception(type, value, tb))
         msg += '=' * 80 + '\n'
-        log(msg)
+        logger(msg)
         tkinter_error(msg)
         sys.exit(1)
 
@@ -2108,7 +2111,7 @@ if __name__ == '__main__':
         except KeyError:
             usage('Unrecognized debug name: %s' % debug)
             sys.exit(1)
-    log.set_level(debug)
+    logger.set_level(debug)
 
     # start wxPython app
     app = wx.App()

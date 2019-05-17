@@ -9,7 +9,7 @@ Uses pyCacheBack to provide in-memory and on-disk caching.
 import os
 import pickle
 
-import tiles
+from . import tiles
 
 
 # if we don't have log.py, don't crash

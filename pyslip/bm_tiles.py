@@ -7,27 +7,7 @@ Uses pyCacheBack to provide in-memory and on-disk caching.
 """
 
 import math
-
 from . import tiles
-
-# if we don't have log.py, don't crash
-try:
-    from . import logger
-    logger = logger.Logger('pyslip.log')
-except AttributeError:
-    # means log already set up
-    pass
-except ImportError as e:
-    # if we don't have log.py, don't crash
-    # fake all log(), log.debug(), ... calls
-    def logit(*args, **kwargs):
-        pass
-    logger = logit
-    logger.debug = logit
-    logger.info = logit
-    logger.warn = logit
-    logger.error = logit
-    logger.critical = logit
 
 ###############################################################################
 # Change values below here to configure an internet tile source.

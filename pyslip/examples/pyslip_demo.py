@@ -37,8 +37,8 @@ except ImportError:
 
 import pyslip
 import pyslip.gmt_local_tiles as tiles
-import pyslip.logger as logger
-logger = logger.Logger('pyslip.log')
+import pyslip.log as log
+log = log.Log('pyslip.log')
 
 
 ######
@@ -359,7 +359,7 @@ class AppFrame(wx.Frame):
         event  the menu select event
         """
 
-        logger('onTilesetSelect: entered')
+        log('onTilesetSelect: entered')
 
         menu_id = event.GetId()
         try:
@@ -372,12 +372,12 @@ class AppFrame(wx.Frame):
         if new_tile_obj is None:
             # haven't seen this tileset before, import and instantiate
             module_name = self.id2tiledata[menu_id][1]
-            logger('New tileset name=%s' % module_name)
-            logger('Before import, tiles=%s' % str(dir(tiles)))
-            logger('Before import, .tileset_name=%s' % tiles.tileset_name)
+            log('New tileset name=%s' % module_name)
+            log('Before import, tiles=%s' % str(dir(tiles)))
+            log('Before import, .tileset_name=%s' % tiles.tileset_name)
             exec('import %s as tiles' % module_name)
-            logger('After import, tiles=%s' % str(dir(tiles)))
-            logger('After import, .tileset_name=%s' % tiles.tileset_name)
+            log('After import, tiles=%s' % str(dir(tiles)))
+            log('After import, .tileset_name=%s' % tiles.tileset_name)
             new_tile_obj = tiles.Tiles()
 
             # update the self.id2tiledata element
@@ -2030,7 +2030,7 @@ class AppFrame(wx.Frame):
         """Routine to handle unexpected events."""
 
         print('ERROR: null_handler!?')
-        logger('ERROR: null_handler!?')
+        log('ERROR: null_handler!?')
 
     def handle_position_event(self, event):
         """Handle a pySlip POSITION event."""
@@ -2080,7 +2080,7 @@ if __name__ == '__main__':
         msg += '\nUncaught exception:\n'
         msg += ''.join(traceback.format_exception(type, value, tb))
         msg += '=' * 80 + '\n'
-        logger(msg)
+        log(msg)
         tkinter_error(msg)
         sys.exit(1)
 
@@ -2119,7 +2119,7 @@ if __name__ == '__main__':
         except KeyError:
             usage('Unrecognized debug name: %s' % debug)
             sys.exit(1)
-    logger.set_level(debug)
+    log.set_level(debug)
 
     # start wxPython app
     app = wx.App()

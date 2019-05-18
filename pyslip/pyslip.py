@@ -33,19 +33,19 @@ import traceback
 import wx
 
 try:
-    import pyslip.logger as logger
-#    logger = logger.Logger('pyslip.log')
+    import pyslip.log as log
+#    log = log.Log('pyslip.log')
 except ImportError as e:
     # if we don't have log.py, don't crash
     # fake all log(), log.debug(), ... calls
     def logit(*args, **kwargs):
         pass
-    logger = logit
-    logger.debug = logit
-    logger.info = logit
-    logger.warn = logit
-    logger.error = logit
-    logger.critical = logit
+    log = logit
+    log.debug = logit
+    log.info = logit
+    log.warn = logit
+    log.error = logit
+    log.critical = logit
 
 
 ## the pySlip version
@@ -3224,9 +3224,9 @@ class PySlip(_BufferedCanvas):
         length = len(log_msg)
         prefix = '#### Information '
         banner = prefix + '#'*(80 - len(log_msg) - len(prefix))
-        logger(banner)
-        logger(log_msg)
-        logger(banner)
+        log(banner)
+        log(log_msg)
+        log(banner)
 
         wx.MessageBox(msg, 'Warning', wx.OK | wx.ICON_INFORMATION)
 
@@ -3237,9 +3237,9 @@ class PySlip(_BufferedCanvas):
         length = len(log_msg)
         prefix = '#### Warning '
         banner = prefix + '#'*(80 - len(log_msg) - len(prefix))
-        logger(banner)
-        logger(log_msg)
-        logger(banner)
+        log(banner)
+        log(log_msg)
+        log(banner)
 
         wx.MessageBox(msg, 'Warning', wx.OK | wx.ICON_ERROR)
 

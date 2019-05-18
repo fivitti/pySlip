@@ -25,7 +25,7 @@ import wx
 
 import pyslip.pycacheback as pycacheback
 import pyslip.sys_tile_data as std
-import pyslip.logger as logger
+import pyslip.log as log
 
 
 # set how old disk-cache tiles can be before we re-request them from the internet
@@ -85,8 +85,8 @@ class TileWorker(threading.Thread):
                     error = True
             except Exception as e:
                 error = True
-                logger('%s exception getting tile %d,%d,%d from %s\n%s'
-                       % (type(e).__name__, level, x, y, tile_url, e.message))
+                log('%s exception getting tile %d,%d,%d from %s\n%s'
+                    % (type(e).__name__, level, x, y, tile_url, e.message))
 
             # call the callback function passing level, x, y and image data
             # error is False if we want to cache this tile on-disk
@@ -299,9 +299,9 @@ class BaseTiles(object):
         try:
             urllib.request.urlopen(test_url)
         except Exception as e:
-            logger('%s exception doing simple connection to: %s'
-                   % (type(e).__name__, test_url))
-            logger(''.join(traceback.format_exc()))
+            log('%s exception doing simple connection to: %s'
+                % (type(e).__name__, test_url))
+            log(''.join(traceback.format_exc()))
 
             if http_proxy:
                 proxy = urllib.request.ProxyHandler({'http': http_proxy})

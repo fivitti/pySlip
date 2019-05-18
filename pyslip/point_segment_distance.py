@@ -114,14 +114,14 @@ if __name__ == '__main__':
     NumPlaces = 11
 
 
-    class TestAssumptions(unittest.TestCase):                                        
+    class TestAssumptions(unittest.TestCase):
 
-	def test_speed(self):
+#        def test_speed(self):
 
-                                                                                         
-        def test_simple1(self):                                                    
+
+        def test_simple1(self):
             """Check simple point/segment cases.
-            
+
             This case is a vertical segment of 2 units length.
             All points should be 1 unit from the segment.
             """
@@ -149,9 +149,9 @@ if __name__ == '__main__':
 
                 self.assertEqual(dist, expected, msg=msg)
 
-        def test_simple2(self):                                                    
+        def test_simple2(self):
             """Check simple point/segment cases.
-            
+
             This case is a horizontal segment of 2 units length.
             All points should be 1 unit from the segment.
             """
@@ -179,9 +179,9 @@ if __name__ == '__main__':
 
                 self.assertEqual(dist, expected, msg=msg)
 
-        def test_simple3(self):                                                    
+        def test_simple3(self):
             """Check simple point/segment cases.
-            
+
             This case is a slant segment.
             All points should be about 0.707 units from the segment.
             """
@@ -209,9 +209,9 @@ if __name__ == '__main__':
 
                 self.assertAlmostEqual(dist, expected, places=NumPlaces, msg=msg)
 
-        def test_simple4(self):                                                    
+        def test_simple4(self):
             """Check simple point/segment cases.
-            
+
             This case is an opposite slant segment.
             All points should be about 0.707 units from the segment.
             """
@@ -239,9 +239,9 @@ if __name__ == '__main__':
 
                 self.assertAlmostEqual(dist, expected, places=NumPlaces, msg=msg)
 
-        def test_simple5(self):                                                    
+        def test_simple5(self):
             """Check simple point/segment cases.
-            
+
             This case is a horizontal segment.
             All points should be on the line, ie distance is 0.0.
             """
@@ -269,9 +269,9 @@ if __name__ == '__main__':
 
                 self.assertAlmostEqual(dist, expected, places=NumPlaces, msg=msg)
 
-        def test_simple6(self):                                                    
+        def test_simple6(self):
             """Check simple point/segment cases.
-            
+
             This case is a vertical segment.
             All points should be on the line, ie distance is 0.0.
             """
@@ -299,9 +299,9 @@ if __name__ == '__main__':
 
                 self.assertAlmostEqual(dist, expected, places=NumPlaces, msg=msg)
 
-        def test_simple7(self):                                                    
+        def test_simple7(self):
             """Check simple point/segment cases.
-            
+
             This case is a slant segment.
             All points should be on the line, ie distance is 0.0.
             """
@@ -329,7 +329,7 @@ if __name__ == '__main__':
 
                 self.assertAlmostEqual(dist, expected, places=NumPlaces, msg=msg)
 
-        def test_simple8(self):                                                    
+        def test_simple8(self):
             """Check simple point/segment cases.  Not straddling axes.
             NE quadrant.  Test horizontal, vertical and slant cases.
             """
@@ -358,6 +358,6 @@ if __name__ == '__main__':
                 self.assertAlmostEqual(dist, expected, places=NumPlaces, msg=msg)
 
 
-    suite = unittest.makeSuite(TestAssumptions,'test')                           
-    runner = unittest.TextTestRunner()                                           
+    suite = unittest.makeSuite(TestAssumptions,'test')
+    runner = unittest.TextTestRunner()
     runner.run(suite)

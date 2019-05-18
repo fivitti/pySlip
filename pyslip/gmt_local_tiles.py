@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 """
-A tile source that serves OpenStreetMap tiles from the internet.
+A tile source that serves GMT tiles from the local store.
 
-Uses pyCacheBack to provide in-memory and on-disk caching.
+Uses pyCacheBack to provide in-memory caching.
 """
 
 import os
@@ -11,11 +11,10 @@ import pickle
 
 from . import tiles
 
-
 # if we don't have log.py, don't crash
 try:
-    from . import log
-    log = log.Log('pyslip.log')
+    from . import logger
+    logger = logger.Logger('pyslip.log')
 except AttributeError:
     # means log already set up
     pass
@@ -24,15 +23,15 @@ except ImportError as e:
     # fake all log(), log.debug(), ... calls
     def logit(*args, **kwargs):
         pass
-    log = logit
-    log.debug = logit
-    log.info = logit
-    log.warn = logit
-    log.error = logit
-    log.critical = logit
+    logger = logit
+    logger.debug = logit
+    logger.info = logit
+    logger.warn = logit
+    logger.error = logit
+    logger.critical = logit
 
 ###############################################################################
-# Change values below here to configure the OSM tile source.
+# Change values below here to configure the tile source.
 ###############################################################################
 
 # attributes used for tileset introspection

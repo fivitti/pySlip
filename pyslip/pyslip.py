@@ -33,8 +33,8 @@ import traceback
 import wx
 
 try:
-    from . import logger
-    logger = logger.Logger('pyslip.log')
+    import pyslip.logger as logger
+#    logger = logger.Logger('pyslip.log')
 except ImportError as e:
     # if we don't have log.py, don't crash
     # fake all log(), log.debug(), ... calls
@@ -47,6 +47,9 @@ except ImportError as e:
     logger.error = logit
     logger.critical = logit
 
+
+## the pySlip version
+#__version__ = '4.0'
 
 # type of SELECT events
 (EventLevel, EventPosition, EventSelect, EventBoxSelect,

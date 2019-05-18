@@ -36,7 +36,6 @@ except ImportError:
     tkinter_error(msg)
 
 import pyslip
-print(dir(pyslip))
 import pyslip.gmt_local_tiles as tiles
 import pyslip.logger as logger
 logger = logger.Logger('pyslip.log')
@@ -360,6 +359,8 @@ class AppFrame(wx.Frame):
         event  the menu select event
         """
 
+        logger('onTilesetSelect: entered')
+
         menu_id = event.GetId()
         try:
             (name, module_name, new_tile_obj) = self.id2tiledata[menu_id]
@@ -371,7 +372,12 @@ class AppFrame(wx.Frame):
         if new_tile_obj is None:
             # haven't seen this tileset before, import and instantiate
             module_name = self.id2tiledata[menu_id][1]
+            logger('New tileset name=%s' % module_name)
+            logger('Before import, tiles=%s' % str(dir(tiles)))
+            logger('Before import, .tileset_name=%s' % tiles.tileset_name)
             exec('import %s as tiles' % module_name)
+            logger('After import, tiles=%s' % str(dir(tiles)))
+            logger('After import, .tileset_name=%s' % tiles.tileset_name)
             new_tile_obj = tiles.Tiles()
 
             # update the self.id2tiledata element
@@ -2024,6 +2030,7 @@ class AppFrame(wx.Frame):
         """Routine to handle unexpected events."""
 
         print('ERROR: null_handler!?')
+        logger('ERROR: null_handler!?')
 
     def handle_position_event(self, event):
         """Handle a pySlip POSITION event."""
@@ -2084,7 +2091,8 @@ if __name__ == '__main__':
     argv = sys.argv[1:]
 
     try:
-        (opts, args) = getopt.getopt(argv, 'd:h', ['debug=', 'help'])
+        (opts, args) = getopt.getopt(argv, 'd:hx',
+                                     ['debug=', 'help', 'inspector'])
     except getopt.error:
         usage()
         sys.exit(1)

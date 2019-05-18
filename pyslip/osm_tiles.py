@@ -8,8 +8,8 @@ Uses pyCacheBack to provide in-memory and on-disk caching.
 
 import math
 
-import tiles
-import logger
+from . import tiles
+from . import logger
 logger = logger.Logger('pyslip.log')
 
 

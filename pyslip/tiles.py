@@ -23,10 +23,9 @@ import urllib.request
 import queue
 import wx
 
-from . import pycacheback
-from . import sys_tile_data as std
-from . import logger
-logger = logger.Logger('pyslip.log')
+import pyslip.pycacheback as pycacheback
+import pyslip.sys_tile_data as std
+import pyslip.logger as logger
 
 
 # set how old disk-cache tiles can be before we re-request them from the internet

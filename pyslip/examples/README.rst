@@ -1,11 +1,8 @@
 Programs in this directory
 ==========================
 
-The programs here do not assume that pySlip has been installed.  They adjust
-the sys.path so they can import from '..'.
-
-They are used to test pySlip and to demonstrate some of the capabilities of the
-widget:
+The programs here all assume that pySlip has been installed.  They are used to
+test pySlip and to demonstrate some of the capabilities of the widget:
 
 =======================  =======
 Program                  Details

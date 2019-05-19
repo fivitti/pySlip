@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 An extended dictionary offering limited LRU entries in the dictionary
 and an interface to an unlimited backing store.

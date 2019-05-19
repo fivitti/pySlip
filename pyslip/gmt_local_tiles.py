@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 A tile source that serves GMT tiles from the local store.
 

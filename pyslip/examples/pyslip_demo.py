@@ -24,6 +24,7 @@ where <options> is zero or more of:
 
 import os
 import copy
+
 try:
     from pyslip.tkinter_error import tkinter_error
 except ImportError:

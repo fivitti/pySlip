@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import time
 
 LOOP = 1000000

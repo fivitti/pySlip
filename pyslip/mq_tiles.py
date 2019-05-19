@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 A tile source that serves MapQuest tiles from the internet.
 

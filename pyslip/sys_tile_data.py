@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Source of the 'error' and 'pending' tiles data.
 

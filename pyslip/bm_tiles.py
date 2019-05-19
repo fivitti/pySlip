@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 A tile source that serves BlueMarble tiles from the internet.
 

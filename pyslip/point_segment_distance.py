@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Module to test the point_segment_distance() and point_near_polyline() functions.
 

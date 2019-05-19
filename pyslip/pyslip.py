@@ -34,7 +34,7 @@ import wx
 
 try:
     import pyslip.log as log
-#    log = log.Log('pyslip.log')
+    log = log.Log('pyslip.log')
 except ImportError as e:
     # if we don't have log.py, don't crash
     # fake all log(), log.debug(), ... calls
@@ -499,6 +499,8 @@ class PySlip(_BufferedCanvas):
         Refreshes the display and tries to maintain the same position
         and zoom level.
         """
+
+        log('ChangeTileset: tile_src=%s' % str(tile_src))
 
         # get level and geo position of view centre
         (level, geo) = self.GetLevelAndPosition()

@@ -15,7 +15,11 @@ import wx
 import pyslip
 import pyslip.osm_tiles as tiles
 import pyslip.log as log
-log = log.Log('pyslip.log')
+try:
+    log = log.Log('pyslip.log')
+except AttributeError:
+    # already set up, ignore error
+    pass
 
 
 ######

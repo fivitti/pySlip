@@ -59,11 +59,11 @@ class Tiles(tiles.BaseTiles):
         and provide the Geo2Tile() and Tile2Geo() methods.
         """
 
-        super(Tiles, self).__init__(TileLevels, TileWidth, TileHeight,
-                                    servers=TileServers, url_path=TileURLPath,
-                                    max_server_requests=MaxServerRequests,
-                                    max_lru=MaxLRU, tiles_dir=tiles_dir,
-                                    http_proxy=http_proxy)
+        super().__init__(TileLevels, TileWidth, TileHeight,
+                         servers=TileServers, url_path=TileURLPath,
+                         max_server_requests=MaxServerRequests,
+                         max_lru=MaxLRU, tiles_dir=tiles_dir,
+                         http_proxy=http_proxy)
 
         # override the tiles.py extent here, the GMT tileset is different
         self.extent=(-65.0, 295.0, -66.66, 66.66)

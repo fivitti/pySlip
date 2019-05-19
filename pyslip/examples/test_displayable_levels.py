@@ -12,7 +12,11 @@ import pyslip
 
 # initialize the logging system
 import pyslip.log as log
-log = log.Log("pyslip.log")
+try:
+    log = log.Log("pyslip.log")
+except AttributeError:
+    # already set up, ignore exception
+    pass
 
 
 ######

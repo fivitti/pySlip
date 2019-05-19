@@ -39,8 +39,13 @@ except ImportError:
 import pyslip
 import pyslip.gmt_local_tiles as tiles
 import pyslip.log as log
-log = log.Log('pyslip.log')
+try:
+    log = log.Log('pyslip.log')
+except AttributeError:
+    # already have a log file, ignore
+    pass
 
+import pyslip.osm_tiles
 
 ######
 # Various demo constants
@@ -126,14 +131,14 @@ LogSym2Num = {'CRITICAL': 50,
 # list of (<long_name>, <module_name>)
 # the <long_name>s go into the Tileselect menu
 TileSources = [
-               ('BlueMarble tiles', 'pyslip.bm_tiles'),
-               ('GMT tiles', 'pyslip.gmt_local_tiles'),
-               ('ModestMaps tiles', 'pyslip.mm_tiles'),
-               ('MapQuest tiles', 'pyslip.mq_tiles'),
-               ('OpenStreetMap tiles', 'pyslip.osm_tiles'),
-               ('Stamen Toner tiles', 'pyslip.stmt_tiles'),
-               ('Stamen Transport tiles', 'pyslip.stmtr_tiles'),
-               ('Stamen Watercolor tiles', 'pyslip.stmw_tiles'),
+               ('BlueMarble tiles', 'bm_tiles'),
+               ('GMT tiles', 'gmt_local_tiles'),
+               ('ModestMaps tiles', 'mm_tiles'),
+               ('MapQuest tiles', 'mq_tiles'),
+               ('OpenStreetMap tiles', 'osm_tiles'),
+               ('Stamen Toner tiles', 'stmt_tiles'),
+               ('Stamen Transport tiles', 'stmtr_tiles'),
+               ('Stamen Watercolor tiles', 'stmw_tiles'),
               ]
 DefaultTileset = 'GMT tiles'
 
@@ -361,6 +366,7 @@ class AppFrame(wx.Frame):
         """
 
         log('onTilesetSelect: entered')
+        log('Before: .id2tiledata=%s' % str(self.id2tiledata))
 
         menu_id = event.GetId()
         try:
@@ -370,20 +376,26 @@ class AppFrame(wx.Frame):
             raise Exception('self.id2tiledata is badly formed:\n%s'
                             % str(self.id2tiledata))
 
+        print('new_tile_obj=%s' % str(new_tile_obj))
+
         if new_tile_obj is None:
             # haven't seen this tileset before, import and instantiate
-            module_name = self.id2tiledata[menu_id][1]
-            log('New tileset name=%s' % module_name)
-            log('Before import, tiles=%s' % str(dir(tiles)))
-            log('Before import, .tileset_name=%s' % tiles.tileset_name)
-            exec('import %s as tiles' % module_name)
-            log('After import, tiles=%s' % str(dir(tiles)))
-            log('After import, .tileset_name=%s' % tiles.tileset_name)
+#            module_name = self.id2tiledata[menu_id][1]
+
+#            exec('import %s as tiles' % module_name)
+            print('Importing %s from pyslip' % module_name)
+            obj = __import__('pyslip', globals(), locals(), [module_name])
+            tileset = getattr(obj, module_name)
+            tile_name = tileset.TilesetName
+            print('tile_name=%s' % tile_name)
+
             new_tile_obj = tiles.Tiles()
 
             # update the self.id2tiledata element
             self.id2tiledata[menu_id] = (name, module_name, new_tile_obj)
 
+        print(' After: .id2tiledata=%s' % str(self.id2tiledata))
+        print('new_tile_obj=%s' % str(new_tile_obj))
         self.pyslip.ChangeTileset(new_tile_obj)
 
     def onClose(self):

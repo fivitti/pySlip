@@ -24,7 +24,11 @@ import wx
 import pyslip.pycacheback as pycacheback
 import pyslip.sys_tile_data as std
 import pyslip.log as log
-log = log.Log('pyslipqt.log')
+try:
+    log = log.Log('pyslipqt.log')
+except AttributeError:
+    # already have a log file, ignore
+    pass
 
 
 # set how old disk-cache tiles can be before we re-request them from the internet

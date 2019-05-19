@@ -10,9 +10,13 @@ import os
 import sys
 import wx
 import pyslip
-import tkinter_error
-import log
-log = log.Log('pyslip.log')
+import pyslip.tkinter_error as tkinter_error
+import pyslip.log as log
+try:
+    log = log.Log('pyslip.log')
+except AttributeError:
+    # already set up, ignore exception
+    pass
 
 
 ######
@@ -750,9 +754,9 @@ if __name__ == '__main__':
 
     # set up the appropriate tile source
     if tile_source == 'gmt':
-        import gmt_local_tiles as Tiles
+        import pyslip.gmt_local_tiles as Tiles
     elif tile_source == 'osm':
-        import osm_tiles as Tiles
+        import pyslip.osm_tiles as Tiles
     else:
         usage('Bad tile source: %s' % tile_source)
         sys.exit(3)

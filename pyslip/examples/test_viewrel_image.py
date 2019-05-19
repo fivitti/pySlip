@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """Test PySlip view-relative images.
 
 Usage: test_maprel_image.py [-h] [-t (OSM|GMT)]
@@ -8,20 +6,16 @@ Usage: test_maprel_image.py [-h] [-t (OSM|GMT)]
 import os
 import sys
 import wx
-
-# prepare sys.path to import from one directory up
-path_up = os.path.abspath('..')
-sys.path.insert(0, path_up)
-
 import pyslip
-import __init__ as pyslip_init
 
 
 ######
 # Various demo constants
 ######
 
-DefaultAppSize = (600, 400)
+DemoWidth = 600
+DemoHeight = 400
+DefaultAppSize = (DemoWidth, DemoHeight)
 
 MinTileLevel = 0
 InitViewLevel = 2
@@ -55,7 +49,7 @@ class TestFrame(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, None, size=DefaultAppSize,
                           title=('PySlip %s - view-relative image test'
-                                 % pyslip_init.__version__))
+                                 % pyslip.__version__))
         self.SetMinSize(DefaultAppSize)
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.panel.SetBackgroundColour(wx.WHITE)

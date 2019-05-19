@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Test PySlip GototPosition() function.
 
@@ -14,16 +12,10 @@ between the two markers shows errors in the Geo2Tile() & Tile2GEO() functions.
 import os
 import sys
 import wx
-
-# prepare sys.path to import from one directory up
-path_up = os.path.abspath('..')
-sys.path.insert(0, path_up)
-
 import pyslip
-import __init__ as pyslip_init
-import osm_tiles as tiles
-import logger
-logger = logger.Logger('pyslip.log')
+import pyslip.osm_tiles as tiles
+import pyslip.log as log
+log = log.Log('pyslip.log')
 
 
 ######
@@ -32,14 +24,16 @@ logger = logger.Logger('pyslip.log')
 
 # demo name/version
 DemoVersion = '1.1'
-DemoName = "pySlip %s - GotoPosition() test %s" % (pyslip_init.__version__, DemoVersion)
+DemoName = "pySlip %s - GotoPosition() test %s" % (pyslip.__version__, DemoVersion)
 
 # initial level and position
 InitViewLevel = 3
 InitViewPosition = (0.0, 0.0)
 
 # startup size of the application
-DefaultAppSize = (800, 665)
+DemoWidth = 800
+DemoHeight = 600
+DefaultAppSize = (DemoWidth, DemoHeight)
 
 # the number of decimal places in a lon/lat display
 LonLatPrecision = 3
@@ -64,8 +58,8 @@ Cities = [((0.0, 51.4778), 'Greenwich, United Kingdom'),
          ]
 
 # sizes of various spacers
-HSpacerSize = (3,1)         # horizontal in application screen
-VSpacerSize = (1,5)         # vertical in control pane
+HSpacerSize = 5             # horizontal in application screen
+VSpacerSize = 5             # vertical in control pane
 
 # border width when packing GUI elements
 PackBorder = 1
@@ -310,7 +304,7 @@ class AppFrame(wx.Frame):
 if __name__ == '__main__':
     import sys
     import traceback
-    import tkinter_error
+    import pyslip.tkinter_error as tkinter_error
 
     # our own handler for uncaught exceptions
     def excepthook(type, value, tb):
@@ -318,7 +312,7 @@ if __name__ == '__main__':
         msg += '\nUncaught exception:\n'
         msg += ''.join(traceback.format_exception(type, value, tb))
         msg += '=' * 80 + '\n'
-        logger(msg)
+        log(msg)
         tkinter_error.tkinter_error(msg)
         sys.exit(1)
 

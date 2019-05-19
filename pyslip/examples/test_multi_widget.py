@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """Test PySlip with multiple widget instances.
 
 Usage: test_multi_widget.py [-h]
@@ -12,22 +10,18 @@ the widget instances.
 import os
 import sys
 import wx
-
-# prepare sys.path to import from one directory up
-path_up = os.path.abspath('..')
-sys.path.insert(0, path_up)
-
 import pyslip
-import __init__ as pyslip_init
-import gmt_local_tiles as GMTTiles
-import osm_tiles as NetTiles
+import pyslip.gmt_local_tiles as GMTTiles
+import pyslip.osm_tiles as NetTiles
 
 
 ######
 # Various demo constants
 ######
 
-DefaultAppSize = (600, 400)
+DemoWidth = 600
+DemoHeight = 500
+DefaultAppSize = (DemoWidth, DemoHeight)
 MinW = 400
 MinH = 300
 MaxW = 1000
@@ -47,7 +41,7 @@ class TestFrame(wx.Frame):
 
         wx.Frame.__init__(self, None, size=DefaultAppSize,
                           title=('PySlip %s - multiwidget test'
-                                 % pyslip_init.__version__))
+                                 % pyslip.__version__))
         self.SetMinSize(DefaultAppSize)
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.panel.SetBackgroundColour(wx.WHITE)

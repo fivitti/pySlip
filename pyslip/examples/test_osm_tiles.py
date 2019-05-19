@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Test the OSM tiles code.
 
@@ -12,18 +10,15 @@ import sys
 import wx
 from wx.lib.embeddedimage import PyEmbeddedImage
 import unittest
-
-# prepare sys.path to import from one directory up
-path_up = os.path.abspath('..')
-sys.path.insert(0, path_up)
-
 import osm_tiles as tiles
 
 
 # where the OSM tiles are cached on disk
 TilesDir = 'test_osm_tiles'
 
-DefaultAppSize = (512, 512)
+DemoWidth = 512
+DemoWidth = 512
+DefaultAppSize = (DemoWidth, DemoWidth)
 DemoName = 'OSM Tiles Cache Test'
 DemoVersion = '0.2'
 

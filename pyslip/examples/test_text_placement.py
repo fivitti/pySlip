@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Program to test text map-relative and view-relative placement.
 Select what to show and experiment with placement parameters.
@@ -11,16 +9,10 @@ Usage: test_text_placement.py [-h|--help] [-d] [(-t|--tiles) (GMT|OSM)]
 import os
 import sys
 import wx
-
-# prepare sys.path to import from one directory up
-path_up = os.path.abspath('..')
-sys.path.insert(0, path_up)
-
 import pyslip
-import __init__ as pyslip_init
 import tkinter_error
-import logger
-logger = logger.Logger('pyslip.log')
+import log
+log = log.Log('pyslip.log')
 
 
 ######
@@ -28,7 +20,7 @@ logger = logger.Logger('pyslip.log')
 ######
 
 # demo name/version
-DemoName = 'Test text placement, pySlip %s' % pyslip_init.__version__
+DemoName = 'Test text placement, pySlip %s' % pyslip.__version__
 DemoVersion = '1.1'
 
 # initial values
@@ -42,7 +34,9 @@ MinTileLevel = 0
 LonLatPrecision = 3
 
 # startup size of the application
-DefaultAppSize = (1000, 700)
+DemoWidth = 1000
+DemoHeight = 700
+DefaultAppSize = (DemoWidth, DemoHeight)
 
 # general text defaults
 DefaultFont = 'Arial'
@@ -756,7 +750,7 @@ if __name__ == '__main__':
         msg += '\nUncaught exception:\n'
         msg += ''.join(traceback.format_exception(type, value, tb))
         msg += '=' * 80 + '\n'
-        logger(msg)
+        log(msg)
         tkinter_error.tkinter_error(msg)
         sys.exit(1)
 

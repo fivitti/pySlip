@@ -1,26 +1,32 @@
-#!/usr/bin/env python
-
-"""Test PySlip "zoom cancel" AFTER zoom has occurred.
+"""
+Test if we can have a list of "allowable levels" and if a user requests
+the display of a level not in that list we CANCEL the zoom operation.
 
 Usage: test_displayable_levels.py [-d] [-h] [-t (OSM|GMT)]
 """
 
 
-import os
 import sys
 import wx
-
 import pyslip
+
+# initialize the logging system
+import pyslip.log as log
+log = log.Log("pyslip.log")
 
 
 ######
 # Various constants
 ######
 
-DefaultAppSize = (800, 600)
+DemoName = 'pySlip %s - Zoom undo test' % pyslip.__version__
+DemoWidth = 1000
+DemoHeight = 800
+DemoAppSize = (DemoWidth, DemoHeight)
 
 InitViewLevel = 2
-InitViewPosition = (158.0, -20.0)
+InitViewPosition = (100.494167, 13.7525)    # Bangkok
+
 
 ################################################################################
 # The main application frame
@@ -28,10 +34,10 @@ InitViewPosition = (158.0, -20.0)
 
 class TestFrame(wx.Frame):
     def __init__(self):
-        wx.Frame.__init__(self, None, size=DefaultAppSize,
+        wx.Frame.__init__(self, None, size=DemoAppSize,
                           title=('PySlip %s - zoom undo test'
                                  % pyslip.__version__))
-        self.SetMinSize(DefaultAppSize)
+        self.SetMinSize(DemoAppSize)
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.panel.SetBackgroundColour(wx.WHITE)
         self.panel.ClearBackground()
@@ -65,7 +71,7 @@ class TestFrame(wx.Frame):
         method below will trigger another exception, which we catch, etc, etc.
         """
 
-        for _ in range(1000):
+        for _ in range(1000000):
             pass
 
         l = [InitViewLevel, InitViewLevel, InitViewLevel, InitViewLevel,

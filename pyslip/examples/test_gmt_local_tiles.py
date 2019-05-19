@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Test the local GMT tiles code.
 
@@ -12,17 +10,14 @@ import sys
 import unittest
 import wx
 from wx.lib.embeddedimage import PyEmbeddedImage
-
-# prepare sys.path to import from one directory up
-path_up = os.path.abspath('..')
-sys.path.insert(0, path_up)
-
-import gmt_local_tiles as tiles
+import pyslip.gmt_local_tiles as tiles
 
 
-DefaultAppSize = (512, 512)
 DemoName = 'GMT Tiles Cache Test'
 DemoVersion = '0.2'
+DemoWidth = 512
+DemoWidth = 512
+DefaultAppSize = (DemoWidth, DemoWidth)
 
 
 class AppFrame(wx.Frame):

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """Test PySlip view-relative text.
 
 Usage: test_maprel_image.py [-h] [-t (OSM|GMT)]
@@ -8,11 +6,6 @@ Usage: test_maprel_image.py [-h] [-t (OSM|GMT)]
 import os
 import sys
 import wx
-
-# prepare sys.path to import from one directory up
-path_up = os.path.abspath('..')
-sys.path.insert(0, path_up)
-
 import pyslip
 
 

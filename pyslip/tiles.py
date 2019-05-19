@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 A _base_ Tiles object for pySlip tiles.
 
@@ -19,13 +17,14 @@ import time
 import math
 import threading
 import traceback
-import urllib.request
+import urllib.request as urllib_request
 import queue
 import wx
 
 import pyslip.pycacheback as pycacheback
 import pyslip.sys_tile_data as std
 import pyslip.log as log
+log = log.Log('pyslipqt.log')
 
 
 # set how old disk-cache tiles can be before we re-request them from the internet
@@ -72,21 +71,30 @@ class TileWorker(threading.Thread):
         while True:
             # get zoom level and tile coordinates to retrieve
             (level, x, y) = self.requests.get()
+            log('run: getting tile (%d,%d,%d)' % (level, x, y))
 
             image = self.error_tile_image
             error = False       # True if we get an error
             try:
                 tile_url = self.server + self.tilepath.format(Z=level, X=x, Y=y)
-                f = urllib.request.urlopen(urllib.request.Request(tile_url))
-                content_type = f.info().getheader('Content-Type')
+                log('tile_url=%s' % tile_url)
+                response = request.urlopen(tile_url)
+                log('response=%s' % str(response))
+                headers = response.info()
+                log('headers=%s' % str(headers))
+                content_type = headers.get_content_type()
+                log('content_type=%s' % str(content_type))
                 if content_type == self.content_type:
                     image = wx.ImageFromStream(f, self.filetype)
                 else:
                     error = True
             except Exception as e:
                 error = True
-                log('%s exception getting tile %d,%d,%d from %s\n%s'
-                    % (type(e).__name__, level, x, y, tile_url, e.message))
+                log('dir(e)=%s' % str(dir(e)))
+                log('%s exception getting tile %d,%d,%d from %s'
+                    % (type(e).__name__, level, x, y, tile_url))
+                import sys
+                sys.exit(1)
 
             # call the callback function passing level, x, y and image data
             # error is False if we want to cache this tile on-disk
@@ -141,7 +149,7 @@ class Cache(pycacheback.pyCacheBack):
         if not os.path.exists(file_path):
             # tile not there, raise KeyError
             raise KeyError("Item with key '%s' not found in on-disk cache"
-                           % str(key))
+                           % str(key)) from None
 
         # we have the tile file - read into memory & return
         return wx.Image(file_path, self.TileDiskFormat).ConvertToBitmap()
@@ -254,6 +262,9 @@ class BaseTiles(object):
         for level in self.levels:
             level_dir = os.path.join(tiles_dir, '%d' % level)
             if not os.path.isdir(level_dir):
+                msg = "The tiles directory %s doesn't exist, creating it." % tiles_dir
+                log.critical(msg)
+                print(msg)
                 os.makedirs(level_dir)
 
         # if we are serving local tiles, just return
@@ -297,18 +308,18 @@ class BaseTiles(object):
         # test for firewall - use proxy (if supplied)
         test_url = self.servers[0] + self.url_path.format(Z=0, X=0, Y=0)
         try:
-            urllib.request.urlopen(test_url)
+            urllib_request.urlopen(test_url)
         except Exception as e:
             log('%s exception doing simple connection to: %s'
                 % (type(e).__name__, test_url))
             log(''.join(traceback.format_exc()))
 
             if http_proxy:
-                proxy = urllib.request.ProxyHandler({'http': http_proxy})
-                opener = urllib.request.build_opener(proxy)
-                urllib.request.install_opener(opener)
+                proxy = urllib_request.ProxyHandler({'http': http_proxy})
+                opener = urllib_request.build_opener(proxy)
+                urllib_request.install_opener(opener)
                 try:
-                    urllib.request.urlopen(test_url)
+                    urllib_request.urlopen(test_url)
                 except:
                     msg = ("Using HTTP proxy %s, "
                            "but still can't get through a firewall!")

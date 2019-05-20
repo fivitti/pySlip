@@ -6,7 +6,6 @@ A small function to put an error message on the screen with Tkinter.
 Used by GUI programs started from a desktop icon.
 """
 
-import string
 from tkinter import *
 
 

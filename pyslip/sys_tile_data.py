@@ -2,15 +2,18 @@
 Source of the 'error' and 'pending' tiles data.
 
 The code here is generated from the:
+
     error_tile.png
     pending_tile.png
+
 files in the pyslip/examples/graphics directory using:
+
     /usr/local/bin/img2py <file>
 
 The captured output is cleaned up and saved in this file as data.
 """
 
-import wx
+#import wx
 from wx.lib.embeddedimage import PyEmbeddedImage
 
 

@@ -30,6 +30,7 @@ try:
 except ImportError:
     print('*'*60 + '\nSorry, you must install pySlip first\n' + '*'*60)
     raise
+
 try:
     import wx
 except ImportError:
@@ -39,6 +40,7 @@ except ImportError:
 import pyslip
 import pyslip.gmt_local_tiles as tiles
 import pyslip.log as log
+
 try:
     log = log.Log('pyslip.log')
 except AttributeError:

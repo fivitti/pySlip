@@ -1,23 +1,28 @@
 """
-A tile source that serves GMT tiles from the local store.
-
-Uses pyCacheBack to provide in-memory caching.
+A tile source that serves pre-generated GMT tiles from the local filesystem.
 """
 
 import os
 import pickle
-from . import tiles
+import pyslip.tiles as tiles
+import pyslip.log as log
+
+try:
+    log = log.Log('pyslip.log')
+except AttributeError:
+    # means log already set up
+    pass
 
 
 ###############################################################################
-# Change values below here to configure the tile source.
+# Change values below here to configure the GMT local tile source.
 ###############################################################################
 
 # attributes used for tileset introspection
 # names must be unique amongst tile modules
-tileset_name = 'GMT local tiles'
-tileset_shortname = 'GMT tiles'
-tileset_version = '2.0'
+TilesetName = 'GMT local tiles'
+TilesetShortName = 'GMT tiles'
+TilesetVersion = '1.0'
 
 # the pool of tile servers used
 TileServers = None
@@ -30,18 +35,17 @@ TileURLPath = None
 TileLevels = range(5)
 
 # maximum pending requests for each tile server
+# unused with local tiles
 MaxServerRequests = None
 
 # set maximum number of in-memory tiles for each level
 MaxLRU = 10000
 
-# size of tiles
-TileWidth = 256
-TileHeight = 256
+# path to the INFO file for GMT tiles
+TileInfoFilename = "tile.info"
 
-# where earlier-cached tiles will be
-# this can be overridden in the __init__ method
-TilesDir = 'gmt_tiles'
+# path to the tiles directory
+TilesDir = os.path.abspath(os.path.expanduser('~/gmt_local_tiles'))
 
 ################################################################################
 # Class for GMT local tiles.   Builds on tiles.BaseTiles.
@@ -50,28 +54,32 @@ TilesDir = 'gmt_tiles'
 class Tiles(tiles.BaseTiles):
     """An object to source GMT tiles for pySlip."""
 
-    TileInfoFilename = "tile.info"
+    # size of these tiles
+    TileWidth = 256
+    TileHeight = 256
 
-    def __init__(self, tiles_dir=TilesDir, http_proxy=None):
+    def __init__(self, tiles_dir=TilesDir):
         """Override the base class for GMT tiles.
 
         Basically, just fill in the BaseTiles class with GMT values from above
         and provide the Geo2Tile() and Tile2Geo() methods.
         """
 
-        super().__init__(TileLevels, TileWidth, TileHeight,
-                         servers=TileServers, url_path=TileURLPath,
-                         max_server_requests=MaxServerRequests,
-                         max_lru=MaxLRU, tiles_dir=tiles_dir,
-                         http_proxy=http_proxy)
+        super().__init__(TileLevels,
+                         Tiles.TileWidth, Tiles.TileHeight,
+                         tiles_dir=tiles_dir, max_lru=MaxLRU)
 
         # override the tiles.py extent here, the GMT tileset is different
-        self.extent=(-65.0, 295.0, -66.66, 66.66)
+        self.extent = (-65.0, 295.0, -66.66, 66.66)
+        self.deg_span_x = 295.0 + 65.0
+        self.deg_span_y = 66.66 + 66.66
+
+        self.levels = TileLevels
 
         # get tile information into instance
         self.level = min(TileLevels)
         (self.num_tiles_x, self.num_tiles_y,
-         self.ppd_x, self.ppd_y) = self.GetInfo(self.level)
+                        self.ppd_x, self.ppd_y) = self.GetInfo(self.level)
 
     def GetInfo(self, level):
         """Get tile info for a particular level.
@@ -88,8 +96,7 @@ class Tiles(tiles.BaseTiles):
             return None
 
         # see if we can open the tile info file.
-        info_file = os.path.join(self.tiles_dir, '%d' % level,
-                                 self.TileInfoFilename)
+        info_file = os.path.join(self.tiles_dir, '%d' % level, TileInfoFilename)
         try:
             with open(info_file, 'rb') as fd:
                 info = pickle.load(fd)
@@ -105,24 +112,24 @@ class Tiles(tiles.BaseTiles):
 
         Returns (xtile, ytile).
 
-        Note that we assume the point *is* on the map!
-
-        This is an easy transformation as geo coordinates are Cartesian.
+        This is an easy transformation as geo coordinates are Cartesian
+        for this tileset.
         """
 
+        # unpack the 'geo' tuple
         (xgeo, ygeo) = geo
 
         # get extent information
         (min_xgeo, max_xgeo, min_ygeo, max_ygeo) = self.extent
 
-        # get 'geo-like' coords with origin at top-left
+        # get number of degress from top-left corner
         x = xgeo - min_xgeo
         y = max_ygeo - ygeo
 
-        tdeg_x = self.tile_size_x / self.ppd_x
-        tdeg_y = self.tile_size_y / self.ppd_y
+        tiles_x = x * self.ppd_x / self.tile_size_x
+        tiles_y = y * self.ppd_y / self.tile_size_y
 
-        return (x/tdeg_x, y/tdeg_y)
+        return (tiles_x, tiles_y)
 
     def Tile2Geo(self, tile):
         """Convert tile fractional coordinates to geo for level in use.
@@ -131,7 +138,8 @@ class Tiles(tiles.BaseTiles):
 
         Note that we assume the point *is* on the map!
 
-        This is an easy transformation as geo coordinates are Cartesian.
+        This is an easy transformation as geo coordinates are Cartesian for
+        this tileset.
         """
 
         (xtile, ytile) = tile
@@ -139,11 +147,24 @@ class Tiles(tiles.BaseTiles):
         # get extent information
         (min_xgeo, max_xgeo, min_ygeo, max_ygeo) = self.extent
 
-        # compute tile degree sizes and position in the coordinate system
+        # compute tile size in degrees
         tdeg_x = self.tile_size_x / self.ppd_x
         tdeg_y = self.tile_size_y / self.ppd_y
+
+        # calculate the geo coordinates
         xgeo = xtile*tdeg_x + min_xgeo
         ygeo = max_ygeo - ytile*tdeg_y
+
+#        if self.wrap_x:
+#            while xgeo < min_xgeo:
+#                xgeo += self.deg_span_x
+#            while xgeo > max_xgeo:
+#                xgeo -= self.deg_span_x
+#        if self.wrap_x:
+#            while ygeo > max_ygeo:
+#                ygeo -= self.deg_span_y
+#            while ygeo < min_ygeo:
+#                ygeo += self.deg_span_y
 
         return (xgeo, ygeo)
 

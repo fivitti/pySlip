@@ -5,7 +5,7 @@ Uses pyCacheBack to provide in-memory and on-disk caching.
 """
 
 import math
-from . import tiles
+from pyslip.tiles import tiles
 
 
 ###############################################################################

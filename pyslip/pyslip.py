@@ -21,15 +21,7 @@ or from the internet (OpenStreetMap, for example).
 """
 
 
-import os
 import sys
-import glob
-import json
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
-import traceback
 import wx
 
 try:
@@ -47,9 +39,6 @@ except ImportError as e:
     log.error = logit
     log.critical = logit
 
-
-## the pySlip version
-#__version__ = '4.0'
 
 # type of SELECT events
 (EventLevel, EventPosition, EventSelect, EventBoxSelect,
@@ -539,7 +528,7 @@ class PySlip(_BufferedCanvas):
         self.tiles_min_level = min(tile_src.levels)
 
         # set callback from Tile source object when tile(s) available
-        self.tile_src.SetAvailableCallback(self.OnTileAvailable)
+        self.tile_src.setCallback(self.OnTileAvailable)
 
         # back to old level+centre, and refresh the display
         self.GotoLevelAndPosition(level, geo)

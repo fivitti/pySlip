@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-pySlip demonstration program with either GMT or OSM tiles.
+pySlip demonstration program with user-selectable tiles.
 
 Usage: pyslip_demo.py <options>
 
@@ -23,7 +23,10 @@ where <options> is zero or more of:
 
 
 import os
+import sys
 import copy
+import getopt
+import traceback
 
 try:
     from pyslip.tkinter_error import tkinter_error
@@ -47,7 +50,6 @@ except AttributeError:
     # already have a log file, ignore
     pass
 
-import pyslip.osm_tiles
 
 ######
 # Various demo constants
@@ -82,7 +84,7 @@ InitViewPosition = (0.0, 51.48)             # Greenwich, England
 # levels on which various layers show
 MRPointShowLevels = [3, 4]
 MRImageShowLevels = [3, 4]
-MRTextShowLevels = None #[3, 4]
+MRTextShowLevels = [3, 4]
 MRPolyShowLevels = [3, 4]
 MRPolylineShowLevels = [3, 4]
 
@@ -2077,72 +2079,70 @@ class AppFrame(wx.Frame):
         del self.demo_select_dispatch[id]
 
 ###############################################################################
+# Main code
+###############################################################################
 
-if __name__ == '__main__':
-    import sys
-    import getopt
-    import traceback
+def usage(msg=None):
+    if msg:
+        print(('*'*80 + '\n%s\n' + '*'*80) % msg)
+    print(__doc__)
 
-    def usage(msg=None):
-        if msg:
-            print(('*'*80 + '\n%s\n' + '*'*80) % msg)
-        print(__doc__)
+# our own handler for uncaught exceptions
+def excepthook(type, value, tback):
+    msg = '\n' + '=' * 80
+    msg += '\nUncaught exception:\n'
+    msg += ''.join(traceback.format_exception(type, value, tback))
+    msg += '=' * 80 + '\n'
+    log(msg)
+    print(msg)
+    tkinter_error(msg)
+    sys.exit(1)
 
-    # our own handler for uncaught exceptions
-    def excepthook(type, value, tb):
-        msg = '\n' + '=' * 80
-        msg += '\nUncaught exception:\n'
-        msg += ''.join(traceback.format_exception(type, value, tb))
-        msg += '=' * 80 + '\n'
-        log(msg)
-        tkinter_error(msg)
-        sys.exit(1)
+# plug our handler into the python system
+sys.excepthook = excepthook
 
-    # plug our handler into the python system
-    sys.excepthook = excepthook
+# parse the CLI params
+argv = sys.argv[1:]
 
-    # parse the CLI params
-    argv = sys.argv[1:]
+try:
+    (opts, args) = getopt.getopt(argv, 'd:hx',
+                                 ['debug=', 'help', 'inspector'])
+except getopt.error:
+    usage()
+    sys.exit(1)
 
-    try:
-        (opts, args) = getopt.getopt(argv, 'd:hx',
-                                     ['debug=', 'help', 'inspector'])
-    except getopt.error:
+debug = 10              # no logging
+inspector = False
+
+for (opt, param) in opts:
+    if opt in ['-d', '--debug']:
+        debug = param
+    elif opt in ['-h', '--help']:
         usage()
-        sys.exit(1)
+        sys.exit(0)
+    elif opt == '-x':
+        inspector = True
 
-    debug = 10              # no logging
-    inspector = False
-
-    for (opt, param) in opts:
-        if opt in ['-d', '--debug']:
-            debug = param
-        elif opt in ['-h', '--help']:
-            usage()
-            sys.exit(0)
-        elif opt == '-x':
-            inspector = True
-
-    # convert any symbolic debug level to a number
+# convert any symbolic debug level to a number
+try:
+    debug = int(debug)
+except ValueError:
+    # possibly a symbolic debug name
     try:
-        debug = int(debug)
-    except ValueError:
-        # possibly a symbolic debug name
-        try:
-            debug = LogSym2Num[debug.upper()]
-        except KeyError:
-            usage('Unrecognized debug name: %s' % debug)
-            sys.exit(1)
-    log.set_level(debug)
+        debug = LogSym2Num[debug.upper()]
+    except KeyError:
+        usage('Unrecognized debug name: %s' % debug)
+        sys.exit(1)
+log.set_level(debug)
 
-    # start wxPython app
-    app = wx.App()
-    app_frame = AppFrame()
-    app_frame.Show()
+# start wxPython app
+app = wx.App()
+app_frame = AppFrame()
+app_frame.Show()
 
-    if inspector:
-        import wx.lib.inspection
-        wx.lib.inspection.InspectionTool().Show()
+if inspector:
+    import wx.lib.inspection
+    wx.lib.inspection.InspectionTool().Show()
 
-    app.MainLoop()
+app.MainLoop()
 

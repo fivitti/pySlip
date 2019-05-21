@@ -17,9 +17,6 @@ where <options> is zero or more of:
             CRITICAL 50     less than ERROR
     -h|--help
         prints this help and stops
-    -t|--tiles <directory>
-        sets the tiles directory to the given path
-        (default is ~/gmt_local_tiles)
     -x
         turns on the wxPython InspectionTool
 """
@@ -306,7 +303,7 @@ class LayerControl(wx.Panel):
 ###############################################################################
 
 class AppFrame(wx.Frame):
-    def __init__(self, tiles_dir):
+    def __init__(self):
         wx.Frame.__init__(self, None, size=DefaultAppSize,
                           title='%s %s' % (DemoName, DemoVersion))
         self.SetMinSize(DefaultAppSize)
@@ -342,7 +339,7 @@ class AppFrame(wx.Frame):
         menuBar.Append(tile_menu, "&Tileset")
         self.SetMenuBar(menuBar)
 
-        self.tile_source = tiles.Tiles(tiles_dir=tiles_dir)
+        self.tile_source = tiles.Tiles()
 
         # build the GUI
         self.make_gui(self.panel)
@@ -2108,15 +2105,14 @@ if __name__ == '__main__':
     argv = sys.argv[1:]
 
     try:
-        (opts, args) = getopt.getopt(argv, 'd:ht:x',
-                                     ['debug=', 'help', 'tiles=', 'inspector'])
+        (opts, args) = getopt.getopt(argv, 'd:hx',
+                                     ['debug=', 'help', 'inspector'])
     except getopt.error:
         usage()
         sys.exit(1)
 
     debug = 10              # no logging
     inspector = False
-    tiles_dir = DefaultTilesetPath
 
     for (opt, param) in opts:
         if opt in ['-d', '--debug']:
@@ -2124,8 +2120,6 @@ if __name__ == '__main__':
         elif opt in ['-h', '--help']:
             usage()
             sys.exit(0)
-        elif opt in ['-t', '--tiles']:
-            tiles_dir = param
         elif opt == '-x':
             inspector = True
 
@@ -2143,7 +2137,7 @@ if __name__ == '__main__':
 
     # start wxPython app
     app = wx.App()
-    app_frame = AppFrame(tiles_dir)
+    app_frame = AppFrame()
     app_frame.Show()
 
     if inspector:

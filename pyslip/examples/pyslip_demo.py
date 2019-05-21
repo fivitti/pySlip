@@ -27,6 +27,7 @@ import sys
 import copy
 import getopt
 import traceback
+from functools import partial
 
 try:
     from pyslip.tkinter_error import tkinter_error
@@ -50,6 +51,10 @@ except AttributeError:
     # already have a log file, ignore
     pass
 
+# get the bits of the demo program we need
+#from display_text import DisplayText
+#from layer_control import LayerControl
+
 
 ######
 # Various demo constants
@@ -59,15 +64,16 @@ except AttributeError:
 DemoName = 'pySlip %s - Demonstration' % pyslip.__version__
 DemoVersion = '4.0'
 
-# tiles info
-MinTileLevel = 0
+DemoWidth = 1000
+DemoHeight = 800
 
 # initial view level and position
 InitViewLevel = 4
 
 # this will eventually be selectable within the app
 # a selection of cities, position from WikiPedia, etc
-InitViewPosition = (0.0, 51.48)             # Greenwich, England
+InitViewPosition = (0.0, 0.0)                # "Null" Island
+#InitViewPosition = (0.0, 51.48)             # Greenwich, England
 #InitViewPosition = (5.33, 60.389444)        # Bergen, Norway
 #InitViewPosition = (153.033333, -27.466667) # Brisbane, Australia
 #InitViewPosition = (98.3786761, 7.8627326)  # Phuket (ภูเก็ต), Thailand
@@ -90,9 +96,6 @@ MRPolylineShowLevels = [3, 4]
 
 # the number of decimal places in a lon/lat display
 LonLatPrecision = 3
-
-# startup size of the application
-DefaultAppSize = (1100, 770)
 
 # default deltas for various layer types
 DefaultPointMapDelta = 40
@@ -134,20 +137,19 @@ LogSym2Num = {'CRITICAL': 50,
 # list of modules containing tile sources
 # list of (<long_name>, <module_name>)
 # the <long_name>s go into the Tileselect menu
-TileSources = [
-               ('BlueMarble tiles', 'bm_tiles'),
-               ('GMT tiles', 'gmt_local_tiles'),
-               ('ModestMaps tiles', 'mm_tiles'),
-               ('MapQuest tiles', 'mq_tiles'),
-               ('OpenStreetMap tiles', 'osm_tiles'),
-               ('Stamen Toner tiles', 'stmt_tiles'),
-               ('Stamen Transport tiles', 'stmtr_tiles'),
-               ('Stamen Watercolor tiles', 'stmw_tiles'),
-              ]
-DefaultTilesetName = 'GMT tiles'
-DefaultTileset = 'gmt_local_tiles'
-DefaultTilesetPath = os.path.expanduser(os.path.join('~', DefaultTileset))
+Tilesets = [
+            ('BlueMarble tiles', 'bm_tiles'),
+            ('GMT tiles', 'gmt_local_tiles'),
+            ('ModestMaps tiles', 'mm_tiles'),
+            ('MapQuest tiles', 'mq_tiles'),
+            ('OpenStreetMap tiles', 'osm_tiles'),
+            ('Stamen Toner tiles', 'stmt_tiles'),
+            ('Stamen Transport tiles', 'stmtr_tiles'),
+            ('Stamen Watercolor tiles', 'stmw_tiles'),
+           ]
 
+# index into Tilesets above to set default tileset
+DefaultTilesetIndex = 1
 
 ######
 # Various GUI layout constants
@@ -156,6 +158,50 @@ DefaultTilesetPath = os.path.expanduser(os.path.join('~', DefaultTileset))
 # border width when packing GUI elements
 PackBorder = 0
 
+
+###############################################################################
+# A small class to manage tileset sources.
+###############################################################################
+
+class TilesetManager:
+    """A class to manage multiple tileset objects.
+  
+        ts = TilesetManager(source_list)  # 'source_list' is list of tileset source modules
+        ts.get_tile_source(index)         # 'index' into 'source_list' of source to use
+
+    Features 'lazy' importing, only imports when the tileset is used
+    the first time.
+    """
+
+    def __init__(self, mod_list):
+        """Create a set of tile sources.
+        
+        mod_list  list of module filenames to manage
+
+        The list is something like: ['osm_tiles.py', 'gmt_local.py']
+
+        We can access tilesets using the index of the module in the 'mod_list'.
+        """
+
+        self.modules = []
+        for fname in mod_list:
+            self.modules.append([fname, os.path.splitext(fname)[0], None])
+
+    def get_tile_source(self, mod_index):
+        """Get an open tileset source for given name.
+
+        mod_index  index into self.modules of tileset to use
+        """
+
+        tileset_data = self.modules[mod_index]
+        (filename, modulename, tile_obj) = tileset_data
+        if not tile_obj:
+            # have never used this tileset, import and instantiate
+            obj = __import__('pyslip', globals(), locals(), [modulename])
+            tileset = getattr(obj, modulename)
+            tile_obj = tileset.Tiles()
+            tileset_data[2] = tile_obj
+        return tile_obj
 
 ###############################################################################
 # Override the wx.TextCtrl class to add read-only style and background colour
@@ -306,42 +352,21 @@ class LayerControl(wx.Panel):
 
 class AppFrame(wx.Frame):
     def __init__(self):
-        wx.Frame.__init__(self, None, size=DefaultAppSize,
-                          title='%s %s' % (DemoName, DemoVersion))
-        self.SetMinSize(DefaultAppSize)
+        super().__init__(None, size=(DemoWidth, DemoHeight),
+                               title='%s %s' % (DemoName, DemoVersion))
+
+        # initialize the tileset handler
+        self.tileset_manager = self.init_tiles()
+        self.tile_source = self.tileset_manager.get_tile_source(DefaultTilesetIndex)
+
+        # start the GUI
+        self.SetMinSize((DemoWidth, DemoHeight))
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.panel.SetBackgroundColour(wx.WHITE)
         self.panel.ClearBackground()
 
         # create tileset menuitems
-        menuBar = wx.MenuBar()
-        tile_menu = wx.Menu()
-
-        # initialise tileset handling
-        self.tile_source = None
-        # a dict of "gui_id: (name, module_name, object)" tuples
-        self.id2tiledata = {}
-        # a dict of "name: gui_id"
-        self.name2guiid = {}
-
-        self.default_tileset_name = None
-        for (name, module_name) in TileSources:
-            new_id = wx.NewId()
-            tile_menu.Append(new_id, name, name, wx.ITEM_RADIO)
-            self.Bind(wx.EVT_MENU, self.onTilesetSelect)
-            self.id2tiledata[new_id] = (name, module_name, None)
-            self.name2guiid[name] = new_id
-            if name == DefaultTilesetName:
-                self.default_tileset_name = name
-
-        if self.default_tileset_name is None:
-            raise Exception('Bad DefaultTileset (%s) or TileSources (%s)'
-                            % (DefaultTileset, str(TileSources)))
-
-        menuBar.Append(tile_menu, "&Tileset")
-        self.SetMenuBar(menuBar)
-
-        self.tile_source = tiles.Tiles()
+        self.initMenu()
 
         # build the GUI
         self.make_gui(self.panel)
@@ -361,45 +386,13 @@ class AppFrame(wx.Frame):
         self.pyslip.Bind(pyslip.EVT_PYSLIP_POSITION, self.handle_position_event)
         self.pyslip.Bind(pyslip.EVT_PYSLIP_LEVEL, self.handle_level_change)
 
-        # select the required tileset
-        item_id = self.name2guiid[self.default_tileset_name]
-        tile_menu.Check(item_id, True)
-
     def onTilesetSelect(self, event):
         """User selected a tileset from the menu.
 
         event  the menu select event
         """
 
-        log('onTilesetSelect: entered')
-        log('Before: .id2tiledata=%s' % str(self.id2tiledata))
-
-        menu_id = event.GetId()
-        try:
-            (name, module_name, new_tile_obj) = self.id2tiledata[menu_id]
-        except KeyError:
-            # badly formed self.id2tiledata element
-            raise Exception('self.id2tiledata is badly formed:\n%s'
-                            % str(self.id2tiledata))
-
-        print('new_tile_obj=%s' % str(new_tile_obj))
-
-        if new_tile_obj is None:
-            # haven't seen this tileset before, import and instantiate
-            print('Importing %s from pyslip' % module_name)
-            obj = __import__('pyslip', globals(), locals(), [module_name])
-            tileset = getattr(obj, module_name)
-            tile_name = tileset.TilesetName
-            print('tile_name=%s' % tile_name)
-
-            new_tile_obj = tiles.Tiles()
-
-            # update the self.id2tiledata element
-            self.id2tiledata[menu_id] = (name, module_name, new_tile_obj)
-
-        print(' After: .id2tiledata=%s' % str(self.id2tiledata))
-        print('new_tile_obj=%s' % str(new_tile_obj))
-        self.pyslip.ChangeTileset(new_tile_obj)
+        self.change_tileset(event.GetId())
 
     def onClose(self):
         """Application is closing."""
@@ -440,7 +433,6 @@ class AppFrame(wx.Frame):
         # create gui objects
         sb = AppStaticBox(parent, '', style=wx.NO_BORDER)
         self.pyslip = pyslip.PySlip(parent, tile_src=self.tile_source)
-#                                    min_level=MinTileLevel)
 
         # lay out objects
         box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
@@ -508,6 +500,87 @@ class AppFrame(wx.Frame):
         controls.Add(polyline_view, proportion=0, flag=wx.EXPAND|wx.ALL)
 
         return controls
+
+    def initMenu(self):
+        """Add the 'Tilesets' menu to the app."""
+
+        # create tileset menuitems
+        menuBar = wx.MenuBar()
+        tile_menu = wx.Menu()
+
+        # a dict of "gui_id: (name, module_name, object)" tuples
+        self.id2tiledata = {}
+
+        # a dict of "name: gui_id"
+        self.name2guiid = {}
+
+        self.default_tileset_name = None
+
+        for (tile_index, (name, module_name)) in enumerate(Tilesets):
+            new_id = wx.NewId()
+            tile_menu.Append(new_id, name, name, wx.ITEM_RADIO)
+            self.Bind(wx.EVT_MENU, self.onTilesetSelect)
+            self.id2tiledata[new_id] = (name, module_name, None)
+            self.name2guiid[name] = new_id
+            if tile_index == DefaultTilesetIndex:
+                self.default_tileset_name = name
+                tile_menu.Check(new_id, True)
+
+        if self.default_tileset_name is None:
+            raise Exception('Bad DefaultTileset (%s) or Tilesets (%s)'
+                            % (DefaultTileset, str(Tilesets)))
+
+        menuBar.Append(tile_menu, "&Tileset")
+        self.SetMenuBar(menuBar)
+
+    def init_tiles(self):
+        """Initialize the tileset manager.
+
+        Return a reference to the manager object.
+        """
+
+        modules = []
+        for (action_id, (name, module_name)) in enumerate(Tilesets):
+            modules.append(module_name)
+
+        return TilesetManager(modules)
+
+    def change_tileset(self, menu_id):
+        """Handle a tileset selection.
+
+        menu_id  the index in self.id2tiledata of the required tileset
+        """
+
+        print('change_tileset: menu_id=%s' % str(menu_id))
+        print('id2tiledata[]=%s' % str(self.id2tiledata))
+
+        try:
+            (name, module_name, new_tile_obj) = self.id2tiledata[menu_id]
+        except KeyError:
+            # badly formed self.id2tiledata element
+            raise Exception('self.id2tiledata is badly formed:\n%s'
+                            % str(self.id2tiledata))
+
+        print('name=%s, module_name=%s, new_tile_obj=%s' 
+                % (str(name), str(module_name), str(new_tile_obj)))
+
+        if new_tile_obj is None:
+            # haven't seen this tileset before, import and instantiate
+            print("importing '%s' from pyslip" % str(module_name))
+            obj = __import__('pyslip', globals(), locals(), [module_name])
+            print('imported module=%s' % str(obj))
+            print('imported module=%s' % str(dir(obj)))
+            tileset = getattr(obj, module_name)
+            print('tileset=%s' % str(tileset))
+            tile_name = tileset.TilesetName
+            print('tile_name=%s' % str(tile_name))
+            new_tile_obj = tiles.Tiles()
+
+            # update the self.id2tiledata element
+            self.id2tiledata[menu_id] = (name, module_name, new_tile_obj)
+
+        print('Before .ChangeTileset, new_tile_obj=%s' % str(new_tile_obj))
+        self.pyslip.ChangeTileset(new_tile_obj)
 
     def make_gui_level(self, parent):
         """Build the control that shows the level.

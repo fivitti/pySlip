@@ -489,16 +489,18 @@ class PySlip(_BufferedCanvas):
         and zoom level.
         """
 
-        log('ChangeTileset: tile_src=%s' % str(tile_src))
+        print('ChangeTileset: tile_src=%s' % str(tile_src))
 
         # get level and geo position of view centre
         (level, geo) = self.GetLevelAndPosition()
+        print('level=%s, geo=%s' % (str(level), str(geo)))
 
         # remember old tileset
         result = self.tile_src
 
         # set the new zoom level to the old
         if not tile_src.UseLevel(self.level):
+            print('Using new tile source')
             # can't use old level, make sensible choice
             if self.level < self.tiles_min_level:
                 self.level = self.tiles_min_level
@@ -511,6 +513,8 @@ class PySlip(_BufferedCanvas):
                                 'levels available are %s'
                                 % (str(self.level),
                                    str(tile_src), str(tile_src.levels)))
+        else:
+            print('NOT USING NEW SOURCE!?')
 
         # set new tile source and set some state
         self.tile_src = tile_src

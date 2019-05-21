@@ -17,6 +17,9 @@ where <options> is zero or more of:
             CRITICAL 50     less than ERROR
     -h|--help
         prints this help and stops
+    -t|--tiles <directory>
+        sets the tiles directory to the given path
+        (default is ~/gmt_local_tiles)
     -x
         turns on the wxPython InspectionTool
 """
@@ -142,7 +145,9 @@ TileSources = [
                ('Stamen Transport tiles', 'stmtr_tiles'),
                ('Stamen Watercolor tiles', 'stmw_tiles'),
               ]
-DefaultTileset = 'GMT tiles'
+DefaultTilesetName = 'GMT tiles'
+DefaultTileset = 'gmt_local_tiles'
+DefaultTilesetPath = os.path.expanduser(os.path.join('~', DefaultTileset))
 
 
 ######
@@ -301,7 +306,7 @@ class LayerControl(wx.Panel):
 ###############################################################################
 
 class AppFrame(wx.Frame):
-    def __init__(self):
+    def __init__(self, tiles_dir):
         wx.Frame.__init__(self, None, size=DefaultAppSize,
                           title='%s %s' % (DemoName, DemoVersion))
         self.SetMinSize(DefaultAppSize)
@@ -327,7 +332,7 @@ class AppFrame(wx.Frame):
             self.Bind(wx.EVT_MENU, self.onTilesetSelect)
             self.id2tiledata[new_id] = (name, module_name, None)
             self.name2guiid[name] = new_id
-            if name == DefaultTileset:
+            if name == DefaultTilesetName:
                 self.default_tileset_name = name
 
         if self.default_tileset_name is None:
@@ -337,7 +342,7 @@ class AppFrame(wx.Frame):
         menuBar.Append(tile_menu, "&Tileset")
         self.SetMenuBar(menuBar)
 
-        self.tile_source = tiles.Tiles()
+        self.tile_source = tiles.Tiles(tiles_dir=tiles_dir)
 
         # build the GUI
         self.make_gui(self.panel)
@@ -382,9 +387,6 @@ class AppFrame(wx.Frame):
 
         if new_tile_obj is None:
             # haven't seen this tileset before, import and instantiate
-#            module_name = self.id2tiledata[menu_id][1]
-
-#            exec('import %s as tiles' % module_name)
             print('Importing %s from pyslip' % module_name)
             obj = __import__('pyslip', globals(), locals(), [module_name])
             tileset = getattr(obj, module_name)
@@ -2106,14 +2108,15 @@ if __name__ == '__main__':
     argv = sys.argv[1:]
 
     try:
-        (opts, args) = getopt.getopt(argv, 'd:hx',
-                                     ['debug=', 'help', 'inspector'])
+        (opts, args) = getopt.getopt(argv, 'd:ht:x',
+                                     ['debug=', 'help', 'tiles=', 'inspector'])
     except getopt.error:
         usage()
         sys.exit(1)
 
     debug = 10              # no logging
     inspector = False
+    tiles_dir = DefaultTilesetPath
 
     for (opt, param) in opts:
         if opt in ['-d', '--debug']:
@@ -2121,6 +2124,8 @@ if __name__ == '__main__':
         elif opt in ['-h', '--help']:
             usage()
             sys.exit(0)
+        elif opt in ['-t', '--tiles']:
+            tiles_dir = param
         elif opt == '-x':
             inspector = True
 
@@ -2138,7 +2143,7 @@ if __name__ == '__main__':
 
     # start wxPython app
     app = wx.App()
-    app_frame = AppFrame()
+    app_frame = AppFrame(tiles_dir)
     app_frame.Show()
 
     if inspector:

@@ -1,7 +1,7 @@
 """
-pySlip demonstration program with user-selectable tiles.
+pySlipQt demonstration program with user-selectable tiles.
 
-Usage: pyslip_demo.py <options>
+Usage: pyslipqt_demo.py <options>
 
 where <options> is zero or more of:
     -d|--debug <level>
@@ -15,8 +15,6 @@ where <options> is zero or more of:
             CRITICAL 50     less than ERROR
     -h|--help
         prints this help and stops
-    -x
-        turns on the wxPython InspectionTool
 """
 
 
@@ -28,26 +26,26 @@ import traceback
 from functools import partial
 
 try:
-    import wx
+    from PyQt5.QtCore import QTimer
+    from PyQt5.QtGui import QPixmap
+    from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget,
+                                 QAction, QGridLayout, QErrorMessage)
 except ImportError:
-    msg = '*'*60 + '\nSorry, you must install wxPython\n' + '*'*60
+    msg = '*'*60 + '\nSorry, you must install PyQt5\n' + '*'*60
     print(msg)
     sys.exit(1)
 
 try:
-    import pyslip
-    import pyslip.gmt_local_tiles as tiles
-    import pyslip.log as log
+    import pySlipQt.pySlipQt as pySlipQt
+    import pySlipQt.log as log
+    import pySlipQt.gmt_local as tiles
 except ImportError:
-    msg = '*'*60 + '\nSorry, you must install pySlip\n' + '*'*60
+    msg = '*'*60 + '\nSorry, you must install pySlipQt\n' + '*'*60
     print(msg)
     sys.exit(1)
 
-try:
-    log = log.Log('pyslip.log')
-except AttributeError:
-    # already have a log file, ignore
-    pass
+# initialize the logging system
+log = log.Log("pyslipqt.log")
 
 # get the bits of the demo program we need
 from display_text import DisplayText
@@ -59,8 +57,8 @@ from layer_control import LayerControl
 ######
 
 # demo name/version
-DemoName = 'pySlip %s - Demonstration' % pyslip.__version__
-DemoVersion = '4.0'
+DemoName = 'pySlipQt %s - Demonstration' % pySlipQt.__version__
+DemoVersion = '1.1'
 
 DemoWidth = 1000
 DemoHeight = 800
@@ -188,71 +186,42 @@ class TilesetManager:
         (filename, modulename, tile_obj) = tileset_data
         if not tile_obj:
             # have never used this tileset, import and instantiate
-            obj = __import__('pyslip', globals(), locals(), [modulename])
+            obj = __import__('pySlipQt', globals(), locals(), [modulename])
             tileset = getattr(obj, modulename)
             tile_obj = tileset.Tiles()
             tileset_data[2] = tile_obj
         return tile_obj
 
 ###############################################################################
-# Override the wx.TextCtrl class to add read-only style and background colour
-###############################################################################
-
-# background colour for the 'read-only' text field
-ControlReadonlyColour = '#ffffcc'
-
-class ROTextCtrl(wx.TextCtrl):
-    """Override the wx.TextCtrl widget to get read-only text control which
-    has a distinctive background colour."""
-
-    def __init__(self, parent, value, tooltip='', *args, **kwargs):
-        wx.TextCtrl.__init__(self, parent, wx.ID_ANY, value=value,
-                             style=wx.TE_READONLY, *args, **kwargs)
-        self.SetBackgroundColour(ControlReadonlyColour)
-        self.SetToolTip(wx.ToolTip(tooltip))
-
-###############################################################################
-# Override the wx.StaticBox class to show our style
-###############################################################################
-
-class AppStaticBox(wx.StaticBox):
-
-    def __init__(self, parent, label, *args, **kwargs):
-#        if label:
-#            label = '  ' + label + '  '
-        if 'style' not in kwargs:
-            kwargs['style'] = wx.NO_BORDER
-        wx.StaticBox.__init__(self, parent, wx.ID_ANY, label, *args, **kwargs)
-
-###############################################################################
 # The main application frame
 ###############################################################################
 
-class AppFrame(wx.Frame):
+class PySlipQtDemo(QMainWindow):
     def __init__(self):
-        super().__init__(None, size=(DemoWidth, DemoHeight),
-                               title='%s %s' % (DemoName, DemoVersion))
+        super().__init__()
 
         # initialize the tileset handler
         self.tileset_manager = self.init_tiles()
         self.tile_source = self.tileset_manager.get_tile_source(DefaultTilesetIndex)
 
         # start the GUI
-        self.SetMinSize((DemoWidth, DemoHeight))
-        self.panel = wx.Panel(self, wx.ID_ANY)
-        self.panel.SetBackgroundColour(wx.WHITE)
-        self.panel.ClearBackground()
+        grid = QGridLayout()
+        grid.setColumnStretch(0, 1)
+        grid.setContentsMargins(2, 2, 2, 2)
 
-        # build the GUI
-        self.make_gui(self.panel)
+        qwidget = QWidget(self)
+        qwidget.setLayout(grid)
+        self.setCentralWidget(qwidget)
 
-        # do initialisation stuff - all the application stuff
-        self.init()
+        # build the 'controls' part of GUI
+        num_rows = self.make_gui_controls(grid)
 
-        # finally, set up application window position
-        self.Centre()
+        self.pyslip = pySlipQt.PySlipQt(self, tile_src=self.tile_source,
+                                        start_level=InitViewLevel)
+        grid.addWidget(self.pyslip, 0, 0, num_rows+1, 1)
+        grid.setRowStretch(num_rows, 1)
 
-        # create tileset menuitems
+        # add the menus
         self.initMenu()
 
         # do initialisation stuff - all the application stuff
@@ -267,11 +236,11 @@ class AppFrame(wx.Frame):
         # variables referencing various layers
         self.sel_text_highlight = None
 
-        # finally, bind events to handlers
-        self.pyslip.Bind(pyslip.EVT_PYSLIP_SELECT, self.handle_select_event)
-        self.pyslip.Bind(pyslip.EVT_PYSLIP_BOXSELECT, self.handle_select_event)
-        self.pyslip.Bind(pyslip.EVT_PYSLIP_POSITION, self.handle_position_event)
-        self.pyslip.Bind(pyslip.EVT_PYSLIP_LEVEL, self.handle_level_change)
+        # bind events to handlers
+        self.pyslip.events.EVT_PYSLIPQT_LEVEL.connect(self.level_change_event)
+        self.pyslip.events.EVT_PYSLIPQT_POSITION.connect(self.mouse_posn_event)
+        self.pyslip.events.EVT_PYSLIPQT_SELECT.connect(self.select_event)
+        self.pyslip.events.EVT_PYSLIPQT_BOXSELECT.connect(self.select_event)
 
         # set the size of the demo window, etc
         self.setGeometry(300, 300, DemoWidth, DemoHeight)
@@ -281,141 +250,148 @@ class AppFrame(wx.Frame):
         # set initial view position
         self.pyslip.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
 
-    def onTilesetSelect(self, event):
-        """User selected a tileset from the menu.
-
-        event  the menu select event
-        """
-
-        self.change_tileset(event.GetId())
-
 #####
 # Build the GUI
 #####
 
-    def make_gui(self, parent):
-        """Create application GUI."""
-
-        # start application layout
-        all_display = wx.BoxSizer(wx.HORIZONTAL)
-        parent.SetSizer(all_display)
-
-        # put map view in left of horizontal box
-        sl_box = self.make_gui_view(parent)
-        all_display.Add(sl_box, proportion=1, border=PackBorder, flag=wx.EXPAND)
-
-        # add controls at right
-        controls = self.make_gui_controls(parent)
-        all_display.Add(controls, proportion=0, border=PackBorder)
-
-        parent.SetSizerAndFit(all_display)
-
-    def make_gui_view(self, parent):
-        """Build the map view widget
-
-        parent  reference to the widget parent
-
-        Returns the static box sizer.
-        """
-
-        # create gui objects
-        sb = AppStaticBox(parent, '', style=wx.NO_BORDER)
-        self.pyslip = pyslip.PySlip(parent, tile_src=self.tile_source)
-
-        # lay out objects
-        box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
-        box.Add(self.pyslip, proportion=1, border=PackBorder, flag=wx.EXPAND)
-
-        return box
-
-    def make_gui_controls(self, parent):
+    def make_gui_controls(self, grid):
         """Build the 'controls' part of the GUI
 
-        parent  reference to parent
+        grid  reference to grid that we populate
 
-        Returns reference to containing sizer object.
+        Returns the number of rows add ed to the 'grid' layout.
         """
 
-        # all controls in vertical box sizer
-        controls = wx.BoxSizer(wx.VERTICAL)
+        # the 'grid_row' variable is row to add into
+        grid_row = 0
 
-        # put level and position into one 'controls' position
-        l_p = wx.BoxSizer(wx.HORIZONTAL)
-        level = self.make_gui_level(parent)
-        l_p.Add(level, proportion=0, flag=wx.EXPAND|wx.ALL)
-        mouse = self.make_gui_mouse(parent)
-        l_p.Add(mouse, proportion=0, flag=wx.EXPAND|wx.ALL)
-        controls.Add(l_p, proportion=0, flag=wx.EXPAND|wx.ALL)
+        # put level and position into grid at top right
+        self.map_level = DisplayText(title='', label='Level:',
+                                     tooltip=None)
+        grid.addWidget(self.map_level, grid_row, 1, 1, 1)
+        self.mouse_position = DisplayText(title='',
+                                          label='Lon/Lat:', text_width=100,
+                                          tooltip='Shows the mouse longitude and latitude on the map',)
+        grid.addWidget(self.mouse_position, grid_row, 2, 1, 1)
+        grid_row += 1
 
         # controls for map-relative points layer
-        point = self.make_gui_point(parent)
-        controls.Add(point, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.lc_point = LayerControl(self, title='Points, map relative %s'
+                                     % (str(MRPointShowLevels) if MRPointShowLevels else ''),
+                                     selectable=True)
+        self.lc_point.change_add.connect(self.pointOnOff)   # tie to event handler(s)
+        self.lc_point.change_show.connect(self.pointShowOnOff)
+        self.lc_point.change_select.connect(self.pointSelectOnOff)
+        grid.addWidget(self.lc_point, grid_row, 1, 1, 2)
+        grid_row += 1
 
         # controls for view-relative points layer
-        point_view = self.make_gui_point_view(parent)
-        controls.Add(point_view, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.lc_point_v = LayerControl(self, 'Points, view relative', selectable=True)
+        self.lc_point_v.change_add.connect(self.pointViewOnOff)   # tie to event handler(s)
+        self.lc_point_v.change_show.connect(self.pointViewShowOnOff)
+        self.lc_point_v.change_select.connect(self.pointViewSelectOnOff)
+        grid.addWidget(self.lc_point_v, grid_row, 1, 1, 2)
+        grid_row += 1
 
         # controls for map-relative image layer
-        image = self.make_gui_image(parent)
-        controls.Add(image, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.lc_image = LayerControl(self, 'Images, map relative %s'
+                                     % (str(MRImageShowLevels) if MRImageShowLevels else ''),
+                                        selectable=True)
+        self.lc_image.change_add.connect(self.imageOnOff)   # tie to event handler(s)
+        self.lc_image.change_show.connect(self.imageShowOnOff)
+        self.lc_image.change_select.connect(self.imageSelectOnOff)
+        grid.addWidget(self.lc_image, grid_row, 1, 1, 2)
+        grid_row += 1
 
         # controls for map-relative image layer
-        image_view = self.make_gui_image_view(parent)
-        controls.Add(image_view, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.lc_image_v = LayerControl(self, 'Images, view relative', selectable=True) 
+        self.lc_image_v.change_add.connect(self.imageViewOnOff)   # tie to event handler(s)
+        self.lc_image_v.change_show.connect(self.imageViewShowOnOff)
+        self.lc_image_v.change_select.connect(self.imageViewSelectOnOff)
+        grid.addWidget(self.lc_image_v, grid_row, 1, 1, 2)
+        grid_row += 1
 
         # controls for map-relative text layer
-        text = self.make_gui_text(parent)
-        controls.Add(text, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.lc_text = LayerControl(self, 'Text, map relative %s'
+                                    % (str(MRTextShowLevels) if MRTextShowLevels else ''),
+                                    selectable=True)
+        self.lc_text.change_add.connect(self.textOnOff)     # tie to event handler(s)
+        self.lc_text.change_show.connect(self.textShowOnOff)
+        self.lc_text.change_select.connect(self.textSelectOnOff)
+        grid.addWidget(self.lc_text, grid_row, 1, 1, 2)
+        grid_row += 1
 
         # controls for view-relative text layer
-        text_view = self.make_gui_text_view(parent)
-        controls.Add(text_view, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.lc_text_v = LayerControl(self, 'Text, view relative', selectable=True)
+        self.lc_text_v.change_add.connect(self.textViewOnOff)    # tie to event handler(s)
+        self.lc_text_v.change_show.connect(self.textViewShowOnOff)
+        self.lc_text_v.change_select.connect(self.textViewSelectOnOff)
+        grid.addWidget(self.lc_text_v, grid_row, 1, 1, 2)
+        grid_row += 1
 
         # controls for map-relative polygon layer
-        poly = self.make_gui_poly(parent)
-        controls.Add(poly, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.lc_poly = LayerControl(self, 'Polygon, map relative %s'
+                                    % (str(MRPolyShowLevels) if MRPolyShowLevels else ''),
+                                       selectable=True)
+        self.lc_poly.change_add.connect(self.polyOnOff)     # tie to event handler(s)
+        self.lc_poly.change_show.connect(self.polyShowOnOff)
+        self.lc_poly.change_select.connect(self.polySelectOnOff)
+        grid.addWidget(self.lc_poly, grid_row, 1, 1, 2)
+        grid_row += 1
 
         # controls for view-relative polygon layer
-        poly_view = self.make_gui_poly_view(parent)
-        controls.Add(poly_view, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.lc_poly_v = LayerControl(self, 'Polygon, view relative', selectable=True)
+        self.lc_poly_v.change_add.connect(self.polyViewOnOff)    # tie to event handler(s)
+        self.lc_poly_v.change_show.connect(self.polyViewShowOnOff)
+        self.lc_poly_v.change_select.connect(self.polyViewSelectOnOff)
+        grid.addWidget(self.lc_poly_v, grid_row, 1, 1, 2)
+        grid_row += 1
 
         # controls for map-relative polyline layer
-        polyline = self.make_gui_polyline(parent)
-        controls.Add(polyline, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.lc_poll = LayerControl(self, 'Polyline, map relative %s'
+                                    % (str(MRPolyShowLevels) if MRPolyShowLevels else ''),
+                                       selectable=True)
+        self.lc_poll.change_add.connect(self.polylineOnOff)     # tie to event handler(s)
+        self.lc_poll.change_show.connect(self.polylineShowOnOff)
+        self.lc_poll.change_select.connect(self.polylineSelectOnOff)
+        grid.addWidget(self.lc_poll, grid_row, 1, 1, 2)
+        grid_row += 1
 
         # controls for view-relative polyline layer
-        polyline_view = self.make_gui_polyline_view(parent)
-        controls.Add(polyline_view, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.lc_poll_v = LayerControl(self, 'Polyline, view relative', selectable=True)
+        self.lc_poll_v.change_add.connect(self.polylineViewOnOff)    # tie to event handler(s)
+        self.lc_poll_v.change_show.connect(self.polylineViewShowOnOff)
+        self.lc_poll_v.change_select.connect(self.polylineViewSelectOnOff)
+        grid.addWidget(self.lc_poll_v, grid_row, 1, 1, 2)
+        grid_row += 1
 
-        return controls
+        return grid_row
 
     def initMenu(self):
         """Add the 'Tilesets' menu to the app."""
 
         # create tileset menuitems
-        menuBar = wx.MenuBar()
-        tile_menu = wx.Menu()
+        menubar = self.menuBar()
+        tilesets = menubar.addMenu('Tilesets')
 
         # this dict: id -> (display_name, module_name, action, tileset_obj)
         self.id2tiledata = {}
 
         # create the tileset menuitems, add to menu and connect to handler
-        for (tile_index, (name, module_name)) in enumerate(Tilesets):
-            new_id = wx.NewId()
-            tile_menu.Append(new_id, name, name, wx.ITEM_RADIO)
-            self.Bind(wx.EVT_MENU, self.onTilesetSelect)
-            self.id2tiledata[new_id] = (name, module_name, None)
-            self.name2guiid[name] = new_id
-            if tile_index == DefaultTilesetIndex:
-                self.default_tileset_name = name
-                tile_menu.Check(new_id, True)
+        for (action_id, (name, module_name)) in enumerate(Tilesets):
+            # create menu, connect to handler
+            new_action = QAction(name, self, checkable=True)
+            tilesets.addAction(new_action)
+            action_plus_menuid = partial(self.change_tileset, action_id)
+            new_action.triggered.connect(action_plus_menuid)
 
-        if self.default_tileset_name is None:
-            raise Exception('Bad DefaultTileset (%s) or Tilesets (%s)'
-                            % (DefaultTileset, str(Tilesets)))
+            # prepare the dict that handles importing tileset object
+            self.id2tiledata[action_id] = (name, module_name, new_action, None)
 
-        menuBar.Append(tile_menu, "&Tileset")
-        self.SetMenuBar(menuBar)
+            # check the default tileset
+            if action_id == DefaultTilesetIndex:
+                # put a check on the default tileset
+                new_action.setChecked(True)
 
     def init_tiles(self):
         """Initialize the tileset manager.
@@ -456,8 +432,8 @@ class AppFrame(wx.Frame):
 
         if new_tile_obj is None:
             # haven't seen this tileset before, import and instantiate
-            log("importing '%s' from pyslip" % str(module_name))
-            obj = __import__('pyslip', globals(), locals(), [module_name])
+            log("importing '%s' from pySlipQt" % str(module_name))
+            obj = __import__('pySlipQt', globals(), locals(), [module_name])
             log('imported module=%s' % str(obj))
             log('imported module=%s' % str(dir(obj)))
             tileset = getattr(obj, module_name)
@@ -467,7 +443,7 @@ class AppFrame(wx.Frame):
             new_tile_obj = tileset.Tiles()
 
             # update the self.id2tiledata element
-            self.id2tiledata[menu_id] = (name, module_name, new_tile_obj)
+            self.id2tiledata[menu_id] = (name, module_name, action, new_tile_obj)
 
         log('Before .ChangeTileset, new_tile_obj=%s' % str(new_tile_obj))
         self.pyslip.ChangeTileset(new_tile_obj)
@@ -482,249 +458,6 @@ class AppFrame(wx.Frame):
     def make_gui_level(self, parent):
         """Build the control that shows the level.
 
-        parent  reference to parent
-
-        Returns reference to containing sizer object.
-        """
-
-        # create objects
-        txt = wx.StaticText(parent, wx.ID_ANY, 'Level: ')
-        self.map_level = ROTextCtrl(parent, '', size=(30,-1),
-                                    tooltip='Shows map zoom level')
-
-        # lay out the controls
-        sb = AppStaticBox(parent, 'Map level')
-        box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
-        box.Add(txt, border=PackBorder, flag=(wx.ALIGN_CENTER_VERTICAL
-                                              |wx.ALIGN_RIGHT|wx.LEFT))
-        box.Add(self.map_level, proportion=0, border=PackBorder,
-                flag=wx.LEFT|wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL)
-
-        return box
-
-    def make_gui_mouse(self, parent):
-        """Build the mouse part of the controls part of GUI.
-
-        parent  reference to parent
-
-        Returns reference to containing sizer object.
-        """
-
-        # create objects
-        txt = wx.StaticText(parent, wx.ID_ANY, 'Lon/Lat: ')
-        self.mouse_position = ROTextCtrl(parent, '', size=(120,-1),
-                                         tooltip=('Shows the mouse '
-                                                  'longitude and latitude '
-                                                  'on the map'))
-
-        # lay out the controls
-        sb = AppStaticBox(parent, 'Mouse position')
-        box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
-        box.Add(txt, border=PackBorder, flag=(wx.ALIGN_CENTER_VERTICAL
-                                     |wx.ALIGN_RIGHT|wx.LEFT))
-        #box.Add(self.mouse_position, proportion=1, border=PackBorder,
-        box.Add(self.mouse_position, proportion=0, border=PackBorder,
-                flag=wx.RIGHT|wx.TOP|wx.BOTTOM)
-
-        return box
-
-    def make_gui_point(self, parent):
-        """Build the points part of the controls part of GUI.
-
-        parent  reference to parent
-
-        Returns reference to containing sizer object.
-        """
-
-        # create widgets
-        point_obj = LayerControl(parent, 'Points, map relative %s'
-                                         % str(MRPointShowLevels),
-                                 selectable=True)
-
-        # tie to event handler(s)
-        point_obj.Bind(EVT_ONOFF, self.pointOnOff)
-        point_obj.Bind(EVT_SHOWONOFF, self.pointShowOnOff)
-        point_obj.Bind(EVT_SELECTONOFF, self.pointSelectOnOff)
-
-        return point_obj
-
-    def make_gui_point_view(self, parent):
-        """Build the view-relative points part of the GUI.
-
-        parent  reference to parent
-
-        Returns reference to containing sizer object.
-        """
-
-        # create widgets
-        point_obj = LayerControl(parent, 'Points, view relative',
-                                 selectable=True)
-
-        # tie to event handler(s)
-        point_obj.Bind(EVT_ONOFF, self.pointViewOnOff)
-        point_obj.Bind(EVT_SHOWONOFF, self.pointViewShowOnOff)
-        point_obj.Bind(EVT_SELECTONOFF, self.pointViewSelectOnOff)
-
-        return point_obj
-
-    def make_gui_image(self, parent):
-        """Build the image part of the controls part of GUI.
-
-        parent  reference to parent
-
-        Returns reference to containing sizer object.
-        """
-
-        # create widgets
-        image_obj = LayerControl(parent, 'Images, map relative %s'
-                                         % str(MRImageShowLevels),
-                                 selectable=True)
-
-        # tie to event handler(s)
-        image_obj.Bind(EVT_ONOFF, self.imageOnOff)
-        image_obj.Bind(EVT_SHOWONOFF, self.imageShowOnOff)
-        image_obj.Bind(EVT_SELECTONOFF, self.imageSelectOnOff)
-
-        return image_obj
-
-    def make_gui_image_view(self, parent):
-        """Build the view-relative image part of the controls part of GUI.
-
-        parent  reference to parent
-
-        Returns reference to containing sizer object.
-        """
-
-        # create widgets
-        image_obj = LayerControl(parent, 'Images, view relative',
-                                 selectable=True)
-
-        # tie to event handler(s)
-        image_obj.Bind(EVT_ONOFF, self.imageViewOnOff)
-        image_obj.Bind(EVT_SHOWONOFF, self.imageViewShowOnOff)
-        image_obj.Bind(EVT_SELECTONOFF, self.imageViewSelectOnOff)
-
-        return image_obj
-
-    def make_gui_text(self, parent):
-        """Build the map-relative text part of the controls part of GUI.
-
-        parent  reference to parent
-
-        Returns reference to containing sizer object.
-        """
-
-        # create widgets
-        text_obj = LayerControl(parent,
-                                'Text, map relative %s' % str(MRTextShowLevels),
-                                selectable=True, editable=False)
-
-        # tie to event handler(s)
-        text_obj.Bind(EVT_ONOFF, self.textOnOff)
-        text_obj.Bind(EVT_SHOWONOFF, self.textShowOnOff)
-        text_obj.Bind(EVT_SELECTONOFF, self.textSelectOnOff)
-
-        return text_obj
-
-    def make_gui_text_view(self, parent):
-        """Build the view-relative text part of the controls part of GUI.
-
-        parent  reference to parent
-
-        Returns reference to containing sizer object.
-        """
-
-        # create widgets
-        text_view_obj = LayerControl(parent, 'Text, view relative',
-                                     selectable=True)
-
-        # tie to event handler(s)
-        text_view_obj.Bind(EVT_ONOFF, self.textViewOnOff)
-        text_view_obj.Bind(EVT_SHOWONOFF, self.textViewShowOnOff)
-        text_view_obj.Bind(EVT_SELECTONOFF, self.textViewSelectOnOff)
-
-        return text_view_obj
-
-    def make_gui_poly(self, parent):
-        """Build the map-relative polygon part of the controls part of GUI.
-
-        parent  reference to parent
-
-        Returns reference to containing sizer object.
-        """
-
-        # create widgets
-        poly_obj = LayerControl(parent,
-                                'Polygon, map relative %s'
-                                     % str(MRPolyShowLevels),
-                                selectable=True)
-
-        # tie to event handler(s)
-        poly_obj.Bind(EVT_ONOFF, self.polyOnOff)
-        poly_obj.Bind(EVT_SHOWONOFF, self.polyShowOnOff)
-        poly_obj.Bind(EVT_SELECTONOFF, self.polySelectOnOff)
-
-        return poly_obj
-
-    def make_gui_poly_view(self, parent):
-        """Build the view-relative polygon part of the controls part of GUI.
-
-        parent  reference to parent
-
-        Returns reference to containing sizer object.
-        """
-
-        # create widgets
-        poly_view_obj = LayerControl(parent, 'Polygon, view relative',
-                                     selectable=True)
-
-        # tie to event handler(s)
-        poly_view_obj.Bind(EVT_ONOFF, self.polyViewOnOff)
-        poly_view_obj.Bind(EVT_SHOWONOFF, self.polyViewShowOnOff)
-        poly_view_obj.Bind(EVT_SELECTONOFF, self.polyViewSelectOnOff)
-
-        return poly_view_obj
-
-    def make_gui_polyline(self, parent):
-        """Build the map-relative polyline part of the controls part of GUI.
-
-        parent  reference to parent
-
-        Returns reference to containing sizer object.
-        """
-
-        # create widgets
-        poly_obj = LayerControl(parent,
-                                'Polyline, map relative %s'
-                                     % str(MRPolyShowLevels),
-                                selectable=True)
-
-        # tie to event handler(s)
-        poly_obj.Bind(EVT_ONOFF, self.polylineOnOff)
-        poly_obj.Bind(EVT_SHOWONOFF, self.polylineShowOnOff)
-        poly_obj.Bind(EVT_SELECTONOFF, self.polylineSelectOnOff)
-
-        return poly_obj
-
-    def make_gui_polyline_view(self, parent):
-        """Build the view-relative polyline part of the controls part of GUI.
-
-        parent  reference to parent
-
-        Returns reference to containing sizer object.
-        """
-
-        # create widgets
-        poly_view_obj = LayerControl(parent, 'Polyline, view relative',
-                                     selectable=True)
-
-        # tie to event handler(s)
-        poly_view_obj.Bind(EVT_ONOFF, self.polylineViewOnOff)
-        poly_view_obj.Bind(EVT_SHOWONOFF, self.polylineViewShowOnOff)
-        poly_view_obj.Bind(EVT_SELECTONOFF, self.polylineViewSelectOnOff)
-
-        return poly_view_obj
-
     ######
     # demo control event handlers
     ######
@@ -734,7 +467,7 @@ class AppFrame(wx.Frame):
     def pointOnOff(self, event):
         """Handle OnOff event for point layer control."""
 
-        if event.state:
+        if event:
             self.point_layer = \
                 self.pyslip.AddPointLayer(PointData, map_rel=True,
                                           colour=PointDataColour, radius=3,
@@ -759,7 +492,7 @@ class AppFrame(wx.Frame):
     def pointShowOnOff(self, event):
         """Handle ShowOnOff event for point layer control."""
 
-        if event.state:
+        if event:
             self.pyslip.ShowLayer(self.point_layer)
             if self.sel_point_layer:
                 self.pyslip.ShowLayer(self.sel_point_layer)
@@ -772,7 +505,7 @@ class AppFrame(wx.Frame):
         """Handle SelectOnOff event for point layer control."""
 
         layer = self.point_layer
-        if event.state:
+        if event:
             self.add_select_handler(layer, self.pointSelect)
             self.pyslip.SetLayerSelectable(layer, True)
         else:
@@ -782,12 +515,13 @@ class AppFrame(wx.Frame):
     def pointSelect(self, event):
         """Handle map-relative point select exception from the widget.
 
-        event  the event that contains these attributes:
-                   type       the type of point selection: single or box
-                   layer_id   ID of the layer the select occurred on
-                   selection  [list of] tuple (xgeo,ygeo) of selected point
-                              (if None then no point(s) selected)
-                   data       userdata object of the selected point
+        event.type       the layer type the select occurred on
+        event.layer_id   ID of the layer the select occurred on
+        event.mposn      mouse click in view coordinates
+        event.vposn      ???
+        event.selection  list of tuples (x,y,kwargs) of selected point(s)
+                         (if None then no point(s) selected)
+        event.relsel     relative selection (unused?)
 
         The selection could be a single or box select.
 
@@ -816,7 +550,7 @@ class AppFrame(wx.Frame):
 
             # choose different highlight colour for different type of selection
             selcolour = '#00ffff'
-            if event.type == pyslip.EventSelect:
+            if event.type == pySlipQt.PySlipQt.EVT_PYSLIPQT_SELECT: # TODO better visibility (like pySlip)
                 selcolour = '#0000ff'
 
             # get selected points into form for display layer
@@ -847,7 +581,7 @@ class AppFrame(wx.Frame):
     def pointViewOnOff(self, event):
         """Handle OnOff event for point view layer control."""
 
-        if event.state:
+        if event:
             self.point_view_layer = \
                 self.pyslip.AddPointLayer(PointViewData, map_rel=False,
                                           placement=PointViewDataPlacement,
@@ -869,7 +603,7 @@ class AppFrame(wx.Frame):
     def pointViewShowOnOff(self, event):
         """Handle ShowOnOff event for point view layer control."""
 
-        if event.state:
+        if event:
             self.pyslip.ShowLayer(self.point_view_layer)
             if self.sel_point_view_layer:
                 self.pyslip.ShowLayer(self.sel_point_view_layer)
@@ -882,7 +616,7 @@ class AppFrame(wx.Frame):
         """Handle SelectOnOff event for point view layer control."""
 
         layer = self.point_view_layer
-        if event.state:
+        if event:
             self.add_select_handler(layer, self.pointViewSelect)
             self.pyslip.SetLayerSelectable(layer, True)
         else:
@@ -892,11 +626,11 @@ class AppFrame(wx.Frame):
     def pointViewSelect(self, event):
         """Handle view-relative point select exception from the widget.
 
-        event  the event that contains these attributes:
-                   type       the type of point selection: single or box
-                   selection  [list of] tuple (xgeo,ygeo) of selected point
-                              (if None then no point(s) selected)
-                   data       userdata object of the selected point
+        event.type       the event type
+        event.layer_id   the ID of the layer that was selected
+        event.selection  [list of] tuple (xgeo,ygeo) of selected point
+                         (if None then no point(s) selected)
+        event.data       userdata object of the selected point
 
         The selection could be a single or box select.
 
@@ -940,7 +674,7 @@ class AppFrame(wx.Frame):
     def imageOnOff(self, event):
         """Handle OnOff event for map-relative image layer control."""
 
-        if event.state:
+        if event:
             self.image_layer = \
                 self.pyslip.AddImageLayer(ImageData, map_rel=True,
                                           visible=True,
@@ -961,7 +695,7 @@ class AppFrame(wx.Frame):
     def imageShowOnOff(self, event):
         """Handle ShowOnOff event for image layer control."""
 
-        if event.state:
+        if event:
             self.pyslip.ShowLayer(self.image_layer)
             if self.sel_image_layer:
                 self.pyslip.ShowLayer(self.sel_image_layer)
@@ -974,7 +708,7 @@ class AppFrame(wx.Frame):
         """Handle SelectOnOff event for image layer control."""
 
         layer = self.image_layer
-        if event.state:
+        if event:
             self.add_select_handler(layer, self.imageSelect)
             self.pyslip.SetLayerSelectable(layer, True)
         else:
@@ -984,11 +718,10 @@ class AppFrame(wx.Frame):
     def imageSelect(self, event):
         """Select event from the widget.
 
-        event  the event that contains these attributes:
-                   type       the type of point selection: single or box
-                   selection  [list of] tuple (xgeo,ygeo) of selected point
-                              (if None then no point(s) selected)
-                   data       userdata object of the selected point
+        event.type       the type of point selection: single or box
+        event.selection  tuple (selection, data, relsel)
+                         (if None then no point(s) selected)
+        event.data       userdata object of the selected point
 
         The selection could be a single or box select.
         """
@@ -1007,10 +740,11 @@ class AppFrame(wx.Frame):
 
             # get selected points into form for display layer
             new_points = []
-            for (x, y, f, d) in selection:
+            for p in event.selection:
+                (x, y, d) = p
                 del d['colour']
                 del d['radius']
-                points.append((x, y, d))
+                new_points.append((x, y, d))
 
             self.sel_image_layer = \
                 self.pyslip.AddPointLayer(new_points, map_rel=True,
@@ -1058,7 +792,7 @@ class AppFrame(wx.Frame):
         event  the state of the leyer control master checkbox
         """
 
-        if event.state:
+        if event:
             self.image_view_layer = \
                 self.pyslip.AddImageLayer(ImageViewData, map_rel=False,
                                           delta=DefaultImageViewDelta,
@@ -1080,7 +814,7 @@ class AppFrame(wx.Frame):
     def imageViewShowOnOff(self, event):
         """Handle ShowOnOff event for image layer control."""
 
-        if event.state:
+        if event:
             self.pyslip.ShowLayer(self.image_view_layer)
             if self.sel_image_view_layer:
                 self.pyslip.ShowLayer(self.sel_image_view_layer)
@@ -1097,7 +831,7 @@ class AppFrame(wx.Frame):
         """Handle SelectOnOff event for image layer control."""
 
         layer = self.image_view_layer
-        if event.state:
+        if event:
             self.add_select_handler(layer, self.imageViewSelect)
             self.pyslip.SetLayerSelectable(layer, True)
         else:
@@ -1197,7 +931,7 @@ class AppFrame(wx.Frame):
     def textOnOff(self, event):
         """Handle OnOff event for map-relative text layer control."""
 
-        if event.state:
+        if event:
             self.text_layer = \
                 self.pyslip.AddTextLayer(TextData, map_rel=True,
                                          name='<text_layer>', visible=True,
@@ -1216,7 +950,7 @@ class AppFrame(wx.Frame):
     def textShowOnOff(self, event):
         """Handle ShowOnOff event for text layer control."""
 
-        if event.state:
+        if event:
             if self.text_layer:
                 self.pyslip.ShowLayer(self.text_layer)
             if self.sel_text_layer:
@@ -1231,7 +965,7 @@ class AppFrame(wx.Frame):
         """Handle SelectOnOff event for text layer control."""
 
         layer = self.text_layer
-        if event.state:
+        if event:
             self.add_select_handler(layer, self.textSelect)
             self.pyslip.SetLayerSelectable(layer, True)
         else:
@@ -1242,10 +976,9 @@ class AppFrame(wx.Frame):
     def textSelect(self, event):
         """Map-relative text select event from the widget.
 
-        event  the event that contains these attributes:
-                   type       the type of point selection: single or box
-                   selection  [list of] tuple (xgeo,ygeo) of selected point
-                              (if None then no point(s) selected)
+        event.type       the type of point selection: single or box
+        event.selection  [list of] tuple (xgeo,ygeo) of selected point
+                         (if None then no point(s) selected)
 
         The selection could be a single or box select.
 
@@ -1263,7 +996,7 @@ class AppFrame(wx.Frame):
         if selection:
             # get selected points into form for display layer
             points = []
-            for (x, y, t, d) in selection:
+            for (x, y, d) in selection:
                 del d['colour']     # remove point attributes, want different
                 del d['radius']
                 del d['offset_x']   # remove offsets, we want point not text
@@ -1286,7 +1019,7 @@ class AppFrame(wx.Frame):
     def textViewOnOff(self, event):
         """Handle OnOff event for view-relative text layer control."""
 
-        if event.state:
+        if event:
             self.text_view_layer = \
                 self.pyslip.AddTextLayer(TextViewData, map_rel=False,
                                          name='<text_view_layer>',
@@ -1309,7 +1042,7 @@ class AppFrame(wx.Frame):
     def textViewShowOnOff(self, event):
         """Handle ShowOnOff event for view text layer control."""
 
-        if event.state:
+        if event:
             self.pyslip.ShowLayer(self.text_view_layer)
             if self.sel_text_view_layer:
                 self.pyslip.ShowLayer(self.sel_text_view_layer)
@@ -1322,7 +1055,7 @@ class AppFrame(wx.Frame):
         """Handle SelectOnOff event for view text layer control."""
 
         layer = self.text_view_layer
-        if event.state:
+        if event:
             self.add_select_handler(layer, self.textViewSelect)
             self.pyslip.SetLayerSelectable(layer, True)
         else:
@@ -1353,7 +1086,7 @@ class AppFrame(wx.Frame):
         if selection:
             # get selected points into form for point display layer
             points = []
-            for (x, y, t, d) in selection:
+            for (x, y, d) in selection:
                 del d['colour']     # want to override colour, radius
                 del d['radius']
                 points.append((x, y, d))
@@ -1374,7 +1107,7 @@ class AppFrame(wx.Frame):
     def polyOnOff(self, event):
         """Handle OnOff event for map-relative polygon layer control."""
 
-        if event.state:
+        if event:
             self.poly_layer = \
                 self.pyslip.AddPolygonLayer(PolyData, map_rel=True,
                                             visible=True,
@@ -1387,6 +1120,7 @@ class AppFrame(wx.Frame):
 
             self.pyslip.DeleteLayer(self.poly_layer)
             self.poly_layer = None
+
             if self.sel_poly_layer:
                 self.pyslip.DeleteLayer(self.sel_poly_layer)
                 self.sel_poly_layer = None
@@ -1395,7 +1129,7 @@ class AppFrame(wx.Frame):
     def polyShowOnOff(self, event):
         """Handle ShowOnOff event for polygon layer control."""
 
-        if event.state:
+        if event:
             self.pyslip.ShowLayer(self.poly_layer)
             if self.sel_poly_layer:
                 self.pyslip.ShowLayer(self.sel_poly_layer)
@@ -1408,7 +1142,7 @@ class AppFrame(wx.Frame):
         """Handle SelectOnOff event for polygon layer control."""
 
         layer = self.poly_layer
-        if event.state:
+        if event:
             self.add_select_handler(layer, self.polySelect)
             self.pyslip.SetLayerSelectable(layer, True)
         else:
@@ -1467,7 +1201,7 @@ class AppFrame(wx.Frame):
     def polyViewOnOff(self, event):
         """Handle OnOff event for map-relative polygon layer control."""
 
-        if event.state:
+        if event:
             self.poly_view_layer = \
                 self.pyslip.AddPolygonLayer(PolyViewData, map_rel=False,
                                             delta=DefaultPolygonViewDelta,
@@ -1489,7 +1223,7 @@ class AppFrame(wx.Frame):
     def polyViewShowOnOff(self, event):
         """Handle ShowOnOff event for polygon layer control."""
 
-        if event.state:
+        if event:
             self.pyslip.ShowLayer(self.poly_view_layer)
             if self.sel_poly_view_layer:
                 self.pyslip.ShowLayer(self.sel_poly_view_layer)
@@ -1502,7 +1236,7 @@ class AppFrame(wx.Frame):
         """Handle SelectOnOff event for polygon layer control."""
 
         layer = self.poly_view_layer
-        if event.state:
+        if event:
             self.add_select_handler(layer, self.polyViewSelect)
             self.pyslip.SetLayerSelectable(layer, True)
         else:
@@ -1557,7 +1291,7 @@ class AppFrame(wx.Frame):
     def polylineOnOff(self, event):
         """Handle OnOff event for map-relative polyline layer control."""
 
-        if event.state:
+        if event:
             self.polyline_layer = \
                 self.pyslip.AddPolylineLayer(PolylineData, map_rel=True,
                                              visible=True,
@@ -1582,7 +1316,7 @@ class AppFrame(wx.Frame):
     def polylineShowOnOff(self, event):
         """Handle ShowOnOff event for polycwlinegon layer control."""
 
-        if event.state:
+        if event:
             self.pyslip.ShowLayer(self.polyline_layer)
             if self.sel_polyline_layer:
                 self.pyslip.ShowLayer(self.sel_polyline_layer)
@@ -1599,7 +1333,7 @@ class AppFrame(wx.Frame):
         """Handle SelectOnOff event for polyline layer control."""
 
         layer = self.polyline_layer
-        if event.state:
+        if event:
             self.add_select_handler(layer, self.polylineSelect)
             self.pyslip.SetLayerSelectable(layer, True)
         else:
@@ -1671,7 +1405,7 @@ class AppFrame(wx.Frame):
     def polylineViewOnOff(self, event):
         """Handle OnOff event for map-relative polyline layer control."""
 
-        if event.state:
+        if event:
             self.polyline_view_layer = \
                 self.pyslip.AddPolylineLayer(PolylineViewData, map_rel=False,
                                              delta=DefaultPolylineViewDelta,
@@ -1697,7 +1431,7 @@ class AppFrame(wx.Frame):
     def polylineViewShowOnOff(self, event):
         """Handle ShowOnOff event for polyline layer control."""
 
-        if event.state:
+        if event:
             self.pyslip.ShowLayer(self.polyline_view_layer)
             if self.sel_polyline_view_layer:
                 self.pyslip.ShowLayer(self.sel_polyline_view_layer)
@@ -1714,7 +1448,7 @@ class AppFrame(wx.Frame):
         """Handle SelectOnOff event for polyline layer control."""
 
         layer = self.polyline_view_layer
-        if event.state:
+        if event:
             self.add_select_handler(layer, self.polylineViewSelect)
             self.pyslip.SetLayerSelectable(layer, True)
         else:
@@ -1786,7 +1520,7 @@ class AppFrame(wx.Frame):
 
         return True
 
-# pySlipQt stuff vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+
     def level_change_event(self, event):
         """Handle a "level change" event from the pySlipQt widget.
         
@@ -1836,8 +1570,6 @@ class AppFrame(wx.Frame):
 
         self.demo_select_dispatch.get(event.layer_id, self.null_handler)(event)
 
-# pySlipQt stuff ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
     ######
     # Small utility routines
     ######
@@ -1847,7 +1579,7 @@ class AppFrame(wx.Frame):
 
         self.pyslip.warn('Sorry, %s is not implemented at the moment.' % msg)
 
-    def dump_event(self, msg, event):  # pySlipQt
+    def dump_event(self, msg, event):
         """Dump an event to the log.
 
         Print attributes and values for non_dunder attributes.
@@ -2084,39 +1816,17 @@ class AppFrame(wx.Frame):
         self.sel_polyline = None
 
         # get width and height of the compass rose image
-        cr_img = wx.Image(CompassRoseGraphic, wx.BITMAP_TYPE_ANY)
-        cr_bmap = cr_img.ConvertToBitmap()
-        (CR_Width, CR_Height) = cr_bmap.GetSize()
-
-        # force pyslip initialisation
-        self.pyslip.OnSize()    # required?
+        cr_img = QPixmap(CompassRoseGraphic)
+        size = cr_img.size()
+        CR_Height = size.height()
+        CR_Width = size.width()
 
         # set initial view position
-        self.map_level.SetLabel('%d' % InitViewLevel)
-        wx.CallAfter(self.final_setup, InitViewLevel, InitViewPosition)
-
-    def final_setup(self, level, position):
-        """Perform final setup.
-
-        level     zoom level required
-        position  position to be in centre of view
-
-        We do this in a CallAfter() function for those operations that
-        must not be done while the GUI is "fluid".
-        """
-
-        self.pyslip.GotoLevelAndPosition(level, position)
+        self.map_level.set_text('%d' % InitViewLevel)
 
     ######
     # Exception handlers
     ######
-
-    def handle_select_event(self, event):
-        """Handle a pySlip point/box SELECT event."""
-
-        layer_id = event.layer_id
-
-        self.demo_select_dispatch.get(layer_id, self.null_handler)(event)
 
     def null_handler(self, event):
         """Routine to handle unexpected events."""
@@ -2154,6 +1864,37 @@ class AppFrame(wx.Frame):
 
         del self.demo_select_dispatch[id]
 
+    ######
+    # Warning and information dialogs
+    ######
+    def info(self, msg):
+        """Display an information message, log and graphically."""
+
+        log_msg = '# ' + msg
+        length = len(log_msg)
+        prefix = '#### Information '
+        banner = prefix + '#'*(80 - len(log_msg) - len(prefix))
+        log(banner)
+        log(log_msg)
+        log(banner)
+
+        info_dialog = QErrorMessage(self)
+        info_dialog.showMessage(msg)
+
+    def warn(self, msg):
+        """Display a warning message, log and graphically."""
+
+        log_msg = '# ' + msg
+        length = len(log_msg)
+        prefix = '#### Warning '
+        banner = prefix + '#'*(80 - len(log_msg) - len(prefix))
+        log(banner)
+        log(log_msg)
+        log(banner)
+
+        warn_dialog = QErrorMessage(self)
+        warn_dialog.showMessage(msg)
+
 ###############################################################################
 # Main code
 ###############################################################################
@@ -2180,14 +1921,12 @@ sys.excepthook = excepthook
 argv = sys.argv[1:]
 
 try:
-    (opts, args) = getopt.getopt(argv, 'd:hx',
-                                 ['debug=', 'help', 'inspector'])
+    (opts, args) = getopt.getopt(argv, 'd:h', ['debug=', 'help'])
 except getopt.error:
     usage()
     sys.exit(1)
 
 debug = 10
-inspector = False
 
 for (opt, param) in opts:
     if opt in ['-d', '--debug']:
@@ -2195,8 +1934,6 @@ for (opt, param) in opts:
     elif opt in ['-h', '--help']:
         usage()
         sys.exit(0)
-    elif opt == '-x':
-        inspector = True
 
 # convert any symbolic debug level to a number
 try:
@@ -2210,14 +1947,8 @@ except ValueError:
         sys.exit(1)
 log.set_level(debug)
 
-# start wxPython app
-app = wx.App()
-app_frame = AppFrame()
-app_frame.Show()
-
-if inspector:
-    import wx.lib.inspection
-    wx.lib.inspection.InspectionTool().Show()
-
-app.MainLoop()
+# start the app
+app = QApplication(args)
+ex = PySlipQtDemo()
+sys.exit(app.exec_())
 

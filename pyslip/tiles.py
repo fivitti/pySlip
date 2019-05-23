@@ -12,6 +12,7 @@ import wx
 import pyslip.pycacheback as pycacheback
 import pyslip.sys_tile_data as std
 import pyslip.log as log
+
 try:
     log = log.Log('pyslip.log')
 except AttributeError:

@@ -339,7 +339,7 @@ class PySlip(_BufferedCanvas):
         """
 
         # create and initialise the base panel
-        _BufferedCanvas.__init__(self, parent=parent, **kwargs)
+        super().__init__(parent=parent, **kwargs)
         self.SetBackgroundColour(PySlip.BackgroundColour)
 
         # initialize all state variables to a 'vanilla' state
@@ -484,44 +484,39 @@ class PySlip(_BufferedCanvas):
 
         tile_src  the tileset object to use
 
-        Returns the old tileset object, None if none.
+        Returns the previous tileset object, None if none.
+
         Refreshes the display and tries to maintain the same position
-        and zoom level.
+        and zoom level.  May change the zoom level if the current level doesn't
+        exist in the new tileset.
         """
 
-        print('ChangeTileset: tile_src=%s' % str(tile_src))
+        log('ChangeTileset: tile_src=%s' % str(tile_src))
 
         # get level and geo position of view centre
         (level, geo) = self.GetLevelAndPosition()
-        print('level=%s, geo=%s' % (str(level), str(geo)))
+        log('level=%s, geo=%s' % (str(level), str(geo)))
 
         # remember old tileset
-        result = self.tile_src
+        old_tileset = self.tile_src
 
-        # set the new zoom level to the old
-        if not tile_src.UseLevel(self.level):
-            print('Using new tile source')
-            # can't use old level, make sensible choice
-            if self.level < self.tiles_min_level:
-                self.level = self.tiles_min_level
-            elif self.level > self.tiles_max_level:
-                self.level = self.tiles_max_level
-
-            # if we can't change level now, raise an error exception
-            if not tile_src.UseLevel(self.level):
-                raise Exception('Trying to use level %s in tile obj %s, '
-                                'levels available are %s'
-                                % (str(self.level),
-                                   str(tile_src), str(tile_src.levels)))
-        else:
-            print('NOT USING NEW SOURCE!?')
+        # get levels in new tileset and see if we can display at the current level
+        new_levels = tile_src.levels
+        new_max_level = tile_src.max_level
+        new_min_level = tile_src.min_level
+        if level > new_max_level:
+            level = new_max_level
+        if level < new_min_level:
+            level = new_min_level
 
         # set new tile source and set some state
         self.tile_src = tile_src
         self.tile_size_x = tile_src.tile_size_x
         self.tile_size_y = tile_src.tile_size_y
+        self.level = level
 
-        (num_tiles_x, num_tiles_y, ppd_x, ppd_y) = tile_src.GetInfo(self.level)
+        result = self.tile_src.GetInfo(level)
+        (num_tiles_x, num_tiles_y, ppd_x, ppd_y) = result
         self.map_width = self.tile_size_x * num_tiles_x
         self.map_height = self.tile_size_y * num_tiles_y
         self.ppd_x = ppd_x
@@ -534,10 +529,29 @@ class PySlip(_BufferedCanvas):
         # set callback from Tile source object when tile(s) available
         self.tile_src.setCallback(self.OnTileAvailable)
 
-        # back to old level+centre, and refresh the display
-        self.GotoLevelAndPosition(level, geo)
+        # set the new zoom level to the old
+        if not tile_src.UseLevel(self.level):
+            # can't use old level, make sensible choice
+            if self.level < self.tiles_min_level:
+                self.level = self.tiles_min_level
+            elif self.level > self.tiles_max_level:
+                self.level = self.tiles_max_level
 
-        return result
+            # if we can't change level now, raise an error exception
+            if not tile_src.UseLevel(self.level):
+                raise Exception('Trying to use level %s in tile obj %s, '
+                                'levels available are %s'
+                                % (str(self.level),
+                                   str(tile_src), str(tile_src.levels)))
+
+# TODO: MUST SET KEY TILE STUFF HERE
+        self.set_key_from_centre(geo)
+
+        # back to old level+centre, and refresh the display
+#        self.GotoLevelAndPosition(level, geo)
+        self.zoom_level_position(level, geo)
+
+        return old_tileset
 
     ######
     # "add a layer" routines
@@ -3211,6 +3225,63 @@ class PySlip(_BufferedCanvas):
             result = kwargs.get(kws[-1], default)
 
         return result
+
+    def get_level_and_position(self, place='cc'):
+        """Get the level and geo position of a cardinal point within the view.
+
+        place  a placement string specifying the point in the view
+               for which we require the geo position
+
+        Returns a tuple (level, geo) where 'geo' is (geo_x, geo_y).
+        """
+
+        view_coords = self.point_placement_view(place, 0, 0, 0, 0,)
+        geo = self.view_to_geo(view_coords)
+
+        return (self.level, geo)
+
+    def set_key_from_centre(self, geo):
+        """Set 'key' tile stuff from given geo at view centre.
+
+        geo  geo coords of centre of view
+
+        We need to assume little about which state variables are set.
+        Only assume these are set:
+            self.tile_width
+            self.tile_height
+        """
+
+        (ctile_tx, ctile_ty) = self.tile_src.Geo2Tile(geo)
+
+        int_ctile_tx = int(ctile_tx)
+        int_ctile_ty = int(ctile_ty)
+
+        frac_ctile_tx = ctile_tx - int_ctile_tx
+        frac_ctile_ty = ctile_ty - int_ctile_ty
+
+        ctile_xoff = self.view_width // 2 - self.tile_width * frac_ctile_tx
+        ctile_yoff = self.view_height // 2 - self.tile_height * frac_ctile_ty
+
+        num_whole_x = ctile_xoff // self.tile_width
+        num_whole_y = ctile_yoff // self.tile_height
+
+        xmargin = ctile_xoff - num_whole_x*self.tile_width
+        ymargin = ctile_yoff - num_whole_y*self.tile_height
+
+        # update the 'key' tile state variables
+        self.key_tile_left = int_ctile_tx - num_whole_x - 1
+        self.key_tile_top = int_ctile_ty - num_whole_y - 1
+        self.key_tile_xoffset = self.tile_width - xmargin
+        self.key_tile_yoffset = self.tile_height - ymargin
+
+        # centre map in view if map < view
+        if self.key_tile_left < 0:
+            self.key_tile_left = 0
+            self.key_tile_xoffset = (self.view_width - self.map_width) // 2
+
+        if self.key_tile_top < 0:
+            self.key_tile_top = 0
+            self.key_tile_yoffset = (self.view_height - self.map_height) // 2
 
     def info(self, msg):
         """Display an information message, log and graphically."""

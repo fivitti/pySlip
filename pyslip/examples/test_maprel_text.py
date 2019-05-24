@@ -8,6 +8,7 @@ import os
 import sys
 import wx
 import pyslip
+from appstaticbox import AppStaticBox
 
 ######
 # Various demo constants

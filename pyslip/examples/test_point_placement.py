@@ -10,6 +10,7 @@ import os
 import sys
 import wx
 import pyslip
+from appstaticbox import AppStaticBox
 import tkinter_error
 import log
 log = log.Log('pyslip.log')
@@ -98,17 +99,6 @@ class ROTextCtrl(wx.TextCtrl):
                              style=wx.TE_READONLY, *args, **kwargs)
         self.SetBackgroundColour(ControlReadonlyColour)
         self.SetToolTip(wx.ToolTip(tooltip))
-
-###############################################################################
-# Override the wx.StaticBox class to show our style
-###############################################################################
-
-class AppStaticBox(wx.StaticBox):
-
-    def __init__(self, parent, label, *args, **kwargs):
-        if 'style' not in kwargs:
-            kwargs['style'] = wx.NO_BORDER
-        wx.StaticBox.__init__(self, parent, wx.ID_ANY, label, *args, **kwargs)
 
 ###############################################################################
 # Class for a LayerControl widget.

@@ -12,6 +12,7 @@ import wx
 import pyslip
 import pyslip.tkinter_error as tkinter_error
 import pyslip.log as log
+from appstaticbox import AppStaticBox
 try:
     log = log.Log('pyslip.log')
 except AttributeError:
@@ -92,17 +93,6 @@ class ROTextCtrl(wx.TextCtrl):
                              style=wx.TE_READONLY, *args, **kwargs)
         self.SetBackgroundColour(ControlReadonlyColour)
         self.SetToolTip(wx.ToolTip(tooltip))
-
-###############################################################################
-# Override the wx.StaticBox class to show our style
-###############################################################################
-
-class AppStaticBox(wx.StaticBox):
-
-    def __init__(self, parent, label, *args, **kwargs):
-        if 'style' not in kwargs:
-            kwargs['style'] = wx.NO_BORDER
-        wx.StaticBox.__init__(self, parent, wx.ID_ANY, label, *args, **kwargs)
 
 ###############################################################################
 # Class for a LayerControl widget.

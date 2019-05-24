@@ -29,6 +29,7 @@ Methods:
 """
 
 import wx
+from appstaticbox import AppStaticBox
 
 class DisplayText(wx.Frame):
 

@@ -268,10 +268,10 @@ class AppFrame(wx.Frame):
         self.sel_text_highlight = None
 
         # finally, bind events to handlers
-        self.pyslip.Bind(pyslip.EVT_PYSLIP_SELECT, self.handle_select_event)
-        self.pyslip.Bind(pyslip.EVT_PYSLIP_BOXSELECT, self.handle_select_event)
-        self.pyslip.Bind(pyslip.EVT_PYSLIP_POSITION, self.handle_position_event)
-        self.pyslip.Bind(pyslip.EVT_PYSLIP_LEVEL, self.handle_level_change)
+        self.pyslip.Bind(pyslip.EVT_PYSLIP_LEVEL, self.level_change_event)
+        self.pyslip.Bind(pyslip.EVT_PYSLIP_POSITION, self.mouse_posn_event)
+        self.pyslip.Bind(pyslip.EVT_PYSLIP_SELECT, self.select_event)
+        self.pyslip.Bind(pyslip.EVT_PYSLIP_BOXSELECT, self.select_event)
 
         # set the size of the demo window, etc
         self.setGeometry(300, 300, DemoWidth, DemoHeight)
@@ -1387,6 +1387,7 @@ class AppFrame(wx.Frame):
 
             self.pyslip.DeleteLayer(self.poly_layer)
             self.poly_layer = None
+
             if self.sel_poly_layer:
                 self.pyslip.DeleteLayer(self.sel_poly_layer)
                 self.sel_poly_layer = None
@@ -1847,7 +1848,7 @@ class AppFrame(wx.Frame):
 
         self.pyslip.warn('Sorry, %s is not implemented at the moment.' % msg)
 
-    def dump_event(self, msg, event):  # pySlipQt
+    def dump_event(self, msg, event):
         """Dump an event to the log.
 
         Print attributes and values for non_dunder attributes.
@@ -2111,34 +2112,11 @@ class AppFrame(wx.Frame):
     # Exception handlers
     ######
 
-    def handle_select_event(self, event):
-        """Handle a pySlip point/box SELECT event."""
-
-        layer_id = event.layer_id
-
-        self.demo_select_dispatch.get(layer_id, self.null_handler)(event)
-
     def null_handler(self, event):
         """Routine to handle unexpected events."""
 
         print('ERROR: null_handler!?')
         log('ERROR: null_handler!?')
-
-    def handle_position_event(self, event):
-        """Handle a widget POSITION event."""
-
-        posn_str = ''
-        if event.mposn:
-            (lon, lat) = event.mposn
-            posn_str = ('%.*f / %.*f'
-                        % (LonLatPrecision, lon, LonLatPrecision, lat))
-
-        self.mouse_position.SetValue(posn_str)
-
-    def handle_level_change(self, event):
-        """Handle a widget LEVEL event."""
-
-        self.map_level.SetValue('%d' % event.level)
 
     ######
     # Handle adding/removing select handler functions.

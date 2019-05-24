@@ -32,10 +32,12 @@ Events:
 """
 
 import wx
-
+from appstaticbox import AppStaticBox
 import pyslip
 import pyslip.gmt_local_tiles as tiles
 import pyslip.log as log
+
+PackBorder = 1    # should come from wxpython?
 
 ###############################################################################
 # Class for a LayerControl widget.

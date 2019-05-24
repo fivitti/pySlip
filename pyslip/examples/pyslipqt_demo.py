@@ -37,15 +37,19 @@ except ImportError:
 
 try:
     import pySlipQt.pySlipQt as pySlipQt
-    import pySlipQt.log as log
     import pySlipQt.gmt_local as tiles
+    import pySlipQt.log as log
 except ImportError:
     msg = '*'*60 + '\nSorry, you must install pySlipQt\n' + '*'*60
     print(msg)
     sys.exit(1)
 
 # initialize the logging system
-log = log.Log("pyslipqt.log")
+try:
+    log = log.Log('pyslip.log')
+except AttributeError:
+    # already have a log file, ignore
+    pass
 
 # get the bits of the demo program we need
 from display_text import DisplayText
@@ -1834,22 +1838,6 @@ class PySlipQtDemo(QMainWindow):
         print('ERROR: null_handler!?')
         log('ERROR: null_handler!?')
 
-    def handle_position_event(self, event):
-        """Handle a widget POSITION event."""
-
-        posn_str = ''
-        if event.mposn:
-            (lon, lat) = event.mposn
-            posn_str = ('%.*f / %.*f'
-                        % (LonLatPrecision, lon, LonLatPrecision, lat))
-
-        self.mouse_position.SetValue(posn_str)
-
-    def handle_level_change(self, event):
-        """Handle a widget LEVEL event."""
-
-        self.map_level.SetValue('%d' % event.level)
-
     ######
     # Handle adding/removing select handler functions.
     ######
@@ -1863,37 +1851,6 @@ class PySlipQtDemo(QMainWindow):
         """Remove handler for select in layer 'id'."""
 
         del self.demo_select_dispatch[id]
-
-    ######
-    # Warning and information dialogs
-    ######
-    def info(self, msg):
-        """Display an information message, log and graphically."""
-
-        log_msg = '# ' + msg
-        length = len(log_msg)
-        prefix = '#### Information '
-        banner = prefix + '#'*(80 - len(log_msg) - len(prefix))
-        log(banner)
-        log(log_msg)
-        log(banner)
-
-        info_dialog = QErrorMessage(self)
-        info_dialog.showMessage(msg)
-
-    def warn(self, msg):
-        """Display a warning message, log and graphically."""
-
-        log_msg = '# ' + msg
-        length = len(log_msg)
-        prefix = '#### Warning '
-        banner = prefix + '#'*(80 - len(log_msg) - len(prefix))
-        log(banner)
-        log(log_msg)
-        log(banner)
-
-        warn_dialog = QErrorMessage(self)
-        warn_dialog.showMessage(msg)
 
 ###############################################################################
 # Main code

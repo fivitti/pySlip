@@ -10,7 +10,6 @@ import os
 import math
 import wx
 import pyslip.pycacheback as pycacheback
-import pyslip.sys_tile_data as std
 import pyslip.log as log
 
 try:

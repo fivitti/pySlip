@@ -462,6 +462,249 @@ class PySlipQtDemo(QMainWindow):
     def make_gui_level(self, parent):
         """Build the control that shows the level.
 
+        parent  reference to parent
+
+        Returns reference to containing sizer object.
+        """
+
+        # create objects
+        txt = wx.StaticText(parent, wx.ID_ANY, 'Level: ')
+        self.map_level = ROTextCtrl(parent, '', size=(30,-1),
+                                    tooltip='Shows map zoom level')
+
+        # lay out the controls
+        sb = AppStaticBox(parent, 'Map level')
+        box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
+        box.Add(txt, border=PackBorder, flag=(wx.ALIGN_CENTER_VERTICAL
+                                              |wx.ALIGN_RIGHT|wx.LEFT))
+        box.Add(self.map_level, proportion=0, border=PackBorder,
+                flag=wx.LEFT|wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL)
+
+        return box
+
+    def make_gui_mouse(self, parent):
+        """Build the mouse part of the controls part of GUI.
+
+        parent  reference to parent
+
+        Returns reference to containing sizer object.
+        """
+
+        # create objects
+        txt = wx.StaticText(parent, wx.ID_ANY, 'Lon/Lat: ')
+        self.mouse_position = ROTextCtrl(parent, '', size=(120,-1),
+                                         tooltip=('Shows the mouse '
+                                                  'longitude and latitude '
+                                                  'on the map'))
+
+        # lay out the controls
+        sb = AppStaticBox(parent, 'Mouse position')
+        box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
+        box.Add(txt, border=PackBorder, flag=(wx.ALIGN_CENTER_VERTICAL
+                                     |wx.ALIGN_RIGHT|wx.LEFT))
+        #box.Add(self.mouse_position, proportion=1, border=PackBorder,
+        box.Add(self.mouse_position, proportion=0, border=PackBorder,
+                flag=wx.RIGHT|wx.TOP|wx.BOTTOM)
+
+        return box
+
+    def make_gui_point(self, parent):
+        """Build the points part of the controls part of GUI.
+
+        parent  reference to parent
+
+        Returns reference to containing sizer object.
+        """
+
+        # create widgets
+        point_obj = LayerControl(parent, 'Points, map relative %s'
+                                         % str(MRPointShowLevels),
+                                 selectable=True)
+
+        # tie to event handler(s)
+        point_obj.Bind(EVT_ONOFF, self.pointOnOff)
+        point_obj.Bind(EVT_SHOWONOFF, self.pointShowOnOff)
+        point_obj.Bind(EVT_SELECTONOFF, self.pointSelectOnOff)
+
+        return point_obj
+
+    def make_gui_point_view(self, parent):
+        """Build the view-relative points part of the GUI.
+
+        parent  reference to parent
+
+        Returns reference to containing sizer object.
+        """
+
+        # create widgets
+        point_obj = LayerControl(parent, 'Points, view relative',
+                                 selectable=True)
+
+        # tie to event handler(s)
+        point_obj.Bind(EVT_ONOFF, self.pointViewOnOff)
+        point_obj.Bind(EVT_SHOWONOFF, self.pointViewShowOnOff)
+        point_obj.Bind(EVT_SELECTONOFF, self.pointViewSelectOnOff)
+
+        return point_obj
+
+    def make_gui_image(self, parent):
+        """Build the image part of the controls part of GUI.
+
+        parent  reference to parent
+
+        Returns reference to containing sizer object.
+        """
+
+        # create widgets
+        image_obj = LayerControl(parent, 'Images, map relative %s'
+                                         % str(MRImageShowLevels),
+                                 selectable=True)
+
+        # tie to event handler(s)
+        image_obj.Bind(EVT_ONOFF, self.imageOnOff)
+        image_obj.Bind(EVT_SHOWONOFF, self.imageShowOnOff)
+        image_obj.Bind(EVT_SELECTONOFF, self.imageSelectOnOff)
+
+        return image_obj
+
+    def make_gui_image_view(self, parent):
+        """Build the view-relative image part of the controls part of GUI.
+
+        parent  reference to parent
+
+        Returns reference to containing sizer object.
+        """
+
+        # create widgets
+        image_obj = LayerControl(parent, 'Images, view relative',
+                                 selectable=True)
+
+        # tie to event handler(s)
+        image_obj.Bind(EVT_ONOFF, self.imageViewOnOff)
+        image_obj.Bind(EVT_SHOWONOFF, self.imageViewShowOnOff)
+        image_obj.Bind(EVT_SELECTONOFF, self.imageViewSelectOnOff)
+
+        return image_obj
+
+    def make_gui_text(self, parent):
+        """Build the map-relative text part of the controls part of GUI.
+
+        parent  reference to parent
+
+        Returns reference to containing sizer object.
+        """
+
+        # create widgets
+        text_obj = LayerControl(parent,
+                                'Text, map relative %s' % str(MRTextShowLevels),
+                                selectable=True, editable=False)
+
+        # tie to event handler(s)
+        text_obj.Bind(EVT_ONOFF, self.textOnOff)
+        text_obj.Bind(EVT_SHOWONOFF, self.textShowOnOff)
+        text_obj.Bind(EVT_SELECTONOFF, self.textSelectOnOff)
+
+        return text_obj
+
+    def make_gui_text_view(self, parent):
+        """Build the view-relative text part of the controls part of GUI.
+
+        parent  reference to parent
+
+        Returns reference to containing sizer object.
+        """
+
+        # create widgets
+        text_view_obj = LayerControl(parent, 'Text, view relative',
+                                     selectable=True)
+
+        # tie to event handler(s)
+        text_view_obj.Bind(EVT_ONOFF, self.textViewOnOff)
+        text_view_obj.Bind(EVT_SHOWONOFF, self.textViewShowOnOff)
+        text_view_obj.Bind(EVT_SELECTONOFF, self.textViewSelectOnOff)
+
+        return text_view_obj
+
+    def make_gui_poly(self, parent):
+        """Build the map-relative polygon part of the controls part of GUI.
+
+        parent  reference to parent
+
+        Returns reference to containing sizer object.
+        """
+
+        # create widgets
+        poly_obj = LayerControl(parent,
+                                'Polygon, map relative %s'
+                                     % str(MRPolyShowLevels),
+                                selectable=True)
+
+        # tie to event handler(s)
+        poly_obj.Bind(EVT_ONOFF, self.polyOnOff)
+        poly_obj.Bind(EVT_SHOWONOFF, self.polyShowOnOff)
+        poly_obj.Bind(EVT_SELECTONOFF, self.polySelectOnOff)
+
+        return poly_obj
+
+    def make_gui_poly_view(self, parent):
+        """Build the view-relative polygon part of the controls part of GUI.
+
+        parent  reference to parent
+
+        Returns reference to containing sizer object.
+        """
+
+        # create widgets
+        poly_view_obj = LayerControl(parent, 'Polygon, view relative',
+                                     selectable=True)
+
+        # tie to event handler(s)
+        poly_view_obj.Bind(EVT_ONOFF, self.polyViewOnOff)
+        poly_view_obj.Bind(EVT_SHOWONOFF, self.polyViewShowOnOff)
+        poly_view_obj.Bind(EVT_SELECTONOFF, self.polyViewSelectOnOff)
+
+        return poly_view_obj
+
+    def make_gui_polyline(self, parent):
+        """Build the map-relative polyline part of the controls part of GUI.
+
+        parent  reference to parent
+
+        Returns reference to containing sizer object.
+        """
+
+        # create widgets
+        poly_obj = LayerControl(parent,
+                                'Polyline, map relative %s'
+                                     % str(MRPolyShowLevels),
+                                selectable=True)
+
+        # tie to event handler(s)
+        poly_obj.Bind(EVT_ONOFF, self.polylineOnOff)
+        poly_obj.Bind(EVT_SHOWONOFF, self.polylineShowOnOff)
+        poly_obj.Bind(EVT_SELECTONOFF, self.polylineSelectOnOff)
+
+        return poly_obj
+
+    def make_gui_polyline_view(self, parent):
+        """Build the view-relative polyline part of the controls part of GUI.
+
+        parent  reference to parent
+
+        Returns reference to containing sizer object.
+        """
+
+        # create widgets
+        poly_view_obj = LayerControl(parent, 'Polyline, view relative',
+                                     selectable=True)
+
+        # tie to event handler(s)
+        poly_view_obj.Bind(EVT_ONOFF, self.polylineViewOnOff)
+        poly_view_obj.Bind(EVT_SHOWONOFF, self.polylineViewShowOnOff)
+        poly_view_obj.Bind(EVT_SELECTONOFF, self.polylineViewSelectOnOff)
+
+        return poly_view_obj
+
     ######
     # demo control event handlers
     ######

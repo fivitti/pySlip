@@ -33,6 +33,7 @@ except ImportError:
     msg = '*'*60 + '\nSorry, you must install wxPython\n' + '*'*60
     print(msg)
     sys.exit(1)
+from appstaticbox import AppStaticBox
 
 try:
     import pyslip
@@ -51,7 +52,9 @@ except AttributeError:
 
 # get the bits of the demo program we need
 from display_text import DisplayText
-from layer_control import LayerControl
+from layer_control import LayerControl, EVT_ONOFF, EVT_SHOWONOFF, EVT_SELECTONOFF
+
+PackBorder = 1     # should come from wxpython?
 
 
 ######
@@ -218,8 +221,6 @@ class ROTextCtrl(wx.TextCtrl):
 class AppStaticBox(wx.StaticBox):
 
     def __init__(self, parent, label, *args, **kwargs):
-#        if label:
-#            label = '  ' + label + '  '
         if 'style' not in kwargs:
             kwargs['style'] = wx.NO_BORDER
         wx.StaticBox.__init__(self, parent, wx.ID_ANY, label, *args, **kwargs)

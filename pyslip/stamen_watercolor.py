@@ -1,47 +1,33 @@
 """
-A tile source that serves OpenStreetMap tiles from server(s).
+A tile source that serves Stamen Watercolor tiles from the internet.
 
-Uses pyCacheBack to provide in-memory and on-disk caching.
+Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.
 """
 
 import math
-import pyslip.tiles_net as tiles
-import pyslip.log as log
-try:
-    log = log.Log('pyslip.log')
-except AttributeError:
-    # means log already set up
-    pass
+import pyslip.tiles_net as tiles_net
 
 
 ###############################################################################
-# Change values below here to configure this tile source.
+# Change values below here to configure an internet tile source.
 ###############################################################################
 
 # attributes used for tileset introspection
 # names must be unique amongst tile modules
-TilesetName = 'OpenStreetMap Tiles'
-TilesetShortName = 'OSM Tiles'
+TilesetName = 'Stamen Watercolor Tiles'
+TilesetShortName = 'STMW Tiles'
 TilesetVersion = '1.0'
 
 # the pool of tile servers used
-TileServers = [
-# using 'https://' we get "SSL: CERTIFICATE_VERIFY_FAILED" errors
-# try to modify get code to use https and no SSL
-#               'https://a.tile.openstreetmap.org',
-#               'https://b.tile.openstreetmap.org',
-#               'https://c.tile.openstreetmap.org',
-               'http://a.tile.openstreetmap.org',
-               'http://b.tile.openstreetmap.org',
-               'http://c.tile.openstreetmap.org',
+TileServers = ['http://c.tile.stamen.com',
               ]
 
 # the path on the server to a tile
 # {} params are Z=level, X=column, Y=row, origin at map top-left
-TileURLPath = '/{Z}/{X}/{Y}.png'
+TileURLPath = '/watercolor/{Z}/{X}/{Y}.jpg'
 
 # tile levels to be used
-TileLevels = range(17)
+TileLevels = range(16)
 
 # maximum pending requests for each tile server
 MaxServerRequests = 2
@@ -49,21 +35,20 @@ MaxServerRequests = 2
 # set maximum number of in-memory tiles for each level
 MaxLRU = 10000
 
+# size of tiles
+TileWidth = 256
+TileHeight = 256
+
 # where earlier-cached tiles will be
 # this can be overridden in the __init__ method
-TilesDir = 'osm_tiles'
-
+TilesDir = 'stamen_watercolor_tiles'
 
 ################################################################################
-# Class for these tiles.   Builds on tiles.BaseTiles.
+# Class for these tiles.   Builds on tiles_net.Tiles.
 ################################################################################
 
-class Tiles(tiles.Tiles):
-    """An object to source server tiles for pySlipQt."""
-
-    # size of tiles
-    TileWidth = 256
-    TileHeight = 256
+class Tiles(tiles_net.Tiles):
+    """An object to source internet tiles for pySlip."""
 
     def __init__(self, tiles_dir=TilesDir, http_proxy=None):
         """Override the base class for these tiles.
@@ -72,17 +57,11 @@ class Tiles(tiles.Tiles):
         and provide the Geo2Tile() and Tile2Geo() methods.
         """
 
-        super().__init__(TileLevels,
-                         Tiles.TileWidth, Tiles.TileHeight,
-                         tiles_dir=tiles_dir,
+        super().__init__(TileLevels, TileWidth, TileHeight,
                          servers=TileServers, url_path=TileURLPath,
                          max_server_requests=MaxServerRequests,
-                         max_lru=MaxLRU, http_proxy=http_proxy)
-
-        # get tile information into instance
-        self.level = min(TileLevels)
-        (self.num_tiles_x, self.num_tiles_y,
-                         self.ppd_x, self.ppd_y) = self.GetInfo(self.level)
+                         max_lru=MaxLRU, tiles_dir=tiles_dir,
+                         http_proxy=http_proxy)
 
     def Geo2Tile(self, geo):
         """Convert geo to tile fractional coordinates for level in use.
@@ -105,7 +84,7 @@ class Tiles(tiles.Tiles):
     def Tile2Geo(self, tile):
         """Convert tile fractional coordinates to geo for level in use.
 
-        tile  a tuple (xtile,ytile) of tile fractional coordinates
+        tile  a tupl;e (xtile,ytile) of tile fractional coordinates
 
         Note that we assume the point *is* on the map!
 
@@ -119,3 +98,4 @@ class Tiles(tiles.Tiles):
         ygeo = math.degrees(yrad)
 
         return (xgeo, ygeo)
+

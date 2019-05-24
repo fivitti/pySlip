@@ -52,7 +52,7 @@ TilesDir = os.path.abspath(os.path.expanduser('~/gmt_local_tiles'))
 ################################################################################
 
 class Tiles(tiles.BaseTiles):
-    """An object to source GMT tiles for pySlip."""
+    """An object to source GMT tiles for the widget."""
 
     # size of these tiles
     TileWidth = 256
@@ -68,6 +68,11 @@ class Tiles(tiles.BaseTiles):
         super().__init__(TileLevels,
                          Tiles.TileWidth, Tiles.TileHeight,
                          tiles_dir=tiles_dir, max_lru=MaxLRU)
+
+# TODO: implement map wrap-around
+#        # we *can* wrap tiles in X direction, but not Y
+#        self.wrap_x = False
+#        self.wrap_y = False
 
         # override the tiles.py extent here, the GMT tileset is different
         self.extent = (-65.0, 295.0, -66.66, 66.66)

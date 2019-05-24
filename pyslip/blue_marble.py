@@ -1,11 +1,10 @@
 """
 A tile source that serves BlueMarble tiles from the internet.
-
-Uses pyCacheBack to provide in-memory and on-disk caching.
 """
 
 import math
-import pyslip.tiles as tiles
+import pyslip.tiles_net as tiles_net
+
 
 ###############################################################################
 # Change values below here to configure an internet tile source.
@@ -40,13 +39,13 @@ TileHeight = 256
 
 # where earlier-cached tiles will be
 # this can be overridden in the __init__ method
-TilesDir = 'bm_tiles'
+TilesDir = 'blue_marble_tiles'
 
 ################################################################################
-# Class for these tiles.   Builds on tiles.BaseTiles.
+# Class for these tiles.   Builds on net_tiles.Tiles.
 ################################################################################
 
-class Tiles(tiles.BaseTiles):
+class Tiles(tiles_net.Tiles):
     """An object to source internet tiles for pySlip."""
 
     def __init__(self, tiles_dir=TilesDir, http_proxy=None):
@@ -56,10 +55,11 @@ class Tiles(tiles.BaseTiles):
         and provide the Geo2Tile() and Tile2Geo() methods.
         """
 
-        super().__init__(TileLevels, TileWidth, TileHeight,
+        super().__init__(levels=TileLevels,
+                         tile_width=TileWidth, tile_height=TileHeight,
+                         tiles_dir=tiles_dir, max_lru=MaxLRU,
                          servers=TileServers, url_path=TileURLPath,
                          max_server_requests=MaxServerRequests,
-                         max_lru=MaxLRU, tiles_dir=tiles_dir,
                          http_proxy=http_proxy)
 
     def Geo2Tile(self, geo):
@@ -97,4 +97,3 @@ class Tiles(tiles.BaseTiles):
         ygeo = math.degrees(yrad)
 
         return (xgeo, ygeo)
-

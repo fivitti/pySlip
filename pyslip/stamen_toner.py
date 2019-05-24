@@ -2,12 +2,10 @@
 A tile source that serves Stamen Toner tiles from the internet.
 
 Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.
-
-Uses pyCacheBack to provide in-memory and on-disk caching.
 """
 
 import math
-import pyslip.tiles as tiles
+import pyslip.tiles_net as tiles_net
 
 
 ###############################################################################
@@ -43,13 +41,13 @@ TileHeight = 256
 
 # where earlier-cached tiles will be
 # this can be overridden in the __init__ method
-TilesDir = 'stmt_tiles'
+TilesDir = 'stamen_toner_tiles'
 
 ################################################################################
-# Class for these tiles.   Builds on tiles.BaseTiles.
+# Class for these tiles.   Builds on tiles_net.Tiles.
 ################################################################################
 
-class Tiles(tiles.BaseTiles):
+class Tiles(tiles_net.Tiles):
     """An object to source internet tiles for pySlip."""
 
     def __init__(self, tiles_dir=TilesDir, http_proxy=None):

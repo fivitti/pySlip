@@ -1,13 +1,12 @@
 """
-A tile source that serves Stamen Watercolor tiles from the internet.
+A tile source that serves Stamen Transport tiles from the internet.
 
-Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.
-
-Uses pyCacheBack to provide in-memory and on-disk caching.
+Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under CC BY SA.
+(See README.rst)
 """
 
 import math
-import pyslip.tiles as tiles
+import pyslip.tiles_net as tiles_net
 
 
 ###############################################################################
@@ -16,17 +15,19 @@ import pyslip.tiles as tiles
 
 # attributes used for tileset introspection
 # names must be unique amongst tile modules
-TilesetName = 'Stamen Watercolor Tiles'
-TilesetShortName = 'STMW Tiles'
+TilesetName = 'Stamen Transport Tiles'
+TilesetShortName = 'STMTR Tiles'
 TilesetVersion = '1.0'
 
 # the pool of tile servers used
-TileServers = ['http://c.tile.stamen.com',
+TileServers = ['http://a.tile2.opencyclemap.org',
+               'http://b.tile2.opencyclemap.org',
+               'http://c.tile2.opencyclemap.org',
               ]
 
 # the path on the server to a tile
 # {} params are Z=level, X=column, Y=row, origin at map top-left
-TileURLPath = '/watercolor/{Z}/{X}/{Y}.jpg'
+TileURLPath = '/transport/{Z}/{X}/{Y}.png'
 
 # tile levels to be used
 TileLevels = range(16)
@@ -43,16 +44,16 @@ TileHeight = 256
 
 # where earlier-cached tiles will be
 # this can be overridden in the __init__ method
-TilesDir = 'stmw_tiles'
+TilesDir = 'stamen_transport_tiles'
 
 ################################################################################
-# Class for these tiles.   Builds on tiles.BaseTiles.
+# Class for these tiles.   Builds on tiles_net.Tiles.
 ################################################################################
 
-class Tiles(tiles.BaseTiles):
+class Tiles(tiles_net.Tiles):
     """An object to source internet tiles for pySlip."""
 
-    def __init__(self, tiles_dir=TilesDir, http_proxy=None):
+    def __init__(self, tiles_dir=TilesDir ,http_proxy=None):
         """Override the base class for these tiles.
 
         Basically, just fill in the BaseTiles class with values from above

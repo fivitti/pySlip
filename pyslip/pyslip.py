@@ -1067,7 +1067,7 @@ class PySlip(_BufferedCanvas):
         # create layer, add unique ID to Z order list
         l = _Layer(id=id, painter=painter, data=data, map_rel=map_rel,
                    visible=visible, show_levels=show_levels,
-                   selectable=selectable, name=name, type=type)
+                   selectable=selectable, name=name, ltype=type)
 
         self.layer_mapping[id] = l
         self.layer_z_order.append(id)

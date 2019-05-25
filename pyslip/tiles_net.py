@@ -6,6 +6,7 @@ For example, see osm_tiles.py.
 """
 
 import os
+import io
 import time
 import math
 import threading
@@ -80,10 +81,12 @@ class TileWorker(threading.Thread):
             pixmap = self.error_image
             try:
                 tile_url = self.server + self.tilepath.format(Z=level, X=x, Y=y)
-                response = request.urlopen(tile_url)
+                response = request.urlopen(request.Request(tile_url))
                 content_type = response.info().get_content_type()
                 if content_type == self.content_type:
-                    pixmap = wx.ImageFromStream(response, self.filetype)
+                    data = response.read()
+                    pixmap = wx.Image(io.BytesIO(data), content_type)
+                    wx.ConvertToBitmap(pixmap)
                 else:
                     # show error, don't cache returned error tile
                     error = True
@@ -96,7 +99,7 @@ class TileWorker(threading.Thread):
             # error is False if we want to cache this tile on-disk
             self.callback(level, x, y, pixmap, error)
 
-            # finally, removes request from queue
+            # finally, remove request from queue
             self.requests.task_done()
 
 ###############################################################################
@@ -388,6 +391,7 @@ class Tiles(tiles.BaseTiles):
 
         # tell the world a new tile is available
         if self.callback:
+            log('.callback(%d, %d, %d, %s, True)' % (level, x, y, str(image)))
             self.callback(level, x, y, image, True)
         else:
             msg = f'tile_is_available: self.callback is NOT SET!'

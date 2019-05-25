@@ -248,7 +248,7 @@ class AppFrame(wx.Frame):
         self.make_gui(self.panel)
 
         # do initialisation stuff - all the application stuff
-        self.init()
+        self.initData()
 
         # finally, set up application window position
         self.Centre()
@@ -275,9 +275,10 @@ class AppFrame(wx.Frame):
         self.pyslip.Bind(pyslip.EVT_PYSLIP_BOXSELECT, self.select_event)
 
         # set the size of the demo window, etc
-        self.setGeometry(300, 300, DemoWidth, DemoHeight)
-        self.setWindowTitle('%s %s' % (DemoName, DemoVersion))
-        self.show()
+#        self.setGeometry(300, 300, DemoWidth, DemoHeight)
+#        self.setWindowTitle('%s %s' % (DemoName, DemoVersion))
+        self.Centre()
+        self.Show()
 
         # set initial view position
         self.pyslip.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
@@ -397,7 +398,7 @@ class AppFrame(wx.Frame):
         menuBar = wx.MenuBar()
         tile_menu = wx.Menu()
 
-        # this dict: id -> (display_name, module_name, action, tileset_obj)
+        # this dict: id -> (display_name, module_name, tileset_obj)
         self.id2tiledata = {}
 
         # create the tileset menuitems, add to menu and connect to handler
@@ -406,7 +407,7 @@ class AppFrame(wx.Frame):
             tile_menu.Append(new_id, name, name, wx.ITEM_RADIO)
             self.Bind(wx.EVT_MENU, self.onTilesetSelect)
             self.id2tiledata[new_id] = (name, module_name, None)
-            self.name2guiid[name] = new_id
+#            self.name2guiid[name] = new_id
             if tile_index == DefaultTilesetIndex:
                 self.default_tileset_name = name
                 tile_menu.Check(new_id, True)
@@ -439,14 +440,16 @@ class AppFrame(wx.Frame):
         log('change_tileset: menu_id=%s' % str(menu_id))
         log('id2tiledata[]=%s' % str(self.id2tiledata))
 
-        # ensure only one tileset is checked in the menu, the required one
-        for (key, tiledata) in self.id2tiledata.items():
-            (name, module_name, action, tile_obj) = tiledata
-            action.setChecked(key == menu_id)
+#        # ensure only one tileset is checked in the menu, the required one
+#        for (key, tiledata) in self.id2tiledata.items():
+##qt?            (name, module_name, action, tile_obj) = tiledata
+#            (name, module_name, tile_obj) = tiledata
+#            action.setChecked(key == menu_id)
 
         # get information for the required tileset
         try:
-            (name, module_name, action, new_tile_obj) = self.id2tiledata[menu_id]
+#qt?            (name, module_name, action, new_tile_obj) = self.id2tiledata[menu_id]
+            (name, module_name, new_tile_obj) = self.id2tiledata[menu_id]
         except KeyError:
             # badly formed self.id2tiledata element
             raise RuntimeError('self.id2tiledata is badly formed:\n%s'
@@ -1796,7 +1799,7 @@ class AppFrame(wx.Frame):
         event.level  the new map level
         """
 
-        self.map_level.set_text(str(event.level))
+        self.map_level.SetValue(str(event.level))
 
     def mouse_posn_event(self, event):
         """Handle a "mouse position" event from the pySlipQt widget.
@@ -1815,9 +1818,9 @@ class AppFrame(wx.Frame):
                 lon = 0.0
             if abs(lat) < 0.01:
                 lat = 0.0
-            self.mouse_position.set_text('%.2f/%.2f' % (lon, lat))
+            self.mouse_position.SetValue('%.2f/%.2f' % (lon, lat))
         else:
-            self.mouse_position.set_text('')
+            self.mouse_position.SetValue('')
 
     def select_event(self, event):
         """Handle a single select click.

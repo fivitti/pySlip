@@ -2,7 +2,13 @@
 *.pyc
 *.log
 .DS_Store
-osm_tiles
+blue_marble_tiles
+mapquest_tiles
+modest_maps_tiles
+open_street_map_tiles
+stamen_toner_tiles
+stamen_transport_tiles
+stamen_watercolor_tiles
 build
 dist
 pyslip.egg-info

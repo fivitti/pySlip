@@ -19,7 +19,6 @@ import pyslip.tiles as tiles
 import pyslip.sys_tile_data as std
 import pyslip.log as log
 
-# if we don't have log.py, don't crash
 try:
     log = log.Log('pyslip.log')
 except AttributeError:
@@ -84,11 +83,10 @@ class TileWorker(threading.Thread):
                 response = request.urlopen(request.Request(tile_url))
                 content_type = response.info().get_content_type()
                 if content_type == self.content_type:
-                    data = response.read()
-                    pixmap = wx.Image(io.BytesIO(data), content_type)
-                    wx.ConvertToBitmap(pixmap)
+                    data = io.BytesIO(response.read())
+                    pixmap = wx.Image(data, content_type).ConvertToBitmap()
                 else:
-                    # show error, don't cache returned error tile
+                    # show error tile, don't cache returned error tile
                     error = True
             except Exception as e:
                 error = True
@@ -97,7 +95,7 @@ class TileWorker(threading.Thread):
 
             # call the callback function passing level, x, y and pixmap data
             # error is False if we want to cache this tile on-disk
-            self.callback(level, x, y, pixmap, error)
+            wx.CallAfter(self.callback, level, x, y, pixmap, error)
 
             # finally, remove request from queue
             self.requests.task_done()
@@ -207,6 +205,14 @@ class Tiles(tiles.BaseTiles):
             status_code = e.code
             log('Error: test_url=%s, status_code=%s'
                     % (test_url, str(status_code)))
+            if status_code == 401:
+                msg = ['',
+                       'You got a 401 error from: %s' % test_url,
+                       'Looks like you need to be authorised for this server.'
+                      ]
+                msg = '\n'.join(msg)
+                log(msg)
+                raise RuntimeError(msg) from None
             if status_code == 404:
                 msg = ['',
                        'You got a 404 error from: %s' % test_url,
@@ -391,10 +397,9 @@ class Tiles(tiles.BaseTiles):
 
         # tell the world a new tile is available
         if self.callback:
-            log('.callback(%d, %d, %d, %s, True)' % (level, x, y, str(image)))
             self.callback(level, x, y, image, True)
         else:
-            msg = f'tile_is_available: self.callback is NOT SET!'
+            msg = f'self.callback is NOT SET!'
             log.error(msg)
             raise RuntimeError(msg) from None
 

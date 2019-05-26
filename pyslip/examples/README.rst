@@ -8,6 +8,10 @@ test pySlip and to demonstrate some of the capabilities of the widget:
 Program                  Details
 =======================  =======
 pyslip_demo.py           demonstrates some capabilities of pySlip
+appstaticbox.py              part of pyslip_demo.py
+display_text.py              part of pyslip_demo.py
+layer_control.py             part of pyslip_demo.py
+rotextctrl.py                part of pyslip_demo.py
 test_image_placement.py  allows playing with image placement
 test_point_placement.py  allows playing with point placement
 test_poly_placement.py   allows playing with polygon placement

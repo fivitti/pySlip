@@ -18,6 +18,7 @@ import os
 import sys
 import datetime
 import traceback
+import threading
 
 
 ################################################################################
@@ -160,6 +161,9 @@ class Log(object):
         sec = to.second
         msec = to.microsecond
 
+        # thread information
+        thread_name = threading.current_thread().name
+
         # caller information - look back for first module != <this module name>
         frames = traceback.extract_stack()
         frames.reverse()
@@ -176,9 +180,9 @@ class Log(object):
         loglevel = self._level_num_to_name[level]
 
         fname = fname[:self.max_fname]
-        self.logfd.write('%02d:%02d:%02d.%06d|%8s|%*s:%-4d|%s\n'
-                         % (hr, min, sec, msec, loglevel, self.max_fname,
-                            fname, lnum, msg))
+        self.logfd.write('%02d:%02d:%02d.%06d|%8s|%12s|%*s:%-4d|%s\n'
+                         % (hr, min, sec, msec, loglevel, thread_name,
+                             self.max_fname, fname, lnum, msg))
         self.logfd.flush()
 
     def critical(self, msg):

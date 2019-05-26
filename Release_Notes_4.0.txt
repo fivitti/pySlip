@@ -8,8 +8,6 @@ Release 4.0 of pySlip has the following changes:
 
 3. Additional tile source modules:
      Blue Marble tiles          (bm_tiles.py)
-     Modest Maps tiles          (mm_tiles.py)
-     Map Quest tiles            (mq_tiles.py)
      Stamen Toner tiles         (stmt_tiles.py)
      Stamen Transport tiles     (stmtr_tiles.py)
      Stamen Watercolor tiles    (stmw_tiles.py)

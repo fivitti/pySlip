@@ -494,11 +494,8 @@ class PySlip(_BufferedCanvas):
         exist in the new tileset.
         """
 
-        log('ChangeTileset: tile_src=%s' % str(tile_src))
-
         # get level and geo position of view centre
         (level, geo) = self.GetLevelAndPosition()
-        log('level=%s, geo=%s' % (str(level), str(geo)))
 
         # remember old tileset
         old_tileset = self.tile_src

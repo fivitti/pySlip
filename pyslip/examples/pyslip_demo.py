@@ -141,15 +141,15 @@ LogSym2Num = {'CRITICAL': 50,
 Tilesets = [
             ('BlueMarble tiles', 'blue_marble'),
             ('GMT tiles', 'gmt_local'),
-            ('ModestMaps tiles', 'modest_maps'),  # can't access?
-            ('MapQuest tiles', 'mapquest'),    # can't access?
+#            ('ModestMaps tiles', 'modest_maps'),  # can't access?
+#            ('MapQuest tiles', 'mapquest'),    # can't access?
             ('OpenStreetMap tiles', 'open_street_map'),
             ('Stamen Toner tiles', 'stamen_toner'),
             ('Stamen Transport tiles', 'stamen_transport'),
             ('Stamen Watercolor tiles', 'stamen_watercolor'),
            ]
 
-# index into Tilesets above to set default tileset
+# index into Tilesets above to set default tileset: GMT tiles
 DefaultTilesetIndex = 1
 
 
@@ -288,6 +288,8 @@ class AppFrame(wx.Frame):
 
         event  the menu select event
         """
+
+        log('User selected a tileset from the menu')
 
         self.change_tileset(event.GetId())
 

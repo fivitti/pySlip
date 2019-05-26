@@ -54,6 +54,8 @@ except AttributeError:
 # get the bits of the demo program we need
 from display_text import DisplayText
 from layer_control import LayerControl
+from appstaticbox import AppStaticBox
+from rotextctrl import ROTextCtrl
 
 
 ######
@@ -140,15 +142,15 @@ LogSym2Num = {'CRITICAL': 50,
 Tilesets = [
             ('BlueMarble tiles', 'blue_marble'),
             ('GMT tiles', 'gmt_local'),
-            ('ModestMaps tiles', 'modest_maps'),  # can't access?
-            ('MapQuest tiles', 'mapquest'),    # can't access?
+#            ('ModestMaps tiles', 'modest_maps'),  # can't access?
+#            ('MapQuest tiles', 'mapquest'),    # can't access?
             ('OpenStreetMap tiles', 'open_street_map'),
             ('Stamen Toner tiles', 'stamen_toner'),
             ('Stamen Transport tiles', 'stamen_transport'),
             ('Stamen Watercolor tiles', 'stamen_watercolor'),
            ]
 
-# index into Tilesets above to set default tileset
+# index into Tilesets above to set default tileset: GMT tiles
 DefaultTilesetIndex = 1
 
 
@@ -502,7 +504,6 @@ class PySlipQtDemo(QMainWindow):
         box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
         box.Add(txt, border=PackBorder, flag=(wx.ALIGN_CENTER_VERTICAL
                                      |wx.ALIGN_RIGHT|wx.LEFT))
-        #box.Add(self.mouse_position, proportion=1, border=PackBorder,
         box.Add(self.mouse_position, proportion=0, border=PackBorder,
                 flag=wx.RIGHT|wx.TOP|wx.BOTTOM)
 
@@ -892,8 +893,6 @@ class PySlipQtDemo(QMainWindow):
             self.sel_point_view_layer = None
 
         if event.selection and event.selection != self.sel_point_view:
-#            (points, _) = event.selection
-
             # it's a box selection
             self.sel_point_view = event.selection
 
@@ -1766,7 +1765,6 @@ class PySlipQtDemo(QMainWindow):
                                           name='<sel_view_polyline>')
 
         return True
-
 
     def level_change_event(self, event):
         """Handle a "level change" event from the pySlipQt widget.

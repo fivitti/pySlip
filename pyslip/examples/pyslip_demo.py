@@ -33,7 +33,6 @@ except ImportError:
     msg = '*'*60 + '\nSorry, you must install wxPython\n' + '*'*60
     print(msg)
     sys.exit(1)
-from appstaticbox import AppStaticBox
 
 try:
     import pyslip
@@ -44,6 +43,7 @@ except ImportError:
     print(msg)
     sys.exit(1)
 
+# initialize the logging system
 try:
     log = log.Log('pyslip.log')
 except AttributeError:
@@ -53,8 +53,8 @@ except AttributeError:
 # get the bits of the demo program we need
 from display_text import DisplayText
 from layer_control import LayerControl, EVT_ONOFF, EVT_SHOWONOFF, EVT_SELECTONOFF
-
-PackBorder = 1     # should come from wxpython?
+from appstaticbox import AppStaticBox
+from rotextctrl import ROTextCtrl
 
 
 ######
@@ -198,34 +198,6 @@ class TilesetManager:
         return tile_obj
 
 ###############################################################################
-# Override the wx.TextCtrl class to add read-only style and background colour
-###############################################################################
-
-# background colour for the 'read-only' text field
-ControlReadonlyColour = '#ffffcc'
-
-class ROTextCtrl(wx.TextCtrl):
-    """Override the wx.TextCtrl widget to get read-only text control which
-    has a distinctive background colour."""
-
-    def __init__(self, parent, value, tooltip='', *args, **kwargs):
-        wx.TextCtrl.__init__(self, parent, wx.ID_ANY, value=value,
-                             style=wx.TE_READONLY, *args, **kwargs)
-        self.SetBackgroundColour(ControlReadonlyColour)
-        self.SetToolTip(wx.ToolTip(tooltip))
-
-###############################################################################
-# Override the wx.StaticBox class to show our style
-###############################################################################
-
-class AppStaticBox(wx.StaticBox):
-
-    def __init__(self, parent, label, *args, **kwargs):
-        if 'style' not in kwargs:
-            kwargs['style'] = wx.NO_BORDER
-        wx.StaticBox.__init__(self, parent, wx.ID_ANY, label, *args, **kwargs)
-
-###############################################################################
 # The main application frame
 ###############################################################################
 
@@ -306,11 +278,11 @@ class AppFrame(wx.Frame):
 
         # put map view in left of horizontal box
         sl_box = self.make_gui_view(parent)
-        all_display.Add(sl_box, proportion=1, border=PackBorder, flag=wx.EXPAND)
+        all_display.Add(sl_box, proportion=1, flag=wx.EXPAND)
 
         # add controls at right
         controls = self.make_gui_controls(parent)
-        all_display.Add(controls, proportion=0, border=PackBorder)
+        all_display.Add(controls, proportion=0)
 
         parent.SetSizerAndFit(all_display)
 
@@ -328,7 +300,7 @@ class AppFrame(wx.Frame):
 
         # lay out objects
         box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
-        box.Add(self.pyslip, proportion=1, border=PackBorder, flag=wx.EXPAND)
+        box.Add(self.pyslip, proportion=1, flag=wx.EXPAND)
 
         return box
 
@@ -352,12 +324,12 @@ class AppFrame(wx.Frame):
         controls.Add(l_p, proportion=0, flag=wx.EXPAND|wx.ALL)
 
         # controls for map-relative points layer
-        point = self.make_gui_point(parent)
-        controls.Add(point, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.lc_point = self.make_gui_point(parent)
+        controls.Add(self.lc_point, proportion=0, flag=wx.EXPAND|wx.ALL)
 
         # controls for view-relative points layer
-        point_view = self.make_gui_point_view(parent)
-        controls.Add(point_view, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.lc_point_v = self.make_gui_point_view(parent)
+        controls.Add(self.lc_point_v, proportion=0, flag=wx.EXPAND|wx.ALL)
 
         # controls for map-relative image layer
         image = self.make_gui_image(parent)
@@ -368,28 +340,28 @@ class AppFrame(wx.Frame):
         controls.Add(image_view, proportion=0, flag=wx.EXPAND|wx.ALL)
 
         # controls for map-relative text layer
-        text = self.make_gui_text(parent)
-        controls.Add(text, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.lc_text = self.make_gui_text(parent)
+        controls.Add(self.lc_text, proportion=0, flag=wx.EXPAND|wx.ALL)
 
         # controls for view-relative text layer
-        text_view = self.make_gui_text_view(parent)
-        controls.Add(text_view, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.lc_text_v = self.make_gui_text_view(parent)
+        controls.Add(self.lc_text_v, proportion=0, flag=wx.EXPAND|wx.ALL)
 
         # controls for map-relative polygon layer
-        poly = self.make_gui_poly(parent)
-        controls.Add(poly, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.lc_poly = self.make_gui_poly(parent)
+        controls.Add(self.lc_poly, proportion=0, flag=wx.EXPAND|wx.ALL)
 
         # controls for view-relative polygon layer
-        poly_view = self.make_gui_poly_view(parent)
-        controls.Add(poly_view, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.lc_poly_v = self.make_gui_poly_view(parent)
+        controls.Add(self.lc_poly_v, proportion=0, flag=wx.EXPAND|wx.ALL)
 
         # controls for map-relative polyline layer
-        polyline = self.make_gui_polyline(parent)
-        controls.Add(polyline, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.lc_poll = self.make_gui_polyline(parent)
+        controls.Add(self.lc_poll, proportion=0, flag=wx.EXPAND|wx.ALL)
 
         # controls for view-relative polyline layer
-        polyline_view = self.make_gui_polyline_view(parent)
-        controls.Add(polyline_view, proportion=0, flag=wx.EXPAND|wx.ALL)
+        self.lc_poll_v = self.make_gui_polyline_view(parent)
+        controls.Add(self.lc_poll_v, proportion=0, flag=wx.EXPAND|wx.ALL)
 
         return controls
 
@@ -442,15 +414,8 @@ class AppFrame(wx.Frame):
         log('change_tileset: menu_id=%s' % str(menu_id))
         log('id2tiledata[]=%s' % str(self.id2tiledata))
 
-#        # ensure only one tileset is checked in the menu, the required one
-#        for (key, tiledata) in self.id2tiledata.items():
-##qt?            (name, module_name, action, tile_obj) = tiledata
-#            (name, module_name, tile_obj) = tiledata
-#            action.setChecked(key == menu_id)
-
         # get information for the required tileset
         try:
-#qt?            (name, module_name, action, new_tile_obj) = self.id2tiledata[menu_id]
             (name, module_name, new_tile_obj) = self.id2tiledata[menu_id]
         except KeyError:
             # badly formed self.id2tiledata element
@@ -501,9 +466,9 @@ class AppFrame(wx.Frame):
         # lay out the controls
         sb = AppStaticBox(parent, 'Map level')
         box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
-        box.Add(txt, border=PackBorder, flag=(wx.ALIGN_CENTER_VERTICAL
-                                              |wx.ALIGN_RIGHT|wx.LEFT))
-        box.Add(self.map_level, proportion=0, border=PackBorder,
+        box.Add(txt, flag=(wx.ALIGN_CENTER_VERTICAL
+                           |wx.ALIGN_RIGHT|wx.LEFT))
+        box.Add(self.map_level, proportion=0,
                 flag=wx.LEFT|wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL)
 
         return box
@@ -526,10 +491,9 @@ class AppFrame(wx.Frame):
         # lay out the controls
         sb = AppStaticBox(parent, 'Mouse position')
         box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
-        box.Add(txt, border=PackBorder, flag=(wx.ALIGN_CENTER_VERTICAL
-                                     |wx.ALIGN_RIGHT|wx.LEFT))
-        #box.Add(self.mouse_position, proportion=1, border=PackBorder,
-        box.Add(self.mouse_position, proportion=0, border=PackBorder,
+        box.Add(txt, flag=(wx.ALIGN_CENTER_VERTICAL
+                           |wx.ALIGN_RIGHT|wx.LEFT))
+        box.Add(self.mouse_position, proportion=0,
                 flag=wx.RIGHT|wx.TOP|wx.BOTTOM)
 
         return box
@@ -751,9 +715,6 @@ class AppFrame(wx.Frame):
                                           placement='nw',   # check placement
                                           name='<pt_layer>')
         else:
-            self.lc_point.set_show(True)       # set control state to 'normal'
-            self.lc_point.set_select(False)
-
             self.pyslip.DeleteLayer(self.point_layer)
             self.point_layer = None
 
@@ -862,9 +823,6 @@ class AppFrame(wx.Frame):
                                           visible=True,
                                           name='<point_view_layer>')
         else:
-            self.lc_point_v.set_show(True)       # set control state to 'normal'
-            self.lc_point_v.set_select(False)
-
             self.pyslip.DeleteLayer(self.point_view_layer)
             self.point_view_layer = None
             if self.sel_point_view_layer:
@@ -917,8 +875,6 @@ class AppFrame(wx.Frame):
             self.sel_point_view_layer = None
 
         if event.selection and event.selection != self.sel_point_view:
-#            (points, _) = event.selection
-
             # it's a box selection
             self.sel_point_view = event.selection
 
@@ -954,9 +910,6 @@ class AppFrame(wx.Frame):
                                           show_levels=MRImageShowLevels,
                                           name='<image_layer>')
         else:
-            self.lc_image.set_show(True)       # set control state to 'normal'
-            self.lc_image.set_select(False)
-
             self.pyslip.DeleteLayer(self.image_layer)
             self.image_layer = None
             if self.sel_image_layer:
@@ -1000,23 +953,24 @@ class AppFrame(wx.Frame):
         """
 
         #relsel = event.relsel
+        selection = event.selection
 
         # select again, turn selection off
-        if event.selection == self.sel_image:
+        if selection == self.sel_image:
             self.pyslip.DeleteLayer(self.sel_image_layer)
             self.sel_image_layer = self.sel_image = None
-        elif event.selection:
+        elif selection:
             # new image selected, show highlight
             if self.sel_image_layer:
                 self.pyslip.DeleteLayer(self.sel_image_layer)
-            self.sel_image = event.selection
+            self.sel_image = selection
 
             # get selected points into form for display layer
             new_points = []
             for (x, y, f, d) in selection:
                 del d['colour']
                 del d['radius']
-                points.append((x, y, d))
+                new_points.append((x, y, d))
 
             self.sel_image_layer = \
                 self.pyslip.AddPointLayer(new_points, map_rel=True,
@@ -1071,9 +1025,6 @@ class AppFrame(wx.Frame):
                                           visible=True,
                                           name='<image_view_layer>')
         else:
-            self.lc_image_v.set_show(True)       # set control state to 'normal'
-            self.lc_image_v.set_select(False)
-
             self.pyslip.DeleteLayer(self.image_view_layer)
             self.image_view_layer = None
             if self.sel_image_view_layer:
@@ -1211,8 +1162,6 @@ class AppFrame(wx.Frame):
                                          show_levels=MRTextShowLevels,
                                          placement='ne')
         else:
-            self.lc_text.set_show(True)       # set control state to 'normal'
-            self.lc_text.set_select(False)
             self.pyslip.DeleteLayer(self.text_layer)
             if self.sel_text_layer:
                 self.pyslip.DeleteLayer(self.sel_text_layer)
@@ -1303,9 +1252,6 @@ class AppFrame(wx.Frame):
                                          offset_x=TextViewDataOffX,
                                          offset_y=TextViewDataOffY)
         else:
-            self.lc_text_v.set_show(True)       # set control state to 'normal'
-            self.lc_text_v.set_select(False)
-
             self.pyslip.DeleteLayer(self.text_view_layer)
             self.text_view_layer = None
             if self.sel_text_view_layer:
@@ -1388,9 +1334,6 @@ class AppFrame(wx.Frame):
                                             show_levels=MRPolyShowLevels,
                                             name='<poly_layer>')
         else:
-            self.lc_poly.set_show(True)       # set control state to 'normal'
-            self.lc_poly.set_select(False)
-
             self.pyslip.DeleteLayer(self.poly_layer)
             self.poly_layer = None
 
@@ -1482,9 +1425,6 @@ class AppFrame(wx.Frame):
                                             placement='cn', visible=True,
                                             fontsize=24, colour='#0000ff')
         else:
-            self.lc_poly_v.set_show(True)       # set control state to 'normal'
-            self.lc_poly_v.set_select(False)
-
             self.pyslip.DeleteLayer(self.poly_view_layer)
             self.poly_view_layer = None
 
@@ -1572,9 +1512,6 @@ class AppFrame(wx.Frame):
                                              show_levels=MRPolyShowLevels,
                                              name='<polyline_layer>')
         else:
-            self.lc_poll.set_show(True)       # set control state to 'normal'
-            self.lc_poll.set_select(False)
-
             self.pyslip.DeleteLayer(self.polyline_layer)
             self.polyline_layer = None
 
@@ -1686,9 +1623,6 @@ class AppFrame(wx.Frame):
                                              placement='cn', visible=True,
                                              fontsize=24, colour='#0000ff')
         else:
-            self.lc_poll_v.set_show(True)       # set control state to 'normal'
-            self.lc_poll_v.set_select(False)
-
             self.pyslip.DeleteLayer(self.polyline_view_layer)
             self.polyline_view_layer = None
 
@@ -1793,7 +1727,6 @@ class AppFrame(wx.Frame):
 
         return True
 
-# pySlipQt stuff vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
     def level_change_event(self, event):
         """Handle a "level change" event from the pySlipQt widget.
         
@@ -1842,8 +1775,6 @@ class AppFrame(wx.Frame):
         self.dump_event('select_event: event:', event)
 
         self.demo_select_dispatch.get(event.layer_id, self.null_handler)(event)
-
-# pySlipQt stuff ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     ######
     # Small utility routines

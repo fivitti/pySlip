@@ -11,9 +11,9 @@ import sys
 import wx
 import pyslip
 from appstaticbox import AppStaticBox
-import tkinter_error
-import log
-log = log.Log('pyslip.log')
+import pyslip.tkinter_error as tkinter_error
+import pyslip.log
+log = pyslip.log('pyslip.log')
 
 
 ######

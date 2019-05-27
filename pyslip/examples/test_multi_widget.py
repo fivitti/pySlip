@@ -11,16 +11,16 @@ import os
 import sys
 import wx
 import pyslip
-import pyslip.gmt_local_tiles as GMTTiles
-import pyslip.osm_tiles as NetTiles
+import pyslip.gmt_local as GMTTiles
+import pyslip.open_street_map as NetTiles
 
 
 ######
 # Various demo constants
 ######
 
-DemoWidth = 600
-DemoHeight = 500
+DemoWidth = 1000
+DemoHeight = 800
 DefaultAppSize = (DemoWidth, DemoHeight)
 MinW = 400
 MinH = 300
@@ -28,7 +28,7 @@ MaxW = 1000
 MaxH = 800
 
 MinTileLevel = 0
-InitViewLevel = 2
+InitViewLevel = 3
 InitViewPosition = (100.51, 13.75)      # Bangkok
 
 ################################################################################

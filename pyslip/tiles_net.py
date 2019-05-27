@@ -2,7 +2,7 @@
 A server Tiles object for pySlip tiles.
 
 All server tile sources should inherit from this class.
-For example, see osm_tiles.py.
+For example, see open_street_map.py.
 """
 
 import os
@@ -24,7 +24,6 @@ try:
 except AttributeError:
     # means log already set up
     pass
-
 
 # set how old disk-cache tiles can be before we re-request them from the
 # server.  this is the number of days old a tile is before we re-request.
@@ -105,7 +104,7 @@ class TileWorker(threading.Thread):
 ###############################################################################
 
 class Tiles(tiles.BaseTiles):
-    """A tile object to source server tiles for pySlip."""
+    """A tile object to source server tiles for the widget."""
 
     # maximum number of outstanding requests per server
     MaxServerRequests = 2
@@ -399,7 +398,7 @@ class Tiles(tiles.BaseTiles):
         if self.callback:
             self.callback(level, x, y, image, True)
         else:
-            msg = f'self.callback is NOT SET!'
+            msg = f'tile_is_available: self.callback is NOT SET!'
             log.error(msg)
             raise RuntimeError(msg) from None
 

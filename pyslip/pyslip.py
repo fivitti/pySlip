@@ -18,6 +18,11 @@ view, etc, as well as Mercator tiles provided either locally from the filesystem
 or from the internet (OpenStreetMap, for example).
 
 [1] http://wiki.openstreetmap.org/index.php/Slippy_Map
+
+Some semantics:
+    map   the whole map
+    view  is the view of the map through the widget
+          (view may be smaller than map, or larger)
 """
 
 
@@ -42,6 +47,13 @@ except ImportError as e:
     log.error = logit
     log.critical = logit
 
+import platform
+if platform.python_version_tuple()[0] != '3':
+    msg = ('You must run pySlip with python 3.x, you are running version %s.x.'
+            % platform.python_version_tuple()[0])
+    log(msg)
+    print(msg)
+    sys.exit(1)
 
 # type of SELECT events
 (EventLevel, EventPosition, EventSelect, EventBoxSelect,

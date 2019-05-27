@@ -10,7 +10,7 @@ import sys
 import unittest
 import wx
 from wx.lib.embeddedimage import PyEmbeddedImage
-import pyslip.gmt_local_tiles as tiles
+import pyslip.gmt_local as tiles
 
 
 DemoName = 'GMT Tiles Cache Test'

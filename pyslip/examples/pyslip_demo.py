@@ -36,7 +36,7 @@ except ImportError:
 
 try:
     import pyslip
-    import pyslip.gmt_local_tiles as tiles
+    import pyslip.gmt_local as tiles
     import pyslip.log as log
 except ImportError:
     msg = '*'*60 + '\nSorry, you must install pySlip\n' + '*'*60
@@ -172,7 +172,7 @@ class TilesetManager:
         
         mod_list  list of module filenames to manage
 
-        The list is something like: ['osm_tiles.py', 'gmt_local.py']
+        The list is something like: ['open_street_map.py', 'gmt_local.py']
 
         We can access tilesets using the index of the module in the 'mod_list'.
         """

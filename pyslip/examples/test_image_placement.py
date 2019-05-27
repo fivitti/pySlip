@@ -238,7 +238,7 @@ class LayerControl(wx.Panel):
         filepath = None
 
         dialog = wx.FileDialog(None, "Choose an image file",
-                               os.getcwd(), "", wildcard, wx.OPEN)
+                               os.getcwd(), "", wildcard, wx.FD_OPEN)
         if dialog.ShowModal() == wx.ID_OK:
             filepath = dialog.GetPath()
         dialog.Destroy()
@@ -744,9 +744,9 @@ if __name__ == '__main__':
 
     # set up the appropriate tile source
     if tile_source == 'gmt':
-        import pyslip.gmt_local_tiles as Tiles
+        import pyslip.gmt_local as Tiles
     elif tile_source == 'osm':
-        import pyslip.osm_tiles as Tiles
+        import pyslip.open_street_map as Tiles
     else:
         usage('Bad tile source: %s' % tile_source)
         sys.exit(3)

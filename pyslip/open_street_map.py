@@ -18,11 +18,6 @@ TilesetVersion = '1.0'
 
 # the pool of tile servers used
 TileServers = [
-# using 'https://' we get "SSL: CERTIFICATE_VERIFY_FAILED" errors
-# try to modify get code to use https and no SSL
-#               'https://a.tile.openstreetmap.org',
-#               'https://b.tile.openstreetmap.org',
-#               'https://c.tile.openstreetmap.org',
                'http://a.tile.openstreetmap.org',
                'http://b.tile.openstreetmap.org',
                'http://c.tile.openstreetmap.org',

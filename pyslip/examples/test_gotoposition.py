@@ -13,7 +13,7 @@ import os
 import sys
 import wx
 import pyslip
-import pyslip.osm_tiles as tiles
+import pyslip.open_street_map as tiles
 import pyslip.log as log
 from appstaticbox import AppStaticBox
 try:

@@ -173,7 +173,7 @@ class TilesetManager:
         
         mod_list  list of module filenames to manage
 
-        The list is something like: ['osm_tiles.py', 'gmt_local.py']
+        The list is something like: ['open_street_map.py', 'gmt_local.py']
 
         We can access tilesets using the index of the module in the 'mod_list'.
         """

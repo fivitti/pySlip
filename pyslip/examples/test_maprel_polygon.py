@@ -13,13 +13,13 @@ import pyslip
 # Various demo constants
 ######
 
-DemoWidth = 600
-DemoHeight = 400
+DemoWidth = 1000
+DemoHeight = 800
 DefaultAppSize = (DemoWidth, DemoHeight)
 
 MinTileLevel = 0
-InitViewLevel = 2
-InitViewPosition = (152.0, -8.0)
+InitViewLevel = 3
+InitViewPosition = (150.0, -8.0)
 
 # create polygon data
 OpenPoly = ((145,5),(135,5),(135,-5),(145,-5))
@@ -130,9 +130,9 @@ if __name__ == '__main__':
 
     # set up the appropriate tile source
     if tile_source == 'gmt':
-        import gmt_local_tiles as Tiles
+        import pyslip.gmt_local as Tiles
     elif tile_source == 'osm':
-        import osm_tiles as Tiles
+        import pyslip.open_street_map as Tiles
     else:
         usage('Bad tile source: %s' % tile_source)
         sys.exit(3)

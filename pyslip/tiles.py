@@ -2,7 +2,7 @@
 A base Tiles object for pySlip local tiles.
 
 All tile sources should inherit from this base class.
-For example, see gmt_local.py (local tiles) and osm_tiles.py
+For example, see gmt_local.py (local tiles) and open_street_map.py
 (internet tiles).
 """
 

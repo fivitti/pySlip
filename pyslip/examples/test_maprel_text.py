@@ -14,12 +14,12 @@ from appstaticbox import AppStaticBox
 # Various demo constants
 ######
 
-DemoWidth = 600
-DemoHeight = 400
+DemoWidth = 1000
+DemoHeight = 800
 DefaultAppSize = (DemoWidth, DemoHeight)
 
 MinTileLevel = 0
-InitViewLevel = 2
+InitViewLevel = 3
 InitViewPosition = (133.87, -23.7)      # Alice Springs
 
 TextMapData = [(151.20, -33.85, 'Sydney cc', {'placement': 'cc'}),
@@ -151,9 +151,9 @@ if __name__ == '__main__':
 
     # set up the appropriate tile source
     if tile_source == 'gmt':
-        import gmt_local_tiles as Tiles
+        import pyslip.gmt_local as Tiles
     elif tile_source == 'osm':
-        import osm_tiles as Tiles
+        import pyslip.open_street_map as Tiles
     else:
         usage('Bad tile source: %s' % tile_source)
         sys.exit(3)

@@ -10,11 +10,11 @@ import sys
 import wx
 from wx.lib.embeddedimage import PyEmbeddedImage
 import unittest
-import osm_tiles as tiles
+import pyslip.open_street_map as tiles
 
 
 # where the OSM tiles are cached on disk
-TilesDir = 'test_osm_tiles'
+TilesDir = 'open_street_map_tiles'
 
 DemoWidth = 512
 DemoWidth = 512

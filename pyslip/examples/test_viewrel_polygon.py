@@ -127,9 +127,9 @@ if __name__ == '__main__':
 
     # set up the appropriate tile source
     if tile_source == 'gmt':
-        import gmt_local_tiles as Tiles
+        import pyslip.gmt_local as Tiles
     elif tile_source == 'osm':
-        import osm_tiles as Tiles
+        import pyslip.open_street_map as Tiles
     else:
         usage('Bad tile source: %s' % tile_source)
         sys.exit(3)

@@ -12,7 +12,8 @@ import sys
 import wx
 import pyslip
 import pyslip.gmt_local as GMTTiles
-import pyslip.open_street_map as NetTiles
+#import pyslip.open_street_map as NetTiles
+import pyslip.stamen_toner as NetTiles
 
 
 ######

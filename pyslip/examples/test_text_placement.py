@@ -11,6 +11,7 @@ import sys
 import wx
 import pyslip
 from appstaticbox import AppStaticBox
+from rotextctrl import ROTextCtrl
 import pyslip.tkinter_error as tkinter_error
 import pyslip.log
 log = pyslip.log('pyslip.log')
@@ -80,23 +81,6 @@ FontChoices = None
 FontsizeChoices = ['8', '10', '12', '14', '16', '18', '20']
 PointRadiusChoices = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
 
-
-###############################################################################
-# Override the wx.TextCtrl class to add read-only style and background colour
-###############################################################################
-
-# background colour for the 'read-only' text field
-ControlReadonlyColour = '#ffffcc'
-
-class ROTextCtrl(wx.TextCtrl):
-    """Override the wx.TextCtrl widget to get read-only text control which
-    has a distinctive background colour."""
-
-    def __init__(self, parent, value, tooltip='', *args, **kwargs):
-        wx.TextCtrl.__init__(self, parent, wx.ID_ANY, value=value,
-                             style=wx.TE_READONLY, *args, **kwargs)
-        self.SetBackgroundColour(ControlReadonlyColour)
-        self.SetToolTip(wx.ToolTip(tooltip))
 
 ###############################################################################
 # Class for a LayerControl widget.

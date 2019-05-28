@@ -424,7 +424,6 @@ class PySlip(_BufferedCanvas):
         self.Bind(wx.EVT_MIDDLE_DOWN, self.OnMiddleDown)
         self.Bind(wx.EVT_MIDDLE_UP, self.OnMiddleUp)
         self.Bind(wx.EVT_RIGHT_DOWN, self.OnRightDown)
-        self.Bind(wx.EVT_RIGHT_DCLICK, self.OnRightDClick)
         self.Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
         self.Bind(wx.EVT_ENTER_WINDOW, self.OnEnterWindow)
@@ -483,11 +482,32 @@ class PySlip(_BufferedCanvas):
     def OnEnterWindow(self, event):
         """Event handler when mouse enters widget."""
 
-        pass
+        # check state of the SHIFT key
+        self.shift_down = False
+        if event.GetModifiers() == wx.MOD_SHIFT:
+            self.shift_down = True
+            self.default_cursor = BoxSelectCursor
+            self.SetCursor(wx.Cursor(BoxSelectCursor))
+
+        self.SetFocus()
 
     def OnLeaveWindow(self, event):
         """Event handler when mouse leaves widget."""
 
+        # turn off drag
+        self.was_dragging = False
+        self.last_drag_x = self.last_drag_y = None
+
+        # turn off box selection mechanism
+        self.is_box_select = False
+        self.sbox_1_x = self.sbox_1_y = None
+
+        # cursor back to normal
+        self.shift_down = False
+        self.default_cursor = DefaultCursor
+        self.SetCursor(wx.Cursor(DefaultCursor))
+
+        # alert any listener that we are OFF the widget
         self.RaiseEventPosition(None, None)
 
     ######
@@ -1853,7 +1873,8 @@ class PySlip(_BufferedCanvas):
         Only look at the SHIFT key, for box select or zoom out.
         """
 
-        if event.KeyCode == wx.WXK_SHIFT:
+        if event.GetModifiers() == wx.MOD_SHIFT:
+#        if event.KeyCode == wx.WXK_SHIFT:
             self.shift_down = True
             self.default_cursor = BoxSelectCursor
             self.SetCursor(wx.Cursor(BoxSelectCursor))
@@ -1863,7 +1884,9 @@ class PySlip(_BufferedCanvas):
 
         Only look at the SHIFT key, for box select or zoom out.
         """
-        if event.KeyCode == wx.WXK_SHIFT:
+
+        if event.GetModifiers() != wx.MOD_SHIFT:
+#        if event.KeyCode == wx.WXK_SHIFT:
             self.shift_down = False
             self.default_cursor = DefaultCursor
             self.SetCursor(wx.Cursor(DefaultCursor))
@@ -2010,102 +2033,14 @@ class PySlip(_BufferedCanvas):
         pass
 
     def OnRightDown(self, event):
-        """Right mouse button down. Prepare for right select (no drag)."""
+        """Right mouse button down. Do nothing in this version."""
 
-        click_posn = event.GetPosition()
-
-        if self.shift_down:
-            self.is_box_select = True
-            self.SetCursor(wx.Cursor(BoxSelectCursor))
-            (self.sbox_w, self.sbox_h) = (0, 0)
-            (self.sbox_1_x, self.sbox_1_y) = click_posn
-        event.Skip()
+        pass
 
     def OnRightUp(self, event):
-        """Right mouse button up.
+        """Right mouse button up.  Do nothing in this version."""
 
-        Note that when we iterate through the layer_z_order list we must
-        iterate on a *copy* as the user select process can modify
-        self.layer_z_order.
-
-        THIS CODE HASN'T BEEN LOOKED AT IN A LONG, LONG TIME.
-        """
-
-        if self.ignore_next_right_up:
-            self.ignore_next_right_up = False
-            return
-
-        self.SetCursor(wx.Cursor(DefaultCursor))
-
-        # we need a repaint to remove any selection box, but NOT YET!
-        delayed_paint = self.sbox_1_x       # True if box select active
-
-        # if any layers interested, inform of possible select
-        if self.is_box_select:
-            # possible box selection
-            ll_x = (self.sbox_1_x + self.view_offset_x) / self.tile_width
-            ll_y = (self.sbox_1_y + self.view_offset_y) / self.tile_height
-
-            ll_g = self.tile_src.Tile2Geo((ll_x, ll_y))
-            tr_g = self.tile_src.Tile2Geo((ll_x + self.sbox_w, ll_y + self.sbox_h))
-
-            # check each layer for a box select event
-            # we work on a copy as user response could change order
-            for id in self.layer_z_order[:]:
-                l = self.layer_mapping[id]
-                if l.selectable and l.visible:   # and l.event_box_select:
-                    if l.map_rel:
-                        # map-relative, get all points selected (if any)
-                        pts = self.layerBSelHandler[l.type](l, ll_g, tr_g)
-                    else:
-                        # view-relative
-                        pts = self.layerBSelHandler[l.type](l,
-                                                            (ll_x, ll_y),
-                                                            (ll_x+self.sbox_w,
-                                                             ll_y+self.sbox_h))
-                    self.RaiseEventSelect(EventRightBoxSelect, layer=l, selection=pts)
-
-                    # user code possibly updated screen
-                    delayed_paint = True
-            self.is_box_select = False
-        else:
-            # possible point selection, get tile coords
-            click_v = event.GetPosition()
-            (click_vx, click_vy) = click_v
-            click_vx += self.view_offset_x
-            click_vy += self.view_offset_y
-            click_g = self.tile_src.Tile2Geo((click_vx, click_vy))
-            # FIXME: do we REALLY need tile coords?
-
-            # check each layer for a point select callback
-            # we work on a copy as user callback could change order
-            for id in self.layer_z_order[:]:
-                l = self.layer_mapping[id]
-                # if layer visible, selectable and there is a callback
-                if l.selectable and l.visible:
-                    if l.map_rel:
-                        pt = self.layerPSelHandler[l.type](l, click_g)
-                    else:
-                        pt = self.layerPSelHandler[l.type](l, click_v)
-                    self.RaiseEventSelect(EventRightSelect, layer=l, selection=pt,
-                                          mposn=click_g, vposn=click_v)
-
-                    # user code possibly updated screen
-                    delayed_paint = True
-
-        # turn off box selection mechanism
-        self.is_box_select = False
-        self.sbox_1_x = self.sbox_1_y = None
-
-        # force PAINT event to remove selection box (if required)
-        if delayed_paint:
-            self.Update()
-
-    def OnRightDClick(self, event):
-        """Right mouse button double-click."""
-
-        # ignore next RIGHT UP event
-        self.ignore_next_right_up = True
+        pass
 
     def OnMouseWheel(self, event):
         """Mouse wheel event."""

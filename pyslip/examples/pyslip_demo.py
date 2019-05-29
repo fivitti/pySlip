@@ -1106,18 +1106,22 @@ class AppFrame(wx.Frame):
 # FIXME  or fiddle with placement perturbations
 
                 # add selection point
+                CR_Height2 = CR_Height//2
+                CR_Width2 = CR_Width//2
                 point_place_coords = {'ne': '(sel_x - CR_Width, sel_y)',
-                                      'ce': '(sel_x - CR_Width, sel_y - CR_Height/2.0)',
+                                      'ce': '(sel_x - CR_Width, sel_y - CR_Height2)',
                                       'se': '(sel_x - CR_Width, sel_y - CR_Height)',
-                                      'cs': '(sel_x - CR_Width/2.0, sel_y - CR_Height)',
+                                      'cs': '(sel_x - CR_Width2, sel_y - CR_Height)',
                                       'sw': '(sel_x, sel_y - CR_Height)',
                                       'cw': '(sel_x, sel_y - CR_Height/2.0)',
                                       'nw': '(sel_x, sel_y)',
-                                      'cn': '(sel_x - CR_Width/2.0, sel_y)',
-                                      'cc': '(sel_x - CR_Width/2.0, sel_y - CR_Height/2.0)',
+                                      'cn': '(sel_x - CR_Width2, sel_y)',
+                                      'cc': '(sel_x - CR_Width2, sel_y - CR_Height2)',
                                       '':   '(sel_x, sel_y)',
                                       None: '(sel_x, sel_y)',
                                      }
+                for (key, code) in point_place_coords.items():
+                    point_place_coords[key] = compile(code, '<string>', mode='eval')
 
                 point = eval(point_place_coords[img_placement])
                 self.sel_imagepoint_view_layer = \
@@ -1130,17 +1134,20 @@ class AppFrame(wx.Frame):
             # add polygon outline around image
             p_dict = {'placement': img_placement, 'width': 3, 'colour': 'green', 'closed': True}
             poly_place_coords = {'ne': '(((-CR_Width,0),(0,0),(0,CR_Height),(-CR_Width,CR_Height)),p_dict)',
-                                 'ce': '(((-CR_Width,-CR_Height/2.0),(0,-CR_Height/2.0),(0,CR_Height/2.0),(-CR_Width,CR_Height/2.0)),p_dict)',
+                                 'ce': '(((-CR_Width,-CR_Height2),(0,-CR_Height2),(0,CR_Height2),(-CR_Width,CR_Height2)),p_dict)',
                                  'se': '(((-CR_Width,-CR_Height),(0,-CR_Height),(0,0),(-CR_Width,0)),p_dict)',
-                                 'cs': '(((-CR_Width/2.0,-CR_Height),(CR_Width/2.0,-CR_Height),(CR_Width/2.0,0),(-CR_Width/2.0,0)),p_dict)',
+                                 'cs': '(((-CR_Width2,-CR_Height),(CR_Width2,-CR_Height),(CR_Width2,0),(-CR_Width2,0)),p_dict)',
                                  'sw': '(((0,-CR_Height),(CR_Width,-CR_Height),(CR_Width,0),(0,0)),p_dict)',
-                                 'cw': '(((0,-CR_Height/2.0),(CR_Width,-CR_Height/2.0),(CR_Width,CR_Height/2.0),(0,CR_Height/2.0)),p_dict)',
+                                 'cw': '(((0,-CR_Height2),(CR_Width,-CR_Height2),(CR_Width,CR_Height2),(0,CR_Height2)),p_dict)',
                                  'nw': '(((0,0),(CR_Width,0),(CR_Width,CR_Height),(0,CR_Height)),p_dict)',
-                                 'cn': '(((-CR_Width/2.0,0),(CR_Width/2.0,0),(CR_Width/2.0,CR_Height),(-CR_Width/2.0,CR_Height)),p_dict)',
-                                 'cc': '(((-CR_Width/2.0,-CR_Height/2.0),(CR_Width/2.0,-CR_Height/2.0),(CR_Width/2.0,CR_Height/2.0),(-CR_Width/2.0,CR_Height/2.0)),p_dict)',
+                                 'cn': '(((-CR_Width2,0),(CR_Width2,0),(CR_Width2,CR_Height),(-CR_Width2,CR_Height)),p_dict)',
+                                 'cc': '(((-CR_Width2,-CR_Height2),(CR_Width2,-CR_Height2),(CR_Width2,CR_Heigh/2),(-CR_Width2,CR_Height2)),p_dict)',
                                  '':   '(((x, y),(x+CR_Width,y),(x+CR_Width,y+CR_Height),(x,y+CR_Height)),p_dict)',
                                  None: '(((x, y),(x+CR_Width,y),(x+CR_Width,y+CR_Height),(x,y+CR_Height)),p_dict)',
                                 }
+            for (key, code) in poly_place_coords.items():
+                poly_place_coords[key] = compile(code, '<string>', mode='eval')
+
             pdata = eval(poly_place_coords[img_placement])
             self.sel_image_view_layer = \
                 self.pyslip.AddPolygonLayer((pdata,), map_rel=False,

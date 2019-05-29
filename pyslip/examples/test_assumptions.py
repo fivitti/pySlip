@@ -13,6 +13,32 @@ import unittest
 
 class TestAssumptions(unittest.TestCase):
 
+    def test_list_vs_set(self):
+        """Check that "for x in my_set:" is not a lot faster than for a list.
+
+        This test just prints the results and doesn't raise an error, since
+        changing to sets isn't a bug, but a possible enhancement.
+        """
+
+        print('\nTesting set/list speed: ', end='', flush=True)
+        Loop = 1000
+        my_list = range(1000000)
+        my_set = set(my_list)
+
+        start = time.time()
+        for _ in range(Loop):
+            for x in my_list:
+                pass
+        list_delta = time.time() - start
+
+        start = time.time()
+        for _ in range(Loop):
+            for x in my_set:
+                pass
+        set_delta = time.time() - start
+
+        print('list time=%.2fs, set time=%.2fs' % (list_delta, set_delta))
+
     def test_copy_list(self):
         """Check 'l_poly = list(poly)' gets us a new list.
 

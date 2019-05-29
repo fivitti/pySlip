@@ -99,8 +99,6 @@ class _BufferedCanvas(wx.Panel):
         self.on_size_callback = None
 
         # allocate bitmap buffer for display
-#        (width, height) = size
-#        self.buffer = wx.EmptyBitmap(width, height)
         self.buffer = None
 
         # Bind events
@@ -110,7 +108,7 @@ class _BufferedCanvas(wx.Panel):
     def Draw(self, dc):
         """Stub: called when the canvas needs to be re-drawn."""
 
-        pass
+        raise RuntimeException('_BufferedCanvas.Draw() was not overridden!')
 
     def Update(self):
         """Causes the canvas to be updated."""
@@ -137,7 +135,6 @@ class _BufferedCanvas(wx.Panel):
         self.view_height = height
 
         # new off-screen buffer
-#        self.buffer = wx.EmptyBitmap(width, height)
         self.buffer = wx.Bitmap(width, height)
 
         # call onSize callback, if registered
@@ -576,12 +573,11 @@ class PySlip(_BufferedCanvas):
                                 % (str(self.level),
                                    str(tile_src), str(tile_src.levels)))
 
-# TODO: MUST SET KEY TILE STUFF HERE
+        # set the "key tile"
         self.set_key_from_centre(geo)
 
         # back to old level+centre, and refresh the display
         self.GotoLevelAndPosition(level, geo)
-#        self.zoom_level_position(level, geo)
 
         return old_tileset
 
@@ -1874,7 +1870,6 @@ class PySlip(_BufferedCanvas):
         """
 
         if event.GetModifiers() == wx.MOD_SHIFT:
-#        if event.KeyCode == wx.WXK_SHIFT:
             self.shift_down = True
             self.default_cursor = BoxSelectCursor
             self.SetCursor(wx.Cursor(BoxSelectCursor))
@@ -1886,7 +1881,6 @@ class PySlip(_BufferedCanvas):
         """
 
         if event.GetModifiers() != wx.MOD_SHIFT:
-#        if event.KeyCode == wx.WXK_SHIFT:
             self.shift_down = False
             self.default_cursor = DefaultCursor
             self.SetCursor(wx.Cursor(DefaultCursor))
@@ -3053,51 +3047,6 @@ class PySlip(_BufferedCanvas):
 
         return dx**2 + dy**2
 
-#    def GeoExtent(self, geo, place, w, h, x_off, y_off):
-#        """Get geo extent of area.
-#
-#        geo           tuple (xgeo, ygeo) of position to place area at
-#        place         placement string ('cc', 'se', etc)
-#        w, h          area width and height (pixels)
-#        x_off, y_off  x and y offset (geo coords)
-#
-#        Return the geo extent of the area: (llon, rlon, tlat, blat)
-#        where:
-#            llon  longitude of left side of area
-#            rlon  longitude of right side of area
-#            tlat  top latitude of area
-#            blat  bottom latitude of area
-#
-#        If object extent is totally off the map, return None.
-#        """
-#
-#        # decide if object CAN be in view
-#        # check point in lower, right or lower-right quadrants
-#        (xgeo, ygeo) = geo
-#        if self.view_rlon < xgeo or self.view_blat > ygeo:
-#            return None
-#
-#        # now, figure out point view posn and extent posn from geo coords+
-#        (vx, vy) = self.Geo2View(geo)
-#        (tlvx, tlvy) = self.extent_placement(place, vx, vy, x_off, y_off, w, h)
-#        # tlvx = top-left view X coordinate
-#
-#        # now get bottom_right corner in pixel coords
-#        brvx = tlvx + w
-#        brvy = tlvy + h
-#        # brvx = bottom-right view X coordinate
-#
-#        # decide if object is completely on-view
-#        if (brvx < -w or brvy < -h
-#                or tlvx > self.view_width or tlvy > self.view_height):
-#            return None
-#
-#        # return geo extent
-#        (llon, tlat) = self.View2Geo((tlvx, tlvy))
-#        (rlon, blat) = self.View2Geo((brvx, brvy))
-#
-#        return (llon, rlon, tlat, blat)
-
     def ViewExtent(self, place, view, w, h, x_off, y_off, dcw=0, dch=0):
         """Get view extent of area.
 
@@ -3173,19 +3122,20 @@ class PySlip(_BufferedCanvas):
 
         return result
 
-    def get_level_and_position(self, place='cc'):
-        """Get the level and geo position of a cardinal point within the view.
-
-        place  a placement string specifying the point in the view
-               for which we require the geo position
-
-        Returns a tuple (level, geo) where 'geo' is (geo_x, geo_y).
-        """
-
-        view_coords = self.point_placement_view(place, 0, 0, 0, 0,)
-        geo = self.view_to_geo(view_coords)
-
-        return (self.level, geo)
+# already have this?
+#    def get_level_and_position(self, place='cc'):
+#        """Get the level and geo position of a cardinal point within the view.
+#
+#        place  a placement string specifying the point in the view
+#               for which we require the geo position
+#
+#        Returns a tuple (level, geo) where 'geo' is (geo_x, geo_y).
+#        """
+#
+#        view_coords = self.point_placement_view(place, 0, 0, 0, 0,)
+#        geo = self.view_to_geo(view_coords)
+#
+#        return (self.level, geo)
 
     def set_key_from_centre(self, geo):
         """Set 'key' tile stuff from given geo at view centre.
@@ -3326,7 +3276,7 @@ class PySlip(_BufferedCanvas):
         dcw2 = dcw/2
         dch2 = dch/2
 
-        if place == 'cc':   x+=dcw2;       y+=dch2
+        if   place == 'cc': x+=dcw2;       y+=dch2
         elif place == 'nw': x+=x_off;      y+=y_off
         elif place == 'cn': x+=dcw2;       y+=y_off
         elif place == 'ne': x+=dcw-x_off;  y+=y_off

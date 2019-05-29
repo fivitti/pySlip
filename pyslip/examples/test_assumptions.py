@@ -13,6 +13,94 @@ import unittest
 
 class TestAssumptions(unittest.TestCase):
 
+    def test_eval(self):
+        """Check that the handling of placement strings by "eval" is still fastest."""
+
+        print('\nTesting eval/if speed: ', end='', flush=True)
+
+        point_place_coords = {'ne': '(sel_x - CR_Width, sel_y)',
+                              'ce': '(sel_x - CR_Width, sel_y - CR_Height//2)',
+                              'se': '(sel_x - CR_Width, sel_y - CR_Height)',
+                              'cs': '(sel_x - CR_Width//2, sel_y - CR_Height)',
+                              'sw': '(sel_x, sel_y - CR_Height)',
+                              'cw': '(sel_x, sel_y - CR_Height//2)',
+                              'nw': '(sel_x, sel_y)',
+                              'cn': '(sel_x - CR_Width//2, sel_y)',
+                              'cc': '(sel_x - CR_Width//2, sel_y - CR_Height//2)',
+                              '':   '(sel_x, sel_y)',
+                              None: '(sel_x, sel_y)',
+                             }
+
+        point_place_coords2 = {'ne': '(sel_x - CR_Width, sel_y)',
+                               'ce': '(sel_x - CR_Width, sel_y - CR_Height2)',
+                               'se': '(sel_x - CR_Width, sel_y - CR_Height)',
+                               'cs': '(sel_x - CR_Width2, sel_y - CR_Height)',
+                               'sw': '(sel_x, sel_y - CR_Height)',
+                               'cw': '(sel_x, sel_y - CR_Height2)',
+                               'nw': '(sel_x, sel_y)',
+                               'cn': '(sel_x - CR_Width2, sel_y)',
+                               'cc': '(sel_x - CR_Width2, sel_y - CR_Height2)',
+                               '':   '(sel_x, sel_y)',
+                               None: '(sel_x, sel_y)',
+                             }
+        for (key, code) in point_place_coords2.items():
+            point_place_coords2[key] = compile(code, '<string>', mode='eval')
+
+        Loop = 1000000
+
+        img_placement = 'cc'
+        sel_x = 10
+        sel_y = 10
+        CR_Width = 10
+        CR_Height = 10
+
+        CR_Height2 = CR_Height//2
+        CR_Width2 = CR_Width//2
+
+        # time the unoptimized "eval" method
+        start = time.time()
+        for _ in range(Loop):
+            point = eval(point_place_coords[img_placement])
+        eval_delta = time.time() - start
+
+        # time the optimized "eval" method
+        start = time.time()
+        for _ in range(Loop):
+            point2 = eval(point_place_coords2[img_placement])
+        opt_delta = time.time() - start
+
+        # time the if/else method
+        start = time.time()
+        for _ in range(Loop):
+            if img_placement == 'ne':
+                point = (sel_x - CR_Width, sel_y)
+            elif img_placement == 'ce':
+                point = (sel_x - CR_Width, sel_y - CR_Height2)
+            elif img_placement == 'se':
+                point = (sel_x - CR_Width, sel_y - CR_Height)
+            elif img_placement == 'cs':
+                point = (sel_x - CR_Width2, sel_y - CR_Height)
+            elif img_placement == 'sw':
+                point = (sel_x, sel_y - CR_Height)
+            elif img_placement == 'cw':
+                point = (sel_x, sel_y - CR_Height2)
+            elif img_placement == 'nw':
+                point = (sel_x, sel_y)
+            elif img_placement == 'cn':
+                point = (sel_x - CR_Width2, sel_y)
+            elif img_placement == 'cc':
+                point = (sel_x - CR_Width2, sel_y - CR_Height2)
+            elif img_placement == '':
+                point = (sel_x, sel_y)
+            elif img_placement is None:
+                point = (sel_x, sel_y)
+        ifelse_delta = time.time() - start
+
+        print(' eval time=%.2fs, opt eval time=%.2fs, if/else time=%.2fs'
+                % (eval_delta, opt_delta, ifelse_delta))
+
+        self.assertTrue(True)
+
     def test_list_vs_set(self):
         """Check that "for x in my_set:" is not a lot faster than for a list.
 
@@ -20,7 +108,7 @@ class TestAssumptions(unittest.TestCase):
         changing to sets isn't a bug, but a possible enhancement.
         """
 
-        print('\nTesting set/list speed: ', end='', flush=True)
+        print('\nTesting list/set speed: ', end='', flush=True)
         Loop = 1000
         my_list = range(1000000)
         my_set = set(my_list)

@@ -59,6 +59,9 @@ if platform.python_version_tuple()[0] != '3':
 (EventLevel, EventPosition, EventSelect, EventBoxSelect,
     EventPolySelect, EventPolyBoxSelect, EventRightSelect) = range(7)
 
+# mouse buttons making a select
+(MouseLeft, MouseMiddle, MouseRight) = (1, 2, 3)
+
 # diiferent cursors for different states
 DefaultCursor = wx.CURSOR_DEFAULT
 BoxSelectCursor = wx.CURSOR_CROSS
@@ -1975,7 +1978,8 @@ class PySlip(_BufferedCanvas):
                         else:
                             sel = self.layerPSelHandler[l.type](l, clickpt_v)
                         self.RaiseEventSelect(mposn=clickpt_g, vposn=clickpt_v,
-                                              layer=l, selection=sel)
+                                              layer=l, selection=sel,
+                                              button=MouseLeft)
                         # user code possibly updated screen
                         delayed_paint = True
 
@@ -2032,9 +2036,48 @@ class PySlip(_BufferedCanvas):
         pass
 
     def OnRightUp(self, event):
-        """Right mouse button up.  Do nothing in this version."""
+        """Right mouse button up.  Just do a single object select."""
 
-        pass
+        # flag, True if we need to update the screen
+        delayed_paint = False
+
+        # possible point selection, get click point in view coords
+        clickpt_v = event.GetPosition()
+
+        # get click point in geo coords
+        clickpt_g = self.View2Geo(clickpt_v)
+
+        log('OnRightUp: clickpt_v=%s, clickpt_g=%s' % (str(clickpt_v), str(clickpt_g)))
+
+        # check each layer for a point select handler
+        # we work on a copy as user code could change order
+        for id in self.layer_z_order[:]:
+            l = self.layer_mapping[id]
+            # if layer visible and selectable
+            if l.selectable and l.visible:
+                if l.map_rel:
+                    sel = self.layerPSelHandler[l.type](l, clickpt_g)
+                else:
+                    sel = self.layerPSelHandler[l.type](l, clickpt_v)
+                self.RaiseEventSelect(mposn=clickpt_g, vposn=clickpt_v,
+                                      layer=l, selection=sel, button=MouseRight)
+                # user code possibly updated screen
+                delayed_paint = True
+
+        # force PAINT event if required
+        if delayed_paint:
+            self.Update()
+
+    def OnLeftDClick(self, event):
+        """Left mouse button double-click.
+
+        Zoom in (if possible).
+        Zoom out (if possible) if shift key is down.
+        """
+
+        # ignore next Left UP event
+        self.ignore_next_up = True
+
 
     def OnMouseWheel(self, event):
         """Mouse wheel event."""
@@ -2759,7 +2802,7 @@ class PySlip(_BufferedCanvas):
 # flag for the select event as the user controls selectability on a
 # layer-by-layer basis.
 
-    def RaiseEventSelect(self, mposn, vposn, layer=None, selection=None):
+    def RaiseEventSelect(self, mposn, vposn, layer=None, selection=None, button=None):
         """Raise a point SELECT event.
 
         mposn      map coordinates of the mouse click
@@ -2769,6 +2812,8 @@ class PySlip(_BufferedCanvas):
                    'point' is the selected object point ((xgeo,ygeo) or
                    (xview,yview)), data is the associated data object and
                    relsel is the relative selection point
+        button     indicates which mouse button made the select:
+                       (LEFT, MIDDLE or RIGHT)
 
         This event is raised even when nothing is selected.  In that case,
         event.layer_id and .selection are None and .mposn and .vposn are the
@@ -2784,6 +2829,7 @@ class PySlip(_BufferedCanvas):
         event.selection = None
         event.data = None
         event.relsel = None
+        event.button = button
         if selection:
             (event.selection, event.data, event.relsel) = selection
 

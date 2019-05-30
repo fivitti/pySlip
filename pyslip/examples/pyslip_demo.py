@@ -197,6 +197,58 @@ class TilesetManager:
             tileset_data[2] = tile_obj
         return tile_obj
 
+######
+# A popup window for context dialogs
+######
+
+class pySlipPopup(wx.PopupWindow):
+    """A simple popup for right-click demonstration."""
+
+    def __init__(self, parent, style, text):
+        super.__init__(self, parent, style)
+
+        panel = wx.Panel(self)
+        self.panel = panel
+        panel.SetBackgroundColour("CADET BLUE")
+
+        st = wx.StaticText(panel, -1, text, pos=(10,10))
+        sz = st.GetBestSize()
+        self.SetSize( (sz.width+20, sz.height+20) )
+        panel.SetSize( (sz.width+20, sz.height+20) )
+
+        panel.Bind(wx.EVT_LEFT_DOWN, self.OnMouseLeftDown)
+        panel.Bind(wx.EVT_MOTION, self.OnMouseMotion)
+        panel.Bind(wx.EVT_LEFT_UP, self.OnMouseLeftUp)
+        panel.Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
+
+        st.Bind(wx.EVT_LEFT_DOWN, self.OnMouseLeftDown)
+        st.Bind(wx.EVT_MOTION, self.OnMouseMotion)
+        st.Bind(wx.EVT_LEFT_UP, self.OnMouseLeftUp)
+        st.Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
+
+        wx.CallAfter(self.Refresh)    
+
+    def OnMouseLeftDown(self, evt):
+        self.Refresh()
+        self.ldPos = evt.GetEventObject().ClientToScreen(evt.GetPosition())
+        self.wPos = self.ClientToScreen((0,0))
+        self.panel.CaptureMouse()
+
+    def OnMouseMotion(self, evt):
+        if evt.Dragging() and evt.LeftIsDown():
+            dPos = evt.GetEventObject().ClientToScreen(evt.GetPosition())
+            nPos = (self.wPos.x + (dPos.x - self.ldPos.x),
+                    self.wPos.y + (dPos.y - self.ldPos.y))
+            self.Move(nPos)
+
+    def OnMouseLeftUp(self, evt):
+        if self.panel.HasCapture():
+            self.panel.ReleaseMouse()
+
+    def OnRightUp(self, evt):
+        self.Show(False)
+        self.Destroy()
+
 ###############################################################################
 # The main application frame
 ###############################################################################
@@ -755,6 +807,7 @@ class AppFrame(wx.Frame):
                    selection  [list of] tuple (xgeo,ygeo) of selected point
                               (if None then no point(s) selected)
                    data       userdata object of the selected point
+                   button     indicates the mouse button used
 
         The selection could be a single or box select.
 
@@ -768,43 +821,58 @@ class AppFrame(wx.Frame):
         EventBoxSelect events.
         """
 
+        log('Doing pointSelect: event.selection=%s, self.sel_point=%s' % (str(event.selection), str(self.sel_point)))
+        log('Doing pointSelect: event.button=%d' % event.button)
+        log('pyslip.MouseLeft=%d, pyslip.MouseMiddle=%d, pyslip.MouseRight=%d'
+                % (pyslip.MouseLeft, pyslip.MouseMiddle, pyslip.MouseRight))
+
         if event.selection == self.sel_point:
-            # same point(s) selected again, turn point(s) off
-            self.pyslip.DeleteLayer(self.sel_point_layer)
-            self.sel_point_layer = None
-            self.sel_point = None
-        elif event.selection:
-            # some other point(s) selected, delete previous selection, if any
-            if self.sel_point_layer:
+            log('Have a point event.selection')
+            if event.button == pyslip.MouseLeft:
+                # LEFT button, same point(s) selected again, turn point(s) off
                 self.pyslip.DeleteLayer(self.sel_point_layer)
+                self.sel_point_layer = None
+                self.sel_point = None
+            elif event.button == pyslip.MouseRight:
+                # RIGHT button, do a context popup
+                log('Doing context popup')
+                pySlipPopup(self, None, "Test text")
 
-            # remember selection (need copy as highlight modifies attributes)
-            self.sel_point = copy.deepcopy(event.selection)
-
-            # choose different highlight colour for different type of selection
-            selcolour = '#00ffff'
-            if event.type == pyslip.EventSelect:
-                selcolour = '#0000ff'
-
-            # get selected points into form for display layer
-            # delete 'colour' and 'radius' attributes as we want different values
-            highlight = []
-            for (x, y, d) in event.selection:
-                del d['colour']     # AddLayer...() ensures keys exist
-                del d['radius']
-                highlight.append((x, y, d))
-
-            # layer with highlight of selected poijnts
-            self.sel_point_layer = \
-                self.pyslip.AddPointLayer(highlight, map_rel=True,
-                                          colour=selcolour,
-                                          radius=5, visible=True,
-                                          show_levels=MRPointShowLevels,
-                                          name='<sel_pt_layer>')
-
-            # make sure highlight layer is BELOW selected layer
-            self.pyslip.PlaceLayerBelowLayer(self.sel_point_layer,
-                                             self.point_layer)
+        elif event.selection:
+            # only allow the LEFT mouse button
+            log('Have a BOX event.selection')
+            if event.button == pyslip.MouseLeft:
+                # some other point(s) selected, delete previous selection, if any
+                if self.sel_point_layer:
+                    self.pyslip.DeleteLayer(self.sel_point_layer)
+    
+                # remember selection (need copy as highlight modifies attributes)
+                self.sel_point = copy.deepcopy(event.selection)
+    
+                # choose different highlight colour for different type of selection
+                selcolour = '#00ffff'
+                if event.type == pyslip.EventSelect:
+                    selcolour = '#0000ff'
+    
+                # get selected points into form for display layer
+                # delete 'colour' and 'radius' attributes as we want different values
+                highlight = []
+                for (x, y, d) in event.selection:
+                    del d['colour']     # AddLayer...() ensures keys exist
+                    del d['radius']
+                    highlight.append((x, y, d))
+    
+                # layer with highlight of selected poijnts
+                self.sel_point_layer = \
+                    self.pyslip.AddPointLayer(highlight, map_rel=True,
+                                              colour=selcolour,
+                                              radius=5, visible=True,
+                                              show_levels=MRPointShowLevels,
+                                              name='<sel_pt_layer>')
+    
+                # make sure highlight layer is BELOW selected layer
+                self.pyslip.PlaceLayerBelowLayer(self.sel_point_layer,
+                                                 self.point_layer)
         # else: we ignore an empty selection
 
         return True
@@ -1765,7 +1833,7 @@ class AppFrame(wx.Frame):
             self.mouse_position.SetValue('')
 
     def select_event(self, event):
-        """Handle a single select click.
+        """Handle a single select click, any mouse button.
 
         event.type       the event type number
         event.mposn      select point tuple in map (geo) coordinates: (xgeo, ygeo)
@@ -1774,13 +1842,13 @@ class AppFrame(wx.Frame):
         event.selection  a tuple (x,y,attrib) defining the position of the object selected (or [] if no selection)
         event.data       the user-supplied data object for the selected object (or [] if no selection)
         event.relsel     relative selection point inside a single selected image (or [] if no selection)
+        event.button     one of pyslip.MopuseLeft, pyslip.MouseMiddle or pyslip.MouseRight
 
         Just look at 'event.type' to decide what handler to call and pass
         'event' through to the handler.
         """
 
-        self.dump_event('select_event: event:', event)
-
+#        self.dump_event('select_event: event:', event)
         self.demo_select_dispatch.get(event.layer_id, self.null_handler)(event)
 
     ######

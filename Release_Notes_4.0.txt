@@ -18,3 +18,12 @@ Release 4.0 of pySlip has the following changes:
 
 5. A mechanism to update tiles sourced from a server.  See the API
    documentation for details on managing this feature.
+
+Warnings:
+
+The OpenStreetMap tile servers seem to not work for me.
+
+The code to handle connecting through a proxy has NOT been tested.
+
+The built in GMT tiles are not at the same zoom level as the internet tiles.
+This may change in the future.

@@ -211,10 +211,11 @@ class Tiles(tiles.BaseTiles):
             log('Error: test_url=%s, status_code=%s'
                     % (test_url, str(status_code)))
             error_msg = StatusError.get(status_code, None)
-            msg = '\n'.join(['You got a %d error from: %s' % (status_code, test_url),
-                             error_msg])
-            log(msg)
-            raise RuntimeError(msg) from None
+            if status_code:
+                msg = '\n'.join(['You got a %d error from: %s' % (status_code, test_url),
+                                 error_msg])
+                log(msg)
+                raise RuntimeError(msg) from None
 
             log('%s exception doing simple connection to: %s'
                     % (type(e).__name__, test_url))

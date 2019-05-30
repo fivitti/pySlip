@@ -18,9 +18,9 @@ TilesetVersion = '1.0'
 
 # the pool of tile servers used
 TileServers = [
-               'http://a.tile.openstreetmap.org',
-               'http://b.tile.openstreetmap.org',
-               'http://c.tile.openstreetmap.org',
+               'https://a.tile.openstreetmap.org',
+               'https://b.tile.openstreetmap.org',
+               'https://c.tile.openstreetmap.org',
               ]
 
 # the path on the server to a tile

@@ -30,6 +30,11 @@ except AttributeError:
 # if 'None', never re-request tiles after first satisfied request.
 RefreshTilesAfterDays = 60
 
+# define the error messages for various failures
+StatusError = {401: 'Looks like you need to be authorised for this server.',
+               404: 'You might need to check the tile addressing for this server.',
+               429: 'You are asking for too many tiles.',
+              }
 
 ################################################################################
 # Worker class for server tile retrieval
@@ -201,25 +206,16 @@ class Tiles(tiles.BaseTiles):
         try:
             request.urlopen(test_url)
         except urllib.error.HTTPError as e:
+            # if it's fatal, log it and die, otherwise try a proxy
             status_code = e.code
             log('Error: test_url=%s, status_code=%s'
                     % (test_url, str(status_code)))
-            if status_code == 401:
-                msg = ['',
-                       'You got a 401 error from: %s' % test_url,
-                       'Looks like you need to be authorised for this server.'
-                      ]
-                msg = '\n'.join(msg)
-                log(msg)
-                raise RuntimeError(msg) from None
-            if status_code == 404:
-                msg = ['',
-                       'You got a 404 error from: %s' % test_url,
-                       'You might need to check the tile addressing for this server.'
-                      ]
-                msg = '\n'.join(msg)
-                log(msg)
-                raise RuntimeError(msg) from None
+            error_msg = StatusError.get(status_code, None)
+            msg = '\n'.join(['You got a %d error from: %s' % (status_code, test_url),
+                             error_msg])
+            log(msg)
+            raise RuntimeError(msg) from None
+
             log('%s exception doing simple connection to: %s'
                     % (type(e).__name__, test_url))
             log(''.join(traceback.format_exc()))

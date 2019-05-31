@@ -60,7 +60,7 @@ if platform.python_version_tuple()[0] != '3':
     EventPolySelect, EventPolyBoxSelect, EventRightSelect) = range(7)
 
 # mouse buttons making a select
-(MouseLeft, MouseMiddle, MouseRight) = (1, 2, 3)
+(MouseLeft, MouseMiddle, MouseRight) = range(3)
 
 # diiferent cursors for different states
 DefaultCursor = wx.CURSOR_DEFAULT
@@ -2047,8 +2047,6 @@ class PySlip(_BufferedCanvas):
         # get click point in geo coords
         clickpt_g = self.View2Geo(clickpt_v)
 
-        log('OnRightUp: clickpt_v=%s, clickpt_g=%s' % (str(clickpt_v), str(clickpt_g)))
-
         # check each layer for a point select handler
         # we work on a copy as user code could change order
         for id in self.layer_z_order[:]:
@@ -2802,7 +2800,8 @@ class PySlip(_BufferedCanvas):
 # flag for the select event as the user controls selectability on a
 # layer-by-layer basis.
 
-    def RaiseEventSelect(self, mposn, vposn, layer=None, selection=None, button=None):
+    def RaiseEventSelect(self, mposn, vposn, layer=None, selection=None,
+                               button=MouseLeft):
         """Raise a point SELECT event.
 
         mposn      map coordinates of the mouse click
@@ -2835,13 +2834,14 @@ class PySlip(_BufferedCanvas):
 
         self.GetEventHandler().ProcessEvent(event)
 
-    def RaiseEventBoxSelect(self, layer=None, selection=None):
+    def RaiseEventBoxSelect(self, layer=None, selection=None, button=MouseLeft):
         """Raise a point BOXSELECT event.
 
         layer      layer the select was on
         selection  a tuple (points, data, relsel) where 'points' is a list of
                    (x,y) tuples, data is a list of associated userdata objects
                    and relsel is None
+        button     the moouse button used to do box select
 
         This event is raised even when nothing is selected.  In that case,
         event.layer_id, .selection and .data are None.
@@ -2854,6 +2854,7 @@ class PySlip(_BufferedCanvas):
         event.selection = None
         event.data = None
         event.relsel = None
+        event.button = button
         if selection:
             (event.selection, event.data, event.relsel) = selection
 

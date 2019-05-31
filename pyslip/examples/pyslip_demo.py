@@ -154,6 +154,66 @@ DefaultTilesetIndex = 1
 
 
 ###############################################################################
+# A small class to popup a moveable window.
+###############################################################################
+
+class DemoPopup(wx.PopupWindow):
+    """A class for a simple popup window.
+   
+    The popup window can be dragged with the left mouse button.
+    It is dismissed with a right mouse button click.
+
+    The basic idea comes from:
+    https://stackoverflow.com/questions/23415125/wxpython-popup-window-bound-to-a-wxbutton
+    """
+
+    def __init__(self, parent, style, text):
+        """Constructor"""
+        super().__init__(parent, style)
+
+        panel = wx.Panel(self)
+        self.panel = panel
+        panel.SetBackgroundColour("LIGHT YELLOW")
+
+        st = wx.StaticText(panel, -1, text, pos=(10,10))
+        sz = st.GetBestSize()
+        self.SetSize( (sz.width+20, sz.height+20) )
+        panel.SetSize( (sz.width+20, sz.height+20) )
+
+        panel.Bind(wx.EVT_LEFT_DOWN, self.OnMouseLeftDown)
+        panel.Bind(wx.EVT_MOTION, self.OnMouseMotion)
+        panel.Bind(wx.EVT_LEFT_UP, self.OnMouseLeftUp)
+        panel.Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
+
+        st.Bind(wx.EVT_LEFT_DOWN, self.OnMouseLeftDown)
+        st.Bind(wx.EVT_MOTION, self.OnMouseMotion)
+        st.Bind(wx.EVT_LEFT_UP, self.OnMouseLeftUp)
+        st.Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
+
+        wx.CallAfter(self.Refresh)    
+
+    def OnMouseLeftDown(self, evt):
+        self.Refresh()
+        self.ldPos = evt.GetEventObject().ClientToScreen(evt.GetPosition())
+        self.wPos = self.ClientToScreen((0,0))
+        self.panel.CaptureMouse()
+
+    def OnMouseMotion(self, evt):
+        if evt.Dragging() and evt.LeftIsDown():
+            dPos = evt.GetEventObject().ClientToScreen(evt.GetPosition())
+            nPos = (self.wPos.x + (dPos.x - self.ldPos.x),
+                    self.wPos.y + (dPos.y - self.ldPos.y))
+            self.Move(nPos)
+
+    def OnMouseLeftUp(self, evt):
+        if self.panel.HasCapture():
+            self.panel.ReleaseMouse()
+
+    def OnRightUp(self, evt):
+        self.Show(False)
+        self.Destroy()
+
+###############################################################################
 # A small class to manage tileset sources.
 ###############################################################################
 
@@ -196,58 +256,6 @@ class TilesetManager:
             tile_obj = tileset.Tiles()
             tileset_data[2] = tile_obj
         return tile_obj
-
-######
-# A popup window for context dialogs
-######
-
-class pySlipPopup(wx.PopupWindow):
-    """A simple popup for right-click demonstration."""
-
-    def __init__(self, parent, style, text):
-        super.__init__(self, parent, style)
-
-        panel = wx.Panel(self)
-        self.panel = panel
-        panel.SetBackgroundColour("CADET BLUE")
-
-        st = wx.StaticText(panel, -1, text, pos=(10,10))
-        sz = st.GetBestSize()
-        self.SetSize( (sz.width+20, sz.height+20) )
-        panel.SetSize( (sz.width+20, sz.height+20) )
-
-        panel.Bind(wx.EVT_LEFT_DOWN, self.OnMouseLeftDown)
-        panel.Bind(wx.EVT_MOTION, self.OnMouseMotion)
-        panel.Bind(wx.EVT_LEFT_UP, self.OnMouseLeftUp)
-        panel.Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
-
-        st.Bind(wx.EVT_LEFT_DOWN, self.OnMouseLeftDown)
-        st.Bind(wx.EVT_MOTION, self.OnMouseMotion)
-        st.Bind(wx.EVT_LEFT_UP, self.OnMouseLeftUp)
-        st.Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
-
-        wx.CallAfter(self.Refresh)    
-
-    def OnMouseLeftDown(self, evt):
-        self.Refresh()
-        self.ldPos = evt.GetEventObject().ClientToScreen(evt.GetPosition())
-        self.wPos = self.ClientToScreen((0,0))
-        self.panel.CaptureMouse()
-
-    def OnMouseMotion(self, evt):
-        if evt.Dragging() and evt.LeftIsDown():
-            dPos = evt.GetEventObject().ClientToScreen(evt.GetPosition())
-            nPos = (self.wPos.x + (dPos.x - self.ldPos.x),
-                    self.wPos.y + (dPos.y - self.ldPos.y))
-            self.Move(nPos)
-
-    def OnMouseLeftUp(self, evt):
-        if self.panel.HasCapture():
-            self.panel.ReleaseMouse()
-
-    def OnRightUp(self, evt):
-        self.Show(False)
-        self.Destroy()
 
 ###############################################################################
 # The main application frame
@@ -312,8 +320,6 @@ class AppFrame(wx.Frame):
 
         event  the menu select event
         """
-
-        log('User selected a tileset from the menu')
 
         self.change_tileset(event.GetId())
 
@@ -463,9 +469,6 @@ class AppFrame(wx.Frame):
         menu_id  the index in self.id2tiledata of the required tileset
         """
 
-        log('change_tileset: menu_id=%s' % str(menu_id))
-        log('id2tiledata[]=%s' % str(self.id2tiledata))
-
         # get information for the required tileset
         try:
             (name, module_name, new_tile_obj) = self.id2tiledata[menu_id]
@@ -474,25 +477,16 @@ class AppFrame(wx.Frame):
             raise RuntimeError('self.id2tiledata is badly formed:\n%s'
                                % str(self.id2tiledata))
 
-        log('name=%s, module_name=%s, new_tile_obj=%s'
-                % (str(name), str(module_name), str(new_tile_obj)))
-
         if new_tile_obj is None:
             # haven't seen this tileset before, import and instantiate
-            log("importing '%s' from pyslip" % str(module_name))
             obj = __import__('pyslip', globals(), locals(), [module_name])
-            log('imported module=%s' % str(obj))
-            log('imported module=%s' % str(dir(obj)))
             tileset = getattr(obj, module_name)
-            log('tileset=%s' % str(tileset))
             tile_name = tileset.TilesetName
-            log('tile_name=%s' % str(tile_name))
             new_tile_obj = tileset.Tiles()
 
             # update the self.id2tiledata element
             self.id2tiledata[menu_id] = (name, module_name, new_tile_obj)
 
-        log('Before .ChangeTileset, new_tile_obj=%s' % str(new_tile_obj))
         self.pyslip.ChangeTileset(new_tile_obj)
 
     def onClose(self):
@@ -821,26 +815,12 @@ class AppFrame(wx.Frame):
         EventBoxSelect events.
         """
 
-        log('Doing pointSelect: event.selection=%s, self.sel_point=%s' % (str(event.selection), str(self.sel_point)))
-        log('Doing pointSelect: event.button=%d' % event.button)
-        log('pyslip.MouseLeft=%d, pyslip.MouseMiddle=%d, pyslip.MouseRight=%d'
-                % (pyslip.MouseLeft, pyslip.MouseMiddle, pyslip.MouseRight))
-
         if event.selection == self.sel_point:
-            log('Have a point event.selection')
-            if event.button == pyslip.MouseLeft:
-                # LEFT button, same point(s) selected again, turn point(s) off
-                self.pyslip.DeleteLayer(self.sel_point_layer)
-                self.sel_point_layer = None
-                self.sel_point = None
-            elif event.button == pyslip.MouseRight:
-                # RIGHT button, do a context popup
-                log('Doing context popup')
-                pySlipPopup(self, None, "Test text")
-
+            # already have point selected, deselect it
+            self.pyslip.DeleteLayer(self.sel_point_layer)
+            self.sel_point_layer = None
+            self.sel_point = None
         elif event.selection:
-            # only allow the LEFT mouse button
-            log('Have a BOX event.selection')
             if event.button == pyslip.MouseLeft:
                 # some other point(s) selected, delete previous selection, if any
                 if self.sel_point_layer:
@@ -873,6 +853,11 @@ class AppFrame(wx.Frame):
                 # make sure highlight layer is BELOW selected layer
                 self.pyslip.PlaceLayerBelowLayer(self.sel_point_layer,
                                                  self.point_layer)
+            elif event.button == pyslip.MouseRight:
+                # RIGHT button, do a context popup, only a single point selected
+                msg = ('Point at GEO coords (%.2f, %.2f)'
+                        % (event.selection[0][0], event.selection[0][1]))
+                self.show_popup(msg, event.vposn)
         # else: we ignore an empty selection
 
         return True
@@ -2143,6 +2128,42 @@ class AppFrame(wx.Frame):
         """Remove handler for select in layer 'id'."""
 
         del self.demo_select_dispatch[id]
+
+    ######
+    # Popup a small window with some text.
+    ######
+
+    def show_popup(self, text, posn):
+        """Display a popup with some text.
+        
+        text  the text to display
+        posn  position (x, y) of the top-left corner of the popup, view coords
+
+        Tries to always draw the popup fully on the widget.
+        """
+
+        # create popup window, get size
+        win = DemoPopup(self.GetTopLevelParent(), wx.SIMPLE_BORDER, text)
+        (win_width, win_height) = win.GetSize()
+
+        # get pySlip widget size and app position on screen
+        (pyslip_width, pyslip_height) = self.pyslip.GetSize()
+        screen_posn = self.ClientToScreen((0, 0))
+
+        # adjust the popup position so it's always on the pySlip widget
+        x_adjust = posn.x - win_width       # assume popup displays left
+        y_adjust = posn.y - win_height//2   # assume popup displays up
+
+        if posn.x < pyslip_width//2:
+            # click in left half of widget, popup goes to right
+            x_adjust = posn.x
+        if posn.y < pyslip_height//2:
+            # click in top half of widget, popup goes down
+            y_adjust = posn.y + win_height//2
+
+        # move popup to fibnal position and show it
+        win.Position(screen_posn, (x_adjust, y_adjust))
+        win.Show(True)
 
 ###############################################################################
 # Main code

@@ -2144,6 +2144,9 @@ class AppFrame(wx.Frame):
         Tries to always draw the popup fully on the widget.
         """
 
+        # add hint about dismissinng the popup
+        text += '\n\n(Right click in popup to dismiss)'
+
         # create popup window, get size
         win = DemoPopup(self.GetTopLevelParent(), wx.SIMPLE_BORDER, text)
         (win_width, win_height) = win.GetSize()

@@ -53,7 +53,7 @@ TilesDir = 'stamen_transport_tiles'
 class Tiles(tiles_net.Tiles):
     """An object to source internet tiles for pySlip."""
 
-    def __init__(self, tiles_dir=TilesDir ,http_proxy=None):
+    def __init__(self, tiles_dir=TilesDir):
         """Override the base class for these tiles.
 
         Basically, just fill in the BaseTiles class with values from above
@@ -63,8 +63,7 @@ class Tiles(tiles_net.Tiles):
         super().__init__(TileLevels, TileWidth, TileHeight,
                          servers=TileServers, url_path=TileURLPath,
                          max_server_requests=MaxServerRequests,
-                         max_lru=MaxLRU, tiles_dir=tiles_dir,
-                         http_proxy=http_proxy)
+                         max_lru=MaxLRU, tiles_dir=tiles_dir)
 
     def Geo2Tile(self, geo):
         """Convert geo to tile fractional coordinates for level in use.

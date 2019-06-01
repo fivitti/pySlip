@@ -220,11 +220,11 @@ _myEVT_PYSLIP_RIGHTSELECT = wx.NewEventType()
 EVT_PYSLIP_RIGHTSELECT = wx.PyEventBinder(_myEVT_PYSLIP_RIGHTSELECT, 1)
 
 
-class _PySlipEvent(wx.PyCommandEvent):
+class _pySlipEvent(wx.PyCommandEvent):
     """Event sent from the pySlip widget."""
 
     def __init__(self, eventType, id):
-        """Construct a PySlip event.
+        """Construct a pySlip event.
 
         eventType  type of event
         id         unique event number
@@ -238,7 +238,7 @@ class _PySlipEvent(wx.PyCommandEvent):
 # The wxPython pySlip widget proper
 ###############################################################################
 
-class PySlip(_BufferedCanvas):
+class pySlip(_BufferedCanvas):
     """A widget to display a tiled map, à la Google maps."""
 
     # list of valid placement values
@@ -355,7 +355,7 @@ class PySlip(_BufferedCanvas):
 
         # create and initialise the base panel
         super().__init__(parent=parent, **kwargs)
-        self.SetBackgroundColour(PySlip.BackgroundColour)
+        self.SetBackgroundColour(pySlip.BackgroundColour)
 
         # initialize all state variables to a 'vanilla' state
         self.change_level_event = True          # True if we send event on level change
@@ -2754,7 +2754,7 @@ class PySlip(_BufferedCanvas):
         """Raise a LEVEL event."""
 
         if self.change_level_event:
-            event = _PySlipEvent(_myEVT_PYSLIP_LEVEL, self.GetId())
+            event = _pySlipEvent(_myEVT_PYSLIP_LEVEL, self.GetId())
 
             event.type = EventLevel
             event.level = level
@@ -2783,7 +2783,7 @@ class PySlip(_BufferedCanvas):
         """
 
         # create event, assume off map
-        event = _PySlipEvent(_myEVT_PYSLIP_POSITION, self.GetId())
+        event = _pySlipEvent(_myEVT_PYSLIP_POSITION, self.GetId())
         event.type = EventPosition
         event.mposn = None
         event.vposn = vposn
@@ -2819,7 +2819,7 @@ class PySlip(_BufferedCanvas):
         mouse click positions.
         """
 
-        event = _PySlipEvent(_myEVT_PYSLIP_SELECT, self.GetId())
+        event = _pySlipEvent(_myEVT_PYSLIP_SELECT, self.GetId())
 
         event.type = EventSelect
         event.mposn = mposn
@@ -2847,7 +2847,7 @@ class PySlip(_BufferedCanvas):
         event.layer_id, .selection and .data are None.
         """
 
-        event = _PySlipEvent(_myEVT_PYSLIP_BOXSELECT, self.GetId())
+        event = _pySlipEvent(_myEVT_PYSLIP_BOXSELECT, self.GetId())
 
         event.type = EventBoxSelect
         event.layer_id = layer.id
@@ -2875,7 +2875,7 @@ class PySlip(_BufferedCanvas):
         data       a list of polygon data objects
         """
 
-        event = _PySlipEvent(_myEVT_PYSLIP_POLYSELECT, self.GetId())
+        event = _pySlipEvent(_myEVT_PYSLIP_POLYSELECT, self.GetId())
 
         event.type = EventPolySelect
         event.mposn = mposn
@@ -2894,7 +2894,7 @@ class PySlip(_BufferedCanvas):
         data       a list of polygon data objects
         """
 
-        event = _PySlipEvent(_myEVT_PYSLIP_POLYBOXSELECT, self.GetId())
+        event = _pySlipEvent(_myEVT_PYSLIP_POLYBOXSELECT, self.GetId())
 
         event.type = EventPolyBoxSelect
         event.layer_id = layer.id

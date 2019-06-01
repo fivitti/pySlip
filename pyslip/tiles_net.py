@@ -5,6 +5,7 @@ All server tile sources should inherit from this class.
 For example, see open_street_map.py.
 """
 
+import sys
 import os
 import io
 import time
@@ -127,7 +128,7 @@ class Tiles(tiles.BaseTiles):
     SecondsInADay = 60 * 60 * 24
 
     def __init__(self, levels, tile_width, tile_height, tiles_dir, max_lru,
-                 servers, url_path, max_server_requests, http_proxy,
+                 servers, url_path, max_server_requests,
                  refetch_days=RefreshTilesAfterDays):
         """Initialise a Tiles instance.
 
@@ -139,7 +140,6 @@ class Tiles(tiles.BaseTiles):
         servers              list of tile servers
         url_path             path on server to each tile
         max_server_requests  maximum number of requests per server
-        http_proxy           proxy to use if required
         refetch_days         fetch new server tile if older than this in days
                              (0 means don't ever update tiles)
         """
@@ -158,7 +158,6 @@ class Tiles(tiles.BaseTiles):
         self.servers = servers
         self.url_path = url_path
         self.max_requests = max_server_requests
-        self.http_proxy = http_proxy
 
         # callback must be set by higher-level copde
         self.callback = None
@@ -201,12 +200,12 @@ class Tiles(tiles.BaseTiles):
         self.error_tile_image = std.getErrorImage()
         self.error_tile = self.error_tile_image.ConvertToBitmap()
 
-        # test for firewall - use proxy (if supplied)
+        # test the tile server, get tile at (0, 0, 0)
         test_url = self.servers[0] + self.url_path.format(Z=0, X=0, Y=0)
         try:
             request.urlopen(test_url)
         except urllib.error.HTTPError as e:
-            # if it's fatal, log it and die, otherwise try a proxy
+            # if it's fatal, log it and die
             status_code = e.code
             log('Error: test_url=%s, status_code=%s'
                     % (test_url, str(status_code)))
@@ -220,21 +219,7 @@ class Tiles(tiles.BaseTiles):
             log('%s exception doing simple connection to: %s'
                     % (type(e).__name__, test_url))
             log(''.join(traceback.format_exc()))
-
-            if http_proxy:
-                proxy = request.ProxyHandler({'http': http_proxy})
-                opener = request.build_opener(proxy)
-                request.install_opener(opener)
-                try:
-                    request.urlopen(test_url)
-                except:
-                    msg = ("Using HTTP proxy %s, "
-                           "but still can't get through a firewall!")
-                    raise Exception(msg) from None
-            else:
-                msg = ("There is a firewall but you didn't "
-                       "give me an HTTP proxy to get through it?")
-                raise Exception(msg) from None
+            raise RuntimeError from None
 
         # set up the request queue and worker threads
         self.request_queue = queue.Queue()  # entries are (level, x, y)

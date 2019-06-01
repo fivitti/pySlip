@@ -62,7 +62,7 @@ if platform.python_version_tuple()[0] != '3':
 # mouse buttons making a select
 (MouseLeft, MouseMiddle, MouseRight) = range(3)
 
-# diiferent cursors for different states
+# diferent cursors for different states
 DefaultCursor = wx.CURSOR_DEFAULT
 BoxSelectCursor = wx.CURSOR_CROSS
 
@@ -214,10 +214,6 @@ EVT_PYSLIP_POLYSELECT = wx.PyEventBinder(_myEVT_PYSLIP_POLYSELECT, 1)
 # polygon box-select
 _myEVT_PYSLIP_POLYBOXSELECT = wx.NewEventType()
 EVT_PYSLIP_POLYBOXSELECT = wx.PyEventBinder(_myEVT_PYSLIP_POLYBOXSELECT, 1)
-
-# point RIGHT select
-_myEVT_PYSLIP_RIGHTSELECT = wx.NewEventType()
-EVT_PYSLIP_RIGHTSELECT = wx.PyEventBinder(_myEVT_PYSLIP_RIGHTSELECT, 1)
 
 
 class _pySlipEvent(wx.PyCommandEvent):

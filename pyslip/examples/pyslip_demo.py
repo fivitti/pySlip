@@ -2093,7 +2093,7 @@ class AppFrame(wx.Frame):
 
         # set initial view position
         self.map_level.SetLabel('%d' % InitViewLevel)
-        wx.CallAfter(self.final_setup, InitViewLevel, InitViewPosition)
+        wx.CallLater(25, self.final_setup, InitViewLevel, InitViewPosition)
 
     def final_setup(self, level, position):
         """Perform final setup.
@@ -2101,7 +2101,7 @@ class AppFrame(wx.Frame):
         level     zoom level required
         position  position to be in centre of view
 
-        We do this in a CallAfter() function for those operations that
+        We do this in a CallLater() function for those operations that
         must not be done while the GUI is "fluid".
         """
 
@@ -2144,7 +2144,7 @@ class AppFrame(wx.Frame):
         Tries to always draw the popup fully on the widget.
         """
 
-        # add hint about dismissinng the popup
+        # add hint about dismissing the popup
         text += '\n\n(Right click in popup to dismiss)'
 
         # create popup window, get size

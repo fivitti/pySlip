@@ -2028,7 +2028,33 @@ class pySlip(_BufferedCanvas):
     def OnMiddleUp(self, event):
         """Middle mouse button up.  Do nothing in this version."""
 
-        pass
+        # flag, True if we need to update the screen
+        delayed_paint = False
+
+        # possible point selection, get click point in view coords
+        clickpt_v = event.GetPosition()
+
+        # get click point in geo coords
+        clickpt_g = self.View2Geo(clickpt_v)
+
+        # check each layer for a point select handler
+        # we work on a copy as user code could change order
+        for id in self.layer_z_order[:]:
+            l = self.layer_mapping[id]
+            # if layer visible and selectable
+            if l.selectable and l.visible:
+                if l.map_rel:
+                    sel = self.layerPSelHandler[l.type](l, clickpt_g)
+                else:
+                    sel = self.layerPSelHandler[l.type](l, clickpt_v)
+                self.RaiseEventSelect(mposn=clickpt_g, vposn=clickpt_v,
+                                      layer=l, selection=sel, button=MouseMiddle)
+                # user code possibly updated screen
+                delayed_paint = True
+
+        # force PAINT event if required
+        if delayed_paint:
+            self.Update()
 
     def OnRightDown(self, event):
         """Right mouse button down. Do nothing in this version."""

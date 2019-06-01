@@ -816,7 +816,7 @@ class AppFrame(wx.Frame):
         """
 
         if event.selection == self.sel_point:
-            # already have point selected, deselect it
+            # already have point selected, just deselect it
             self.pyslip.DeleteLayer(self.sel_point_layer)
             self.sel_point_layer = None
             self.sel_point = None
@@ -853,6 +853,9 @@ class AppFrame(wx.Frame):
                 # make sure highlight layer is BELOW selected layer
                 self.pyslip.PlaceLayerBelowLayer(self.sel_point_layer,
                                                  self.point_layer)
+            elif event.button == pyslip.MouseMiddle:
+                log('SELECT event using middle mouse button at GEO coords (%.2f, %.2f)'
+                        % (event.selection[0][0], event.selection[0][1]))
             elif event.button == pyslip.MouseRight:
                 # RIGHT button, do a context popup, only a single point selected
                 msg = ('Point at GEO coords (%.2f, %.2f)'
@@ -1829,11 +1832,10 @@ class AppFrame(wx.Frame):
         event.relsel     relative selection point inside a single selected image (or [] if no selection)
         event.button     one of pyslip.MopuseLeft, pyslip.MouseMiddle or pyslip.MouseRight
 
-        Just look at 'event.type' to decide what handler to call and pass
+        Just look at 'event.layer_id' to decide what handler to call and pass
         'event' through to the handler.
         """
 
-#        self.dump_event('select_event: event:', event)
         self.demo_select_dispatch.get(event.layer_id, self.null_handler)(event)
 
     ######

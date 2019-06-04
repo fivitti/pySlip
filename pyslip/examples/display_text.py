@@ -30,32 +30,42 @@ Methods:
 
 import wx
 from appstaticbox import AppStaticBox
+from rotextctrl import ROTextCtrl
 
-class DisplayText(wx.Frame):
+class DisplayText(wx.Panel):
 
     # some subwidget sizes
     LabelWidth = 30
 
 
-    def __init__(self, title, label, tooltip=None, text_width=None):
-        super().__init__()
+    def __init__(self, parent, title, label, tooltip=None, text_width=None):
+        super().__init__(parent)
+
+        print('DisplayText class: point 1', flush=True)
 
         # handle any text width request
         size = (text_width, -1)
         if text_width is None:
             size = (DisplayText.LabelWidth, -1)
 
+        print('DisplayText class: point 2', flush=True)
+
         # create objects
         self.txt = wx.StaticText(self, wx.ID_ANY, label)
+        print('DisplayText class: point 2.5', flush=True)
         self.map_level = ROTextCtrl(self, '', size=size, tooltip=tooltip)
+
+        print('DisplayText class: point 3', flush=True)
 
         # lay out the controls
         sb = AppStaticBox(self, title)
         box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
-        box.Add(self.txt, border=PackBorder, flag=(wx.ALIGN_CENTER_VERTICAL
-                                              |wx.ALIGN_RIGHT|wx.LEFT))
+#        box.Add(self.txt, border=PackBorder, flag=(wx.ALIGN_CENTER_VERTICAL
+#                                              |wx.ALIGN_RIGHT|wx.LEFT))
         box.Add(self.map_level, proportion=0, border=PackBorder,
                 flag=wx.LEFT|wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL)
+
+        print('DisplayText class: point 9', flush=True)
 
     def set_text(self, text):
         """Set the text of the display field.

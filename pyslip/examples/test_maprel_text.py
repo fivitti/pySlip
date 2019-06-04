@@ -56,7 +56,7 @@ class TestFrame(wx.Frame):
         # build the GUI
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(box)
-        self.pyslip = pyslip.PySlip(self.panel, tile_src=self.tile_src)
+        self.pyslip = pyslip.pySlip(self.panel, tile_src=self.tile_src)
         box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
         self.panel.SetSizerAndFit(box)
         self.panel.Layout()
@@ -70,41 +70,19 @@ class TestFrame(wx.Frame):
                                                    offset_x=5, offset_y=1)
 
         # set initial view position
-        self.pyslip.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
+        wx.CallLater(25, self.final_setup, InitViewLevel, InitViewPosition)
 
-#####
-# Build the GUI
-#####
+    def final_setup(self, level, position):
+        """Perform final setup.
 
-    def make_gui(self, parent):
-        """Create application GUI."""
+        level     zoom level required
+        position  position to be in centre of view
 
-        # start application layout
-        all_display = wx.BoxSizer(wx.HORIZONTAL)
-        parent.SetSizer(all_display)
-        self.pyslip = pyslip.PySlip(parent, tile_src=self.tile_src,
-                                    min_level=MinTileLevel)
-        all_display.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
-        parent.SetSizerAndFit(all_display)
-
-    def make_gui_view(self, parent):
-        """Build the map view widget
-
-        parent  reference to the widget parent
-
-        Returns the static box sizer.
+        We do this in a CallLater() function for those operations that
+        must not be done while the GUI is "fluid".
         """
 
-        # create gui objects
-        sb = AppStaticBox(parent, '')
-        self.pyslip = pyslip.PySlip(parent, tile_src=self.tile_src,
-                                    min_level=MinTileLevel)
-
-        # lay out objects
-        box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
-        box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
-
-        return box
+        self.pyslip.GotoLevelAndPosition(level, position)
 
 ################################################################################
 

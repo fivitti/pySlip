@@ -59,16 +59,16 @@ class TestFrame(wx.Frame):
         box = wx.BoxSizer(wx.VERTICAL)
         gsz = wx.GridSizer(rows=2, cols=2, vgap=5, hgap=5)
 
-        self.pyslip1 = pyslip.PySlip(self.panel, tile_src=gmt_tile_src_1)
+        self.pyslip1 = pyslip.pySlip(self.panel, tile_src=gmt_tile_src_1)
         gsz.Add(self.pyslip1, flag=wx.ALL|wx.EXPAND)
 
-        self.pyslip2 = pyslip.PySlip(self.panel, tile_src=osm_tile_src_1)
+        self.pyslip2 = pyslip.pySlip(self.panel, tile_src=osm_tile_src_1)
         gsz.Add(self.pyslip2, flag=wx.ALL|wx.EXPAND)
 
-        self.pyslip3 = pyslip.PySlip(self.panel, tile_src=osm_tile_src_2)
+        self.pyslip3 = pyslip.pySlip(self.panel, tile_src=osm_tile_src_2)
         gsz.Add(self.pyslip3, flag=wx.ALL|wx.EXPAND)
 
-        self.pyslip4 = pyslip.PySlip(self.panel, tile_src=gmt_tile_src_2)
+        self.pyslip4 = pyslip.pySlip(self.panel, tile_src=gmt_tile_src_2)
         gsz.Add(self.pyslip4, flag=wx.ALL|wx.EXPAND)
 
         box.Add(gsz, proportion=1, flag=wx.ALL|wx.EXPAND)

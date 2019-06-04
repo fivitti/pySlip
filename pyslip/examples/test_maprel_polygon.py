@@ -67,15 +67,10 @@ class TestFrame(wx.Frame):
         # build the GUI
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(box)
-        self.pyslip = pyslip.PySlip(self.panel, tile_src=self.tile_src)
+        self.pyslip = pyslip.pySlip(self.panel, tile_src=self.tile_src)
         box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
         self.panel.SetSizerAndFit(box)
         self.panel.Layout()
-        self.Centre()
-        self.Show(True)
-
-        # set initial view position
-        self.pyslip.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
 
         # add test text layer
         self.poly_layer = self.pyslip.AddPolygonLayer(PolyMapData,
@@ -84,6 +79,23 @@ class TestFrame(wx.Frame):
                                                       size=DefaultAppSize)
         self.text_layer = self.pyslip.AddTextLayer(TextMapData, map_rel=True,
                                                    name='<text_map_layer>')
+
+        # set initial view position
+        self.Centre()
+        self.Show(True)
+        wx.CallLater(25, self.final_setup, InitViewLevel, InitViewPosition)
+
+    def final_setup(self, level, position):
+        """Perform final setup.
+
+        level     zoom level required
+        position  position to be in centre of view
+
+        We do this in a CallLater() function for those operations that
+        must not be done while the GUI is "fluid".
+        """
+
+        self.pyslip.GotoLevelAndPosition(level, position)
 
 ################################################################################
 

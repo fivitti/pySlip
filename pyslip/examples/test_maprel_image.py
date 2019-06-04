@@ -14,12 +14,12 @@ import pyslip
 # Various constants
 ######
 
-DemoWidth = 600
-DemoWidth = 400
+DemoWidth = 1000
+DemoWidth = 800
 DefaultAppSize = (DemoWidth, DemoWidth)
 
 MinTileLevel = 0
-InitViewLevel = 2
+InitViewLevel = 4
 InitViewPosition = (158.0, -20.0)
 
 arrow = 'graphics/arrow_right.png'
@@ -57,15 +57,12 @@ class TestFrame(wx.Frame):
         # build the GUI
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(box)
-        self.pyslip = pyslip.PySlip(self.panel, tile_src=self.tile_src)
+        self.pyslip = pyslip.pySlip(self.panel, tile_src=self.tile_src)
         box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
         self.panel.SetSizerAndFit(box)
         self.panel.Layout()
         self.Centre()
         self.Show(True)
-
-        # set initial view position
-        self.pyslip.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
 
         # add test layers
         self.poly_layer = self.pyslip.AddPolygonLayer(PolygonMapData)
@@ -73,6 +70,21 @@ class TestFrame(wx.Frame):
                                                      map_rel=True,
                                                      placement='ce',
                                                      name='<image_map_layer>')
+
+        # set initial view position
+        wx.CallLater(25, self.final_setup, InitViewLevel, InitViewPosition)
+
+    def final_setup(self, level, position):
+        """Perform final setup.
+
+        level     zoom level required
+        position  position to be in centre of view
+
+        We do this in a CallLater() function for those operations that
+        must not be done while the GUI is "fluid".
+        """
+
+        self.pyslip.GotoLevelAndPosition(level, position)
 
 ################################################################################
 

@@ -36,8 +36,8 @@ InitViewLevel = 3
 InitViewPosition = (0.0, 0.0)
 
 # startup size of the application
-DemoWidth = 800
-DemoHeight = 600
+DemoWidth = 1000
+DemoHeight = 800
 DefaultAppSize = (DemoWidth, DemoHeight)
 
 # the number of decimal places in a lon/lat display
@@ -117,7 +117,19 @@ class AppFrame(wx.Frame):
         self.pyslip.Bind(pyslip.EVT_PYSLIP_LEVEL, self.handle_level_change)
 
         # finally, goto desired level and position
-        self.pyslip.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
+        wx.CallLater(25, self.final_setup, InitViewLevel, InitViewPosition)
+
+    def final_setup(self, level, position):
+        """Perform final setup.
+
+        level     zoom level required
+        position  position to be in centre of view
+
+        We do this in a CallAfter() function for those operations that
+        must not be done while the GUI is "fluid".
+        """
+
+        self.pyslip.GotoLevelAndPosition(level, position)
 
 #####
 # Build the GUI
@@ -155,7 +167,7 @@ class AppFrame(wx.Frame):
         # create gui objects
         sb = AppStaticBox(parent, '')
 #        tile_object = tiles.Tiles(self.tile_directory)
-        self.pyslip = pyslip.PySlip(parent, tile_src=self.tile_source)
+        self.pyslip = pyslip.pySlip(parent, tile_src=self.tile_source)
 
         # lay out objects
         box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)

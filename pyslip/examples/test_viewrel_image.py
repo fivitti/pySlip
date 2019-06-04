@@ -13,12 +13,12 @@ import pyslip
 # Various demo constants
 ######
 
-DemoWidth = 600
-DemoHeight = 400
+DemoWidth = 1000
+DemoHeight = 600
 DefaultAppSize = (DemoWidth, DemoHeight)
 
 MinTileLevel = 0
-InitViewLevel = 2
+InitViewLevel = 3
 InitViewPosition = (133.87, -23.7)      # Alice Springs
 
 arrow_cw = 'graphics/arrow_left.png'
@@ -60,19 +60,31 @@ class TestFrame(wx.Frame):
 
         # build the GUI
         box = wx.BoxSizer(wx.VERTICAL)
-        self.pyslip = pyslip.PySlip(self.panel, tile_src=self.tile_src)
+        self.pyslip = pyslip.pySlip(self.panel, tile_src=self.tile_src)
         box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
         self.panel.SetSizer(box)
         self.panel.Layout()
         self.Centre()
         self.Show(True)
 
-        # set initial view position and add test layer(s)
-        self.pyslip.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
+        # add test layer(s) and set initial view position
         self.text_layer = self.pyslip.AddImageLayer(ImageViewData,
                                                     map_rel=False,
                                                     name='<image_view_layer>',
                                                     offset_x=0, offset_y=0)
+        wx.CallLater(25, self.final_setup, InitViewLevel, InitViewPosition)
+
+    def final_setup(self, level, position):
+        """Perform final setup.
+
+        level     zoom level required
+        position  position to be in centre of view
+
+        We do this in a CallLater() function for those operations that
+        must not be done while the GUI is "fluid".
+        """
+
+        self.pyslip.GotoLevelAndPosition(level, position)
 
 ################################################################################
 

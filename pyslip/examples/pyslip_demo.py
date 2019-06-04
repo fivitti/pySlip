@@ -282,14 +282,8 @@ class AppFrame(wx.Frame):
         # do initialisation stuff - all the application stuff
         self.initData()
 
-        # finally, set up application window position
-        self.Centre()
-
         # create tileset menuitems
         self.initMenu()
-
-        # do initialisation stuff - all the application stuff
-        self.initData()
 
         # create select event dispatch directory
         self.demo_select_dispatch = {}
@@ -307,13 +301,11 @@ class AppFrame(wx.Frame):
         self.pyslip.Bind(pyslip.EVT_PYSLIP_BOXSELECT, self.select_event)
 
         # set the size of the demo window, etc
-#        self.setGeometry(300, 300, DemoWidth, DemoHeight)
-#        self.setWindowTitle('%s %s' % (DemoName, DemoVersion))
         self.Centre()
         self.Show()
 
         # set initial view position
-        self.pyslip.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
+        wx.CallLater(25, self.final_setup, InitViewLevel, InitViewPosition)
 
     def onTilesetSelect(self, event):
         """User selected a tileset from the menu.

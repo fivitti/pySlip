@@ -13,7 +13,6 @@ import pyslip
 from appstaticbox import AppStaticBox
 import pyslip.tkinter_error as tkinter_error
 import pyslip.log
-print(f'dir(pyslip.log)={dir(pyslip.log)}')
 log = pyslip.log('pyslip.log')
 
 
@@ -387,7 +386,7 @@ class AppFrame(wx.Frame):
 
         # create gui objects
         sb = AppStaticBox(parent, '')
-        self.pyslip = pyslip.PySlip(parent, tile_src=self.tile_source)
+        self.pyslip = pyslip.pySlip(parent, tile_src=self.tile_source)
 
         # lay out objects
         box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)

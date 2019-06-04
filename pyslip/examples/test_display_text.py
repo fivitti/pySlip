@@ -25,9 +25,11 @@ class TestFrame(wx.Frame):
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.panel.SetBackgroundColour(wx.WHITE)
         self.panel.ClearBackground()
+        print('After setup, just before DisplayText()', flush=True)
 
         # create the text DisplayText widget
-        DisplayText('title', 'label')
+        DisplayText(self.panel, 'title', 'label')
+        print('After DisplayText()')
 
         # build the GUI
         box = wx.BoxSizer(wx.HORIZONTAL)
@@ -36,7 +38,9 @@ class TestFrame(wx.Frame):
         box.Add(self.dt, proportion=1, border=1, flag=wx.EXPAND)
         self.panel.SetSizerAndFit(box)
         self.panel.Layout()
+        print('Just before Centre()')
         self.Centre()
+        print('Just before Show()')
         self.Show(True)
 
 ################################################################################
@@ -89,7 +93,11 @@ if __name__ == '__main__':
         usage('Bad tile source: %s' % tile_source)
         sys.exit(3)
 
+    print('Starting the wxPython code')
+
     # start wxPython app
     app = wx.App()
+    print('Just before TestFrame().Show()')
     TestFrame().Show()
+    print('Just before app.MainLoop()')
     app.MainLoop()

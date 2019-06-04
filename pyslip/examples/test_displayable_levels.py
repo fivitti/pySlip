@@ -60,12 +60,25 @@ class TestFrame(wx.Frame):
         self.Show(True)
 
         # set initial view position
-        self.pyslip.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
+        wx.CallLater(25, self.final_setup, InitViewLevel, InitViewPosition)
+
 
         # bind the pySlip widget to the "zoom undo" method
         self.pyslip.Bind(pyslip.EVT_PYSLIP_LEVEL, self.onZoom)
 
-    def onZoom(self, event):
+    def final_setup(self, level, position):
+        """Perform final setup.
+
+        level     zoom level required
+        position  position to be in centre of view
+
+        We do this in a CallAfter() function for those operations that
+        must not be done while the GUI is "fluid".
+        """
+
+        self.pyslip.GotoLevelAndPosition(level, position)
+
+    eef onZoom(self, event):
         """Catch and undo a zoom.
 
         Simulate the amount of work a user handler might do before deciding to

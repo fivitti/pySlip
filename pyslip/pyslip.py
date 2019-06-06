@@ -57,7 +57,7 @@ if platform.python_version_tuple()[0] != '3':
 
 # type of SELECT events
 (EventLevel, EventPosition, EventSelect, EventBoxSelect,
-    EventPolySelect, EventPolyBoxSelect, EventRightSelect) = range(7)
+    EventPolySelect, EventPolyBoxSelect) = range(6)
 
 # mouse buttons making a select
 (MouseLeft, MouseMiddle, MouseRight) = range(3)
@@ -2079,6 +2079,7 @@ class pySlip(_BufferedCanvas):
                     sel = self.layerPSelHandler[l.type](l, clickpt_g)
                 else:
                     sel = self.layerPSelHandler[l.type](l, clickpt_v)
+                log('Raising EventSelect at clickpt_v=%s' % str(clickpt_v))
                 self.RaiseEventSelect(mposn=clickpt_g, vposn=clickpt_v,
                                       layer=l, selection=sel, button=MouseRight)
                 # user code possibly updated screen

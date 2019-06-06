@@ -78,7 +78,7 @@ class TestFrame(wx.Frame):
 
         self.pyslip.GotoLevelAndPosition(level, position)
 
-    eef onZoom(self, event):
+    def onZoom(self, event):
         """Catch and undo a zoom.
 
         Simulate the amount of work a user handler might do before deciding to

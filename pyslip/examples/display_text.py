@@ -30,7 +30,29 @@ Methods:
 
 import wx
 from appstaticbox import AppStaticBox
-from rotextctrl import ROTextCtrl
+#from rotextctrl import ROTextCtrl
+
+###############################################################################
+# Override the wx.TextCtrl class to add read-only style and background colour
+###############################################################################
+
+# background colour for the 'read-only' text field
+ControlReadonlyColour = '#ffffcc'
+
+class ROTextCtrl(wx.TextCtrl):
+    """Override the wx.TextCtrl widget to get read-only text control which
+    has a distinctive background colour."""
+
+    def __init__(self, parent, value, tooltip='', *args, **kwargs):
+        wx.TextCtrl.__init__(self, parent, wx.ID_ANY, value=value,
+                             style=wx.TE_READONLY, *args, **kwargs)
+        self.SetBackgroundColour(ControlReadonlyColour)
+#        self.SetToolTip(wx.ToolTip(tooltip))
+        self.SetToolTip(tooltip)
+
+###############################################################################
+# Define the custom widget.
+###############################################################################
 
 class DisplayText(wx.Panel):
 
@@ -60,9 +82,9 @@ class DisplayText(wx.Panel):
         # lay out the controls
         sb = AppStaticBox(self, title)
         box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
-#        box.Add(self.txt, border=PackBorder, flag=(wx.ALIGN_CENTER_VERTICAL
-#                                              |wx.ALIGN_RIGHT|wx.LEFT))
-        box.Add(self.map_level, proportion=0, border=PackBorder,
+#        box.Add(self.map_level, proportion=0, border=PackBorder,
+#                flag=wx.LEFT|wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL)
+        box.Add(self.map_level, proportion=0,
                 flag=wx.LEFT|wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL)
 
         print('DisplayText class: point 9', flush=True)

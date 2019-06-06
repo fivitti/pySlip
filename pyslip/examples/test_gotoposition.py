@@ -16,6 +16,7 @@ import pyslip
 import pyslip.stamen_watercolor as tiles
 import pyslip.log as log
 from appstaticbox import AppStaticBox
+from rotextctrl import ROTextCtrl
 try:
     log = log.Log('pyslip.log')
 except AttributeError:
@@ -69,23 +70,6 @@ VSpacerSize = 5             # vertical in control pane
 # border width when packing GUI elements
 PackBorder = 1
 
-
-################################################################################
-# Override the wx.TextCtrl class to add read-only style and background colour
-################################################################################
-
-# background colour for the 'read-only' text field
-ControlReadonlyColour = '#ffffcc'
-
-class ROTextCtrl(wx.TextCtrl):
-    """Override the wx.TextCtrl widget to get read-only text control which
-    has a distinctive background colour."""
-
-    def __init__(self, parent, value, tooltip='', *args, **kwargs):
-        wx.TextCtrl.__init__(self, parent, wx.ID_ANY, value=value,
-                             style=wx.TE_READONLY, *args, **kwargs)
-        self.SetBackgroundColour(ControlReadonlyColour)
-        self.SetToolTip(wx.ToolTip(tooltip))
 
 ################################################################################
 # The main application frame
@@ -143,8 +127,14 @@ class AppFrame(wx.Frame):
         parent.SetSizer(all_display)
 
         # put map view in left of horizontal box
-        sl_box = self.make_gui_view(parent)
-        all_display.Add(sl_box, proportion=1, border=1, flag=wx.EXPAND)
+        self.pyslip = pyslip.pySlip(parent, tile_src=self.tile_source)
+        all_display.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
+
+#        # lay out objects
+#        box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
+#        box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
+#        sl_box = self.make_gui_view(parent)
+#        all_display.Add(sl_box, proportion=1, border=1, flag=wx.EXPAND)
 
         # small spacer here - separate view and controls
         all_display.AddSpacer(HSpacerSize)

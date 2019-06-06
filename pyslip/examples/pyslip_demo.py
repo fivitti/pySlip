@@ -166,6 +166,9 @@ class DemoPopup(wx.PopupWindow):
     https://stackoverflow.com/questions/23415125/wxpython-popup-window-bound-to-a-wxbutton
     """
 
+    # padding size top/bottom/left/right
+    Padding = 20
+
     def __init__(self, parent, style, text):
         """Constructor"""
         super().__init__(parent, style)
@@ -174,10 +177,11 @@ class DemoPopup(wx.PopupWindow):
         self.panel = panel
         panel.SetBackgroundColour("LIGHT YELLOW")
 
-        st = wx.StaticText(panel, -1, text, pos=(10,10))
+        st = wx.StaticText(panel, -1, text,
+                           pos=(DemoPopup.Padding//2,DemoPopup.Padding//2))
         sz = st.GetBestSize()
-        self.SetSize( (sz.width+20, sz.height+20) )
-        panel.SetSize( (sz.width+20, sz.height+20) )
+        self.SetSize( (sz.width+DemoPopup.Padding, sz.height+DemoPopup.Padding) )
+        panel.SetSize( (sz.width+DemoPopup.Padding, sz.height+DemoPopup.Padding) )
 
         panel.Bind(wx.EVT_LEFT_DOWN, self.OnMouseLeftDown)
         panel.Bind(wx.EVT_MOTION, self.OnMouseMotion)
@@ -849,8 +853,8 @@ class AppFrame(wx.Frame):
                         % (event.selection[0][0], event.selection[0][1]))
             elif event.button == pyslip.MouseRight:
                 # RIGHT button, do a context popup, only a single point selected
-                msg = ('Point at GEO coords (%.2f, %.2f)'
-                        % (event.selection[0][0], event.selection[0][1]))
+                msg = ('Point at GEO coords (%.2f, %.2f), view coords %s'
+                        % (event.selection[0][0], event.selection[0][1], str(event.vposn)))
                 self.show_popup(msg, event.vposn)
         # else: we ignore an empty selection
 
@@ -2135,31 +2139,37 @@ class AppFrame(wx.Frame):
         Tries to always draw the popup fully on the widget.
         """
 
+        log('show_popup: text=%s, posn=%s' % (text, str(posn)))
+
         # add hint about dismissing the popup
-        text += '\n\n(Right click in popup to dismiss)'
+#        text += '\n\n(Right click in popup to dismiss)'
 
         # create popup window, get size
-        win = DemoPopup(self.GetTopLevelParent(), wx.SIMPLE_BORDER, text)
-        (win_width, win_height) = win.GetSize()
+        popup = DemoPopup(self.GetTopLevelParent(), wx.SIMPLE_BORDER, text)
+        (pop_width, pop_height) = popup.GetSize()
+        log('pop_width=%d, pop_height=%d' % (pop_width, pop_height))
 
         # get pySlip widget size and app position on screen
         (pyslip_width, pyslip_height) = self.pyslip.GetSize()
         screen_posn = self.ClientToScreen((0, 0))
+        log('screen_posn=%s' % str(screen_posn))
 
-        # adjust the popup position so it's always on the pySlip widget
-        x_adjust = posn.x - win_width       # assume popup displays left
-        y_adjust = posn.y - win_height//2   # assume popup displays up
+        # assume the popup is displayed in the top-left quarter of the view
+        # we want the top-left popup corner over the click point
+        x_adjusted = posn.x                     # assume popup displays to right
+        y_adjusted = posn.y + DemoPopup.Padding # assume popup displays down
 
-        if posn.x < pyslip_width//2:
-            # click in left half of widget, popup goes to right
-            x_adjust = posn.x
-        if posn.y < pyslip_height//2:
-            # click in top half of widget, popup goes down
-            y_adjust = posn.y + win_height//2
+        if posn.x >= pyslip_width//2:
+            # click in right half of widget, popup goes to the left
+            x_adjusted = posn.x - pop_width
+        if posn.y >= pyslip_height//2:
+            # click in bottom half of widget, popup goes up
+            y_adjusted = posn.y - pop_height + DemoPopup.Padding
 
-        # move popup to fibnal position and show it
-        win.Position(screen_posn, (x_adjust, y_adjust))
-        win.Show(True)
+        # move popup to final position and show it
+        popup.Show(True)
+        log('x_adjusted=%d, y_adjusted=%d' % (x_adjusted, y_adjusted))
+        popup.Position(screen_posn, (x_adjusted, y_adjusted))
 
 ###############################################################################
 # Main code

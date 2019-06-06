@@ -2079,7 +2079,6 @@ class pySlip(_BufferedCanvas):
                     sel = self.layerPSelHandler[l.type](l, clickpt_g)
                 else:
                     sel = self.layerPSelHandler[l.type](l, clickpt_v)
-                log('Raising EventSelect at clickpt_v=%s' % str(clickpt_v))
                 self.RaiseEventSelect(mposn=clickpt_g, vposn=clickpt_v,
                                       layer=l, selection=sel, button=MouseRight)
                 # user code possibly updated screen

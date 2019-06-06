@@ -151,6 +151,10 @@ Tilesets = [
 # index into Tilesets above to set default tileset: GMT tiles
 DefaultTilesetIndex = 1
 
+# some layout constants
+HorizSpacer = 5
+VertSpacer = 5
+
 
 ###############################################################################
 # A small class to popup a moveable window.
@@ -330,8 +334,8 @@ class AppFrame(wx.Frame):
         parent.SetSizer(all_display)
 
         # put map view in left of horizontal box
-        sl_box = self.make_gui_view(parent)
-        all_display.Add(sl_box, proportion=1, flag=wx.EXPAND)
+        self.pyslip = pyslip.pySlip(parent, tile_src=self.tile_source)
+        all_display.Add(self.pyslip, proportion=1, flag=wx.EXPAND)
 
         # add controls at right
         controls = self.make_gui_controls(parent)
@@ -339,82 +343,119 @@ class AppFrame(wx.Frame):
 
         parent.SetSizerAndFit(all_display)
 
-    def make_gui_view(self, parent):
-        """Build the map view widget
-
-        parent  reference to the widget parent
-
-        Returns the static box sizer.
-        """
-
-        # create gui objects
-        sb = AppStaticBox(parent, '', style=wx.NO_BORDER)
-        self.pyslip = pyslip.pySlip(parent, tile_src=self.tile_source)
-
-        # lay out objects
-        box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
-        box.Add(self.pyslip, proportion=1, flag=wx.EXPAND)
-
-        return box
-
     def make_gui_controls(self, parent):
         """Build the 'controls' part of the GUI
 
         parent  reference to parent
 
         Returns reference to containing sizer object.
+
+        Should really use GridBagSizer layout.
         """
 
         # all controls in vertical box sizer
         controls = wx.BoxSizer(wx.VERTICAL)
 
         # put level and position into one 'controls' position
-        l_p = wx.BoxSizer(wx.HORIZONTAL)
+        tmp = wx.BoxSizer(wx.HORIZONTAL)
+        tmp.AddSpacer(HorizSpacer)
         level = self.make_gui_level(parent)
-        l_p.Add(level, proportion=0, flag=wx.EXPAND|wx.ALL)
+        tmp.Add(level, proportion=0, flag=wx.EXPAND|wx.ALL)
+        tmp.AddSpacer(HorizSpacer)
         mouse = self.make_gui_mouse(parent)
-        l_p.Add(mouse, proportion=0, flag=wx.EXPAND|wx.ALL)
-        controls.Add(l_p, proportion=0, flag=wx.EXPAND|wx.ALL)
+        tmp.Add(mouse, proportion=0, flag=wx.EXPAND|wx.ALL)
+        tmp.AddSpacer(HorizSpacer)
+        controls.Add(tmp, proportion=0, flag=wx.EXPAND|wx.ALL)
+        controls.AddSpacer(VertSpacer)
 
         # controls for map-relative points layer
-        self.lc_point = self.make_gui_point(parent)
-        controls.Add(self.lc_point, proportion=0, flag=wx.EXPAND|wx.ALL)
+        tmp = wx.BoxSizer(wx.HORIZONTAL)
+        tmp.AddSpacer(HorizSpacer)
+        lc_point = self.make_gui_point(parent)
+        tmp.Add(lc_point, proportion=1, flag=wx.EXPAND|wx.ALL)
+        tmp.AddSpacer(HorizSpacer)
+        controls.Add(tmp, proportion=0, flag=wx.EXPAND|wx.ALL)
+        controls.AddSpacer(VertSpacer)
 
         # controls for view-relative points layer
-        self.lc_point_v = self.make_gui_point_view(parent)
-        controls.Add(self.lc_point_v, proportion=0, flag=wx.EXPAND|wx.ALL)
+        tmp = wx.BoxSizer(wx.HORIZONTAL)
+        tmp.AddSpacer(HorizSpacer)
+        lc_point_v = self.make_gui_point_view(parent)
+        tmp.Add(lc_point_v, proportion=1, flag=wx.EXPAND|wx.ALL)
+        tmp.AddSpacer(HorizSpacer)
+        controls.Add(tmp, proportion=0, flag=wx.EXPAND|wx.ALL)
+        controls.AddSpacer(VertSpacer)
 
         # controls for map-relative image layer
+        tmp = wx.BoxSizer(wx.HORIZONTAL)
+        tmp.AddSpacer(HorizSpacer)
         image = self.make_gui_image(parent)
-        controls.Add(image, proportion=0, flag=wx.EXPAND|wx.ALL)
+        tmp.Add(image, proportion=1, flag=wx.EXPAND|wx.ALL)
+        tmp.AddSpacer(HorizSpacer)
+        controls.Add(tmp, proportion=0, flag=wx.EXPAND|wx.ALL)
+        controls.AddSpacer(VertSpacer)
 
-        # controls for map-relative image layer
+        # controls for view-relative image layer
+        tmp = wx.BoxSizer(wx.HORIZONTAL)
+        tmp.AddSpacer(HorizSpacer)
         image_view = self.make_gui_image_view(parent)
-        controls.Add(image_view, proportion=0, flag=wx.EXPAND|wx.ALL)
+        tmp.Add(image_view, proportion=1, flag=wx.EXPAND|wx.ALL)
+        tmp.AddSpacer(HorizSpacer)
+        controls.Add(tmp, proportion=0, flag=wx.EXPAND|wx.ALL)
+        controls.AddSpacer(VertSpacer)
 
         # controls for map-relative text layer
-        self.lc_text = self.make_gui_text(parent)
-        controls.Add(self.lc_text, proportion=0, flag=wx.EXPAND|wx.ALL)
+        tmp = wx.BoxSizer(wx.HORIZONTAL)
+        tmp.AddSpacer(HorizSpacer)
+        lc_text = self.make_gui_text(parent)
+        tmp.Add(lc_text, proportion=1, flag=wx.EXPAND|wx.ALL)
+        tmp.AddSpacer(HorizSpacer)
+        controls.Add(tmp, proportion=0, flag=wx.EXPAND|wx.ALL)
+        controls.AddSpacer(VertSpacer)
 
         # controls for view-relative text layer
-        self.lc_text_v = self.make_gui_text_view(parent)
-        controls.Add(self.lc_text_v, proportion=0, flag=wx.EXPAND|wx.ALL)
+        tmp = wx.BoxSizer(wx.HORIZONTAL)
+        tmp.AddSpacer(HorizSpacer)
+        lc_text_v = self.make_gui_text_view(parent)
+        tmp.Add(lc_text_v, proportion=1, flag=wx.EXPAND|wx.ALL)
+        tmp.AddSpacer(HorizSpacer)
+        controls.Add(tmp, proportion=0, flag=wx.EXPAND|wx.ALL)
+        controls.AddSpacer(VertSpacer)
 
         # controls for map-relative polygon layer
-        self.lc_poly = self.make_gui_poly(parent)
-        controls.Add(self.lc_poly, proportion=0, flag=wx.EXPAND|wx.ALL)
+        tmp = wx.BoxSizer(wx.HORIZONTAL)
+        tmp.AddSpacer(HorizSpacer)
+        lc_poly = self.make_gui_poly(parent)
+        tmp.Add(lc_poly, proportion=1, flag=wx.EXPAND|wx.ALL)
+        tmp.AddSpacer(HorizSpacer)
+        controls.Add(tmp, proportion=0, flag=wx.EXPAND|wx.ALL)
+        controls.AddSpacer(VertSpacer)
 
         # controls for view-relative polygon layer
-        self.lc_poly_v = self.make_gui_poly_view(parent)
-        controls.Add(self.lc_poly_v, proportion=0, flag=wx.EXPAND|wx.ALL)
+        tmp = wx.BoxSizer(wx.HORIZONTAL)
+        tmp.AddSpacer(HorizSpacer)
+        lc_poly_v = self.make_gui_poly_view(parent)
+        tmp.Add(lc_poly_v, proportion=1, flag=wx.EXPAND|wx.ALL)
+        tmp.AddSpacer(HorizSpacer)
+        controls.Add(tmp, proportion=0, flag=wx.EXPAND|wx.ALL)
+        controls.AddSpacer(VertSpacer)
 
         # controls for map-relative polyline layer
-        self.lc_poll = self.make_gui_polyline(parent)
-        controls.Add(self.lc_poll, proportion=0, flag=wx.EXPAND|wx.ALL)
+        tmp = wx.BoxSizer(wx.HORIZONTAL)
+        tmp.AddSpacer(HorizSpacer)
+        lc_poll = self.make_gui_polyline(parent)
+        tmp.Add(lc_poll, proportion=1, flag=wx.EXPAND|wx.ALL)
+        tmp.AddSpacer(HorizSpacer)
+        controls.Add(tmp, proportion=0, flag=wx.EXPAND|wx.ALL)
+        controls.AddSpacer(VertSpacer)
 
         # controls for view-relative polyline layer
-        self.lc_poll_v = self.make_gui_polyline_view(parent)
-        controls.Add(self.lc_poll_v, proportion=0, flag=wx.EXPAND|wx.ALL)
+        tmp = wx.BoxSizer(wx.HORIZONTAL)
+        tmp.AddSpacer(HorizSpacer)
+        lc_poll_v = self.make_gui_polyline_view(parent)
+        tmp.Add(lc_poll_v, proportion=1, flag=wx.EXPAND|wx.ALL)
+        tmp.AddSpacer(HorizSpacer)
+        controls.Add(tmp, proportion=0, flag=wx.EXPAND|wx.ALL)
 
         return controls
 
@@ -853,8 +894,8 @@ class AppFrame(wx.Frame):
                         % (event.selection[0][0], event.selection[0][1]))
             elif event.button == pyslip.MouseRight:
                 # RIGHT button, do a context popup, only a single point selected
-                msg = ('Point at GEO coords (%.2f, %.2f), view coords %s'
-                        % (event.selection[0][0], event.selection[0][1], str(event.vposn)))
+                msg = ('Point at GEO coords (%.2f, %.2f)'
+                        % (event.selection[0][0], event.selection[0][1]))
                 self.show_popup(msg, event.vposn)
         # else: we ignore an empty selection
 
@@ -2139,37 +2180,30 @@ class AppFrame(wx.Frame):
         Tries to always draw the popup fully on the widget.
         """
 
-        log('show_popup: text=%s, posn=%s' % (text, str(posn)))
-
-        # add hint about dismissing the popup
-#        text += '\n\n(Right click in popup to dismiss)'
-
         # create popup window, get size
         popup = DemoPopup(self.GetTopLevelParent(), wx.SIMPLE_BORDER, text)
         (pop_width, pop_height) = popup.GetSize()
-        log('pop_width=%d, pop_height=%d' % (pop_width, pop_height))
 
         # get pySlip widget size and app position on screen
         (pyslip_width, pyslip_height) = self.pyslip.GetSize()
         screen_posn = self.ClientToScreen((0, 0))
-        log('screen_posn=%s' % str(screen_posn))
 
         # assume the popup is displayed in the top-left quarter of the view
         # we want the top-left popup corner over the click point
         x_adjusted = posn.x                     # assume popup displays to right
-        y_adjusted = posn.y + DemoPopup.Padding # assume popup displays down
+        y_adjusted = posn.y                     # assume popup displays down
 
         if posn.x >= pyslip_width//2:
             # click in right half of widget, popup goes to the left
             x_adjusted = posn.x - pop_width
         if posn.y >= pyslip_height//2:
             # click in bottom half of widget, popup goes up
-            y_adjusted = posn.y - pop_height + DemoPopup.Padding
+            y_adjusted = posn.y - pop_height
+
+        popup.Position(screen_posn, (x_adjusted, y_adjusted))
 
         # move popup to final position and show it
         popup.Show(True)
-        log('x_adjusted=%d, y_adjusted=%d' % (x_adjusted, y_adjusted))
-        popup.Position(screen_posn, (x_adjusted, y_adjusted))
 
 ###############################################################################
 # Main code

@@ -51,7 +51,6 @@ except AttributeError:
     pass
 
 # get the bits of the demo program we need
-from display_text import DisplayText
 from layer_control import LayerControl, EVT_ONOFF, EVT_SHOWONOFF, EVT_SELECTONOFF
 from appstaticbox import AppStaticBox
 from rotextctrl import ROTextCtrl

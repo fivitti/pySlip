@@ -60,7 +60,8 @@ class TestFrame(wx.Frame):
 
         # build the GUI
         box = wx.BoxSizer(wx.VERTICAL)
-        self.pyslip = pyslip.pySlip(self.panel, tile_src=self.tile_src)
+        self.pyslip = pyslip.pySlip(self.panel, tile_src=self.tile_src,
+                                    style=wx.SIMPLE_BORDER)
         box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
         self.panel.SetSizer(box)
         self.panel.Layout()

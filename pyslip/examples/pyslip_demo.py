@@ -334,7 +334,8 @@ class AppFrame(wx.Frame):
         parent.SetSizer(all_display)
 
         # put map view in left of horizontal box
-        self.pyslip = pyslip.pySlip(parent, tile_src=self.tile_source)
+        self.pyslip = pyslip.pySlip(parent, tile_src=self.tile_source,
+                                    style=wx.SIMPLE_BORDER)
         all_display.Add(self.pyslip, proportion=1, flag=wx.EXPAND)
 
         # add controls at right

@@ -127,14 +127,9 @@ class AppFrame(wx.Frame):
         parent.SetSizer(all_display)
 
         # put map view in left of horizontal box
-        self.pyslip = pyslip.pySlip(parent, tile_src=self.tile_source)
+        self.pyslip = pyslip.pySlip(parent, tile_src=self.tile_source,
+                                    style=wx.SIMPLE_BORDER)
         all_display.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
-
-#        # lay out objects
-#        box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
-#        box.Add(self.pyslip, proportion=1, border=1, flag=wx.EXPAND)
-#        sl_box = self.make_gui_view(parent)
-#        all_display.Add(sl_box, proportion=1, border=1, flag=wx.EXPAND)
 
         # small spacer here - separate view and controls
         all_display.AddSpacer(HSpacerSize)
@@ -144,7 +139,6 @@ class AppFrame(wx.Frame):
         all_display.Add(controls, proportion=0, border=1)
 
         parent.SetSizerAndFit(all_display)
-#        parent.Fit()
 
     def make_gui_view(self, parent):
         """Build the map view widget

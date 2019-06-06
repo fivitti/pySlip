@@ -11,6 +11,7 @@ import sys
 import wx
 import pyslip
 from appstaticbox import AppStaticBox
+from rotextctrl import ROTextCtrl
 import pyslip.tkinter_error as tkinter_error
 
 
@@ -77,23 +78,6 @@ VSpacerSize = 5         # vertical in control pane
 # border width when packing GUI elements
 PackBorder = 0
 
-
-###############################################################################
-# Override the wx.TextCtrl class to add read-only style and background colour
-###############################################################################
-
-# background colour for the 'read-only' text field
-ControlReadonlyColour = '#ffffcc'
-
-class ROTextCtrl(wx.TextCtrl):
-    """Override the wx.TextCtrl widget to get read-only text control which
-    has a distinctive background colour."""
-
-    def __init__(self, parent, value, tooltip='', *args, **kwargs):
-        wx.TextCtrl.__init__(self, parent, wx.ID_ANY, value=value,
-                             style=wx.TE_READONLY, *args, **kwargs)
-        self.SetBackgroundColour(ControlReadonlyColour)
-        self.SetToolTip(wx.ToolTip(tooltip))
 
 ###############################################################################
 # Class for a LayerControl widget.
@@ -290,8 +274,9 @@ class AppFrame(wx.Frame):
         parent.SetSizer(all_display)
 
         # put map view in left of horizontal box
-        sl_box = self.make_gui_view(parent)
-        all_display.Add(sl_box, proportion=1, border=0, flag=wx.EXPAND)
+        self.pyslip = pyslip.pySlip(parent, tile_src=self.tile_source,
+                                    style=wx.SIMPLE_BORDER)
+        all_display.Add(self.pyslip, proportion=1, border=0, flag=wx.EXPAND)
 
         # small spacer here - separate view and controls
         all_display.AddSpacer(HSpacerSize)
@@ -301,24 +286,6 @@ class AppFrame(wx.Frame):
         all_display.Add(controls, proportion=0, border=0)
 
         parent.SetSizerAndFit(all_display)
-
-    def make_gui_view(self, parent):
-        """Build the map view widget
-
-        parent  reference to the widget parent
-
-        Returns the static box sizer.
-        """
-
-        # create gui objects
-        sb = AppStaticBox(parent, '')
-        self.pyslip = pyslip.pySlip(parent, tile_src=self.tile_source)
-
-        # lay out objects
-        box = wx.StaticBoxSizer(sb, orient=wx.HORIZONTAL)
-        box.Add(self.pyslip, proportion=1, border=0, flag=wx.EXPAND)
-
-        return box
 
     def make_gui_controls(self, parent):
         """Build the 'controls' part of the GUI

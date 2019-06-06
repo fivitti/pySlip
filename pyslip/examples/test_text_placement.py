@@ -36,7 +36,7 @@ LonLatPrecision = 3
 
 # startup size of the application
 DemoWidth = 1000
-DemoHeight = 700
+DemoHeight = 800
 DefaultAppSize = (DemoWidth, DemoHeight)
 
 # general text defaults
@@ -362,8 +362,9 @@ class AppFrame(wx.Frame):
         parent.SetSizer(all_display)
 
         # put map view in left of horizontal box
-        sl_box = self.make_gui_view(parent)
-        all_display.Add(sl_box, proportion=1, border=0, flag=wx.EXPAND)
+        self.pyslip = pyslip.pySlip(parent, tile_src=self.tile_source,
+                                    style=wx.SIMPLE_BORDER)
+        all_display.Add(self.pyslip, proportion=1, border=0, flag=wx.EXPAND)
 
         # small spacer here - separate view and controls
         all_display.AddSpacer(HSpacerSize)

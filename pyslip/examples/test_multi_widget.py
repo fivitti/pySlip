@@ -59,17 +59,21 @@ class TestFrame(wx.Frame):
         box = wx.BoxSizer(wx.VERTICAL)
         gsz = wx.GridSizer(rows=2, cols=2, vgap=5, hgap=5)
 
-        self.pyslip1 = pyslip.pySlip(self.panel, tile_src=gmt_tile_src_1)
-        gsz.Add(self.pyslip1, flag=wx.ALL|wx.EXPAND)
+        self.pyslip1 = pyslip.pySlip(self.panel, tile_src=gmt_tile_src_1,
+                                     style=wx.SIMPLE_BORDER)
+        gsz.Add(self.pyslip1, border=1, flag=wx.ALL|wx.EXPAND)
 
-        self.pyslip2 = pyslip.pySlip(self.panel, tile_src=osm_tile_src_1)
-        gsz.Add(self.pyslip2, flag=wx.ALL|wx.EXPAND)
+        self.pyslip2 = pyslip.pySlip(self.panel, tile_src=osm_tile_src_1,
+                                     style=wx.SIMPLE_BORDER)
+        gsz.Add(self.pyslip2, border=1, flag=wx.ALL|wx.EXPAND)
 
-        self.pyslip3 = pyslip.pySlip(self.panel, tile_src=osm_tile_src_2)
-        gsz.Add(self.pyslip3, flag=wx.ALL|wx.EXPAND)
+        self.pyslip3 = pyslip.pySlip(self.panel, tile_src=osm_tile_src_2,
+                                     style=wx.SIMPLE_BORDER)
+        gsz.Add(self.pyslip3, border=1, flag=wx.ALL|wx.EXPAND)
 
-        self.pyslip4 = pyslip.pySlip(self.panel, tile_src=gmt_tile_src_2)
-        gsz.Add(self.pyslip4, flag=wx.ALL|wx.EXPAND)
+        self.pyslip4 = pyslip.pySlip(self.panel, tile_src=gmt_tile_src_2,
+                                     style=wx.SIMPLE_BORDER)
+        gsz.Add(self.pyslip4, border=1, flag=wx.ALL|wx.EXPAND)
 
         box.Add(gsz, proportion=1, flag=wx.ALL|wx.EXPAND)
 
@@ -81,9 +85,9 @@ class TestFrame(wx.Frame):
 
         # set initial view position
         self.pyslip1.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
-        self.pyslip2.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
+        self.pyslip2.GotoLevelAndPosition(InitViewLevel+1, InitViewPosition)
         self.pyslip3.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
-        self.pyslip4.GotoLevelAndPosition(InitViewLevel, InitViewPosition)
+        self.pyslip4.GotoLevelAndPosition(InitViewLevel-1, InitViewPosition)
 
 ################################################################################
 

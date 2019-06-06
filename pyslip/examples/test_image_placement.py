@@ -363,7 +363,8 @@ class AppFrame(wx.Frame):
         parent.SetSizer(all_display)
 
         # make the map widget, place it at left
-        self.pyslip = pyslip.pySlip(parent, tile_src=self.tile_source)
+        self.pyslip = pyslip.pySlip(parent, tile_src=self.tile_source,
+                                    style=wx.SIMPLE_BORDER)
         all_display.Add(self.pyslip, proportion=2, border=0, flag=wx.EXPAND)
 
         # small spacer here - separate view and controls

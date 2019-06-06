@@ -11,6 +11,7 @@ import sys
 import wx
 import pyslip
 from appstaticbox import AppStaticBox
+from rotextctrl import ROTextCtrl
 import pyslip.tkinter_error as tkinter_error
 import pyslip.log
 log = pyslip.log('pyslip.log')
@@ -82,23 +83,6 @@ FontChoices = None
 FontsizeChoices = ['8', '10', '12', '14', '16', '18', '20']
 PointRadiusChoices = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
 
-
-###############################################################################
-# Override the wx.TextCtrl class to add read-only style and background colour
-###############################################################################
-
-# background colour for the 'read-only' text field
-ControlReadonlyColour = '#ffffcc'
-
-class ROTextCtrl(wx.TextCtrl):
-    """Override the wx.TextCtrl widget to get read-only text control which
-    has a distinctive background colour."""
-
-    def __init__(self, parent, value, tooltip='', *args, **kwargs):
-        wx.TextCtrl.__init__(self, parent, wx.ID_ANY, value=value,
-                             style=wx.TE_READONLY, *args, **kwargs)
-        self.SetBackgroundColour(ControlReadonlyColour)
-        self.SetToolTip(wx.ToolTip(tooltip))
 
 ###############################################################################
 # Class for a LayerControl widget.
@@ -364,8 +348,10 @@ class AppFrame(wx.Frame):
         parent.SetSizer(all_display)
 
         # put map view in left of horizontal box
-        sl_box = self.make_gui_view(parent)
-        all_display.Add(sl_box, proportion=1, border=0, flag=wx.EXPAND)
+        self.pyslip = pyslip.pySlip(parent,
+                                    tile_src=self.tile_source,
+                                    style=wx.SIMPLE_BORDER)
+        all_display.Add(self.pyslip, proportion=1, border=0, flag=wx.EXPAND)
 
         # small spacer here - separate view and controls
         all_display.AddSpacer(HSpacerSize)

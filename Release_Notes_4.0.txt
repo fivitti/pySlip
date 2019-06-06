@@ -7,10 +7,11 @@ Release 4.0 of pySlip has the following changes:
 2. A more streamlined way to define tile sources.
 
 3. Additional tile source modules:
-     Blue Marble tiles          (bm_tiles.py)
-     Stamen Toner tiles         (stmt_tiles.py)
-     Stamen Transport tiles     (stmtr_tiles.py)
-     Stamen Watercolor tiles    (stmw_tiles.py)
+     Blue Marble tiles          (blue_marble.py)
+     Stamen Toner tiles         (stamen_toner.py)
+     Stamen Transport tiles     (stamen_transport.py)
+     Stamen Watercolor tiles    (stamen_watercolor.py)
+   See note about OpenStreetMap tiles below.
 
 4. A method of changing the tile source for an existing pySlip instance.
    See the API documentation for more details.  The examples/pyslip_demo.py
@@ -21,9 +22,9 @@ Release 4.0 of pySlip has the following changes:
 
 Warnings:
 
-The OpenStreetMap tile servers seem to not work for me.
-
-The code to handle connecting through a proxy has NOT been tested.
+The OpenStreetMap tile servers seem to not work for me.  Getting 429 errors
+implying that I'm getting tiles too quickly, but it happens on the FIRST tile
+fetch!?
 
 The built in GMT tiles are not at the same zoom level as the internet tiles.
 This may change in the future.

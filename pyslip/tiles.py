@@ -69,7 +69,7 @@ class Cache(pycacheback.pyCacheBack):
         if not os.path.exists(file_path):
             # tile not there, raise KeyError
             raise KeyError("Item with key '%s' not found in on-disk cache"
-                           % str(key)) from None
+                           % str(key))
 
         # we have the tile file - read into memory & return
         return wx.Image(file_path, Cache.TileDiskFormat).ConvertToBitmap()
@@ -149,11 +149,11 @@ class BaseTiles(object):
                 msg = ("%s doesn't appear to be a tile cache directory"
                        % tiles_dir)
                 log.critical(msg)
-                raise Exception(msg) from None
+                raise Exception(msg)
 
             msg = "The tiles directory %s doesn't exist." % tiles_dir
             log.critical(msg)
-            raise Exception(msg) from None
+            raise Exception(msg)
 
 # possible recursion here?
 #        self.UseLevel(min(self.levels))
@@ -203,7 +203,7 @@ class BaseTiles(object):
             return self.cache[(self.level, x, y)]
         except KeyError as e:
             raise KeyError("Can't find tile for key '%s'"
-                           % str((self.level, x, y))) from None
+                           % str((self.level, x, y)))
 
     def GetInfo(self, level):
         """Get tile info for a particular level.

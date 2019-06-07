@@ -181,7 +181,7 @@ class Tiles(tiles.BaseTiles):
             raise TypeError("Bad tile_extension value, got '%s', "
                             "expected one of %s"
                             % (str(tile_extension),
-                               str(self.AllowedFileTypes.keys()))) from None
+                               str(self.AllowedFileTypes.keys())))
 
         # compose the expected 'Content-Type' string on request result
         # if we get here we know the extension is in self.AllowedFileTypes
@@ -214,12 +214,12 @@ class Tiles(tiles.BaseTiles):
                 msg = '\n'.join(['You got a %d error from: %s' % (status_code, test_url),
                                  error_msg])
                 log(msg)
-                raise RuntimeError(msg) from None
+                raise RuntimeError(msg)
 
             log('%s exception doing simple connection to: %s'
                     % (type(e).__name__, test_url))
             log(''.join(traceback.format_exc()))
-            raise RuntimeError from None
+            raise RuntimeError
 
         # set up the request queue and worker threads
         self.request_queue = queue.Queue()  # entries are (level, x, y)
@@ -382,7 +382,7 @@ class Tiles(tiles.BaseTiles):
         else:
             msg = f'tile_is_available: self.callback is NOT SET!'
             log.error(msg)
-            raise RuntimeError(msg) from None
+            raise RuntimeError(msg)
 
     def SetAgeThresholdDays(self, num_days):
         """Set the tile refetch threshold time.

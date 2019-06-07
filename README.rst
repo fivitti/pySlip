@@ -3,7 +3,8 @@
 pySlip
 ======
 
-The python 3, wxpython 4 version is currently under construction.
+The python 3, wxpython 4 version is at 'beta' stage and is available
+through `PyPi <https://pypi.org/project/pyslip/>`_.
 
 pySlip is a 'slip map' widget for wxPython.
 
@@ -20,7 +21,7 @@ someone else may find it useful.  If you find it useful, or make improvements
 to it, drop me a line.
 
 pySlip works on Linux and may work on Mac and Windows.  It works with wxPython
-4.0+ and Python 3.6+.
+4.0+ and Python 3.6+.  It may work on earlier python 3 versions.
 
 The widget API is documented in
 `the wiki <https://github.com/rzzzwilson/pySlip/wiki/The-pySlip-API>`_.

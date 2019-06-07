@@ -11,7 +11,7 @@ Release 4.0 of pySlip has the following changes:
      Stamen Toner tiles         (stamen_toner.py)
      Stamen Transport tiles     (stamen_transport.py)
      Stamen Watercolor tiles    (stamen_watercolor.py)
-   See note about OpenStreetMap tiles below.
+   See note about the existing OpenStreetMap tiles below.
 
 4. A method of changing the tile source for an existing pySlip instance.
    See the API documentation for more details.  The examples/pyslip_demo.py

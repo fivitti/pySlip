@@ -132,55 +132,57 @@ class LayerControl(wx.Panel):
 
         # row 0
         row = 0
+        gbs.Add(3, 1, (row,0))
         label = wx.StaticText(self, wx.ID_ANY, 'placement: ')
-        gbs.Add(label, (row,0), border=0,
+        gbs.Add(label, (row,1), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
         choices = ['nw', 'cn', 'ne', 'ce', 'se', 'cs', 'sw', 'cw', 'cc', 'none']
         style=wx.CB_DROPDOWN|wx.CB_READONLY
         self.placement = wx.ComboBox(self, value=self.v_placement,
                                      choices=choices, style=style)
-        gbs.Add(self.placement, (row,1), border=0,
+        gbs.Add(self.placement, (row,2), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.EXPAND))
 
         label = wx.StaticText(self, wx.ID_ANY, 'width: ')
-        gbs.Add(label, (row,2), border=0,
+        gbs.Add(label, (row,3), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
         choices = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
         style=wx.CB_DROPDOWN|wx.CB_READONLY
         self.width = wx.ComboBox(self, value=self.v_width,
                                  choices=choices, style=style)
-        gbs.Add(self.width, (row,3),
+        gbs.Add(self.width, (row,4),
                 border=0, flag=(wx.ALIGN_CENTER_VERTICAL|wx.EXPAND))
+        gbs.Add(3, 1, (row,5))
 
         # row 1
         row += 1
         label = wx.StaticText(self, wx.ID_ANY, 'colour: ')
-        gbs.Add(label, (row,0), border=0,
+        gbs.Add(label, (row,1), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
         self.polycolour = wx.Button(self, label='')
         self.polycolour.SetBackgroundColour(self.v_colour)
-        gbs.Add(self.polycolour, (row,1), border=0, flag=wx.EXPAND)
+        gbs.Add(self.polycolour, (row,2), border=0, flag=wx.EXPAND)
 
         # row 2
         row += 1
         label = wx.StaticText(self, wx.ID_ANY, 'offset_x: ')
-        gbs.Add(label, (row,0), border=0,
+        gbs.Add(label, (row,1), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
         self.offset_x = wx.TextCtrl(self, value=str(self.v_offset_x))
-        gbs.Add(self.offset_x, (row,1), border=0, flag=wx.EXPAND)
+        gbs.Add(self.offset_x, (row,2), border=0, flag=wx.EXPAND)
 
         label = wx.StaticText(self, wx.ID_ANY, '  offset_y: ')
-        gbs.Add(label, (row,2), border=0,
+        gbs.Add(label, (row,3), border=0,
                 flag=(wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT))
         self.offset_y = wx.TextCtrl(self, value=str(self.v_offset_y))
-        gbs.Add(self.offset_y, (row,3), border=0, flag=wx.EXPAND)
+        gbs.Add(self.offset_y, (row,4), border=0, flag=wx.EXPAND)
 
         # row 3
         row += 1
         delete_button = wx.Button(self, label='Remove')
-        gbs.Add(delete_button, (row,1), border=10, flag=wx.EXPAND)
+        gbs.Add(delete_button, (row,2), border=10, flag=wx.EXPAND)
         update_button = wx.Button(self, label='Update')
-        gbs.Add(update_button, (row,3), border=10, flag=wx.EXPAND)
+        gbs.Add(update_button, (row,4), border=10, flag=wx.EXPAND)
 
         sbs.Add(gbs)
         self.SetSizer(sbs)
@@ -189,6 +191,10 @@ class LayerControl(wx.Panel):
         self.polycolour.Bind(wx.EVT_BUTTON, self.onPolyColour)
         delete_button.Bind(wx.EVT_BUTTON, self.onDelete)
         update_button.Bind(wx.EVT_BUTTON, self.onUpdate)
+
+        # row 4 - spacer
+        row += 1
+        gbs.Add(1, 3, (row,0))
 
     def onPolyColour(self, event):
         """Change polyline colour."""

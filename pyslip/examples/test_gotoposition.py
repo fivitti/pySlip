@@ -14,6 +14,7 @@ import sys
 import wx
 import pyslip
 import pyslip.stamen_watercolor as tiles
+#import pyslip.gmt_local as tiles
 import pyslip.log as log
 from appstaticbox import AppStaticBox
 from rotextctrl import ROTextCtrl

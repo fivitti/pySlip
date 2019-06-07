@@ -38,3 +38,8 @@ Directory                What it is
 gmt_tiles.tar.gz         pre-generated GMT tiles
 graphics                 graphics files used by the programs here
 =======================  =======
+
+Note:
+The test *test_assumptions.py* fails due to some code in pySlip not being as
+fast as it might be.  Some of the ideas tested in *test_assumptions.py* might
+be put into pySlip, but some may not.

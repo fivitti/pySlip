@@ -82,6 +82,7 @@ class TestFrame(wx.Frame):
     def onZoom(self, event):
         """Catch and undo a zoom.
 
+        The pySlip widget automatically zooms if there are tiles available.
         Simulate the amount of work a user handler might do before deciding to
         undo a zoom.
 
@@ -89,6 +90,9 @@ class TestFrame(wx.Frame):
         method below will trigger another exception, which we catch, etc, etc.
         """
 
+        print('Trying to zoom to level %d' % event.level)
+
+        # do some busy waiting - simulates user code
         for _ in range(1000000):
             pass
 
@@ -100,6 +104,8 @@ class TestFrame(wx.Frame):
             ]
 
         if event.level not in l:
+            # zoomed level isn't aallowed, go back to the original level
+            print('Undoing zoom to %d' % event.level)
             self.pyslip.GotoLevel(InitViewLevel)
 
 ################################################################################

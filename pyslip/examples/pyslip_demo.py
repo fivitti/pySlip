@@ -2262,6 +2262,17 @@ except ValueError:
         sys.exit(1)
 log.set_level(debug)
 
+# check to see if the GMT tiles directory exists in the right place
+if not os.path.isdir(tiles.TilesDir):
+    home_dir = os.path.abspath(os.path.expanduser('~'))
+    msg = ("\nSorry, the GMT local tiles haven't been installed correctly.\n\n"
+           "You must copy the pySlip/pyslip/examples/gmt_tiles.tar.gz directory\n"
+           f"to your home directory ({home_dir}) and unpack it there.\n"
+          )
+    log(msg)
+    print(msg)
+    sys.exit(1)
+
 # start wxPython app
 app = wx.App()
 app_frame = AppFrame()

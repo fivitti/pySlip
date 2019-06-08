@@ -22,3 +22,12 @@ but not Windows or macOS, yet.
 
 The widget API is documented in
 `the wiki <https://github.com/rzzzwilson/pySlip/wiki/The-pySlip-API>`_.
+
+Installation
+------------
+
+You install pySlip in the usual PyPi way: pip install pyslip .
+
+Before running the `pyslip_demo.py` program you must copy the
+pySlip/pyslip/examples/gmt_local_tiles.zip file to your home directory and unzip
+it there.  That should create a directory named `gmt_local_tiles`.

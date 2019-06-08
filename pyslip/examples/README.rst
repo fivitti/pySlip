@@ -39,7 +39,17 @@ gmt_tiles.tar.gz         pre-generated GMT tiles
 graphics                 graphics files used by the programs here
 =======================  =======
 
-Note:
+GMT tiles
+---------
+
+Before running *pyslip_demo.py* you must copy one of the compressed GMT local
+tiles files to your home directory and unpack it there.  That should rsult in 
+a directory named *gmt_local_tiles*.
+
+
+Note
+----
+
 The test *test_assumptions.py* fails due to some code in pySlip not being as
 fast as it might be.  Some of the ideas tested in *test_assumptions.py* might
 be put into pySlip, but some may not.

@@ -35,7 +35,8 @@ Other things here:
 =======================  =======
 Directory                What it is
 =======================  =======
-gmt_tiles.tar.gz         pre-generated GMT tiles
+gmt_tiles.tar.gz         pre-generated GMT tiles (tar format)
+gmt_local_tiles.zip      pre-generated GMT tiles (zip format)
 graphics                 graphics files used by the programs here
 =======================  =======
 

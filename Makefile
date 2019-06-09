@@ -8,7 +8,7 @@ release: clean
 	echo "**********************************************"
 	read ignore
 	cp PyPi_README.rst README.rst
-	clear; python setup.py sdist bdist_wheel
+	clear; python3 setup.py sdist bdist_wheel
 	twine upload dist/*
 	cp github_README.rst README.rst
 

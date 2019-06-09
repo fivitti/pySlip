@@ -5,8 +5,8 @@ def readme():
         return f.read()
 
 setup(name='pyslip',
-      version='4.0.3',
-      description='A slipmap widget for wxPython',
+      version='4.0.4',
+      description='A slipmap widget for wxPython 4',
       long_description=readme(),
       url='http://github.com/rzzzwilson/pySlip',
       author='Ross Wilson',
@@ -20,6 +20,6 @@ setup(name='pyslip',
                    'Operating System :: OS Independent',
                    'Programming Language :: Python :: 3'],
       keywords='python wxpython slipmap map',
-      download_url='https://github.com/rzzzwilson/pySlip/releases/tag/4.0.3',
+      download_url='https://github.com/rzzzwilson/pySlip/releases/tag/4.0.4',
       include_package_data=True,
       zip_safe=False)

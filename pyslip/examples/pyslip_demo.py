@@ -273,6 +273,9 @@ class AppFrame(wx.Frame):
         super().__init__(None, size=(DemoWidth, DemoHeight),
                                title='%s %s' % (DemoName, DemoVersion))
 
+        # set locale to ENGLISH, object must persist
+        self.locale = wx.Locale(wx.LANGUAGE_ENGLISH)
+
         # initialize the tileset handler
         self.tileset_manager = self.init_tiles()
         self.tile_source = self.tileset_manager.get_tile_source(DefaultTilesetIndex)

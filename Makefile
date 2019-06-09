@@ -6,6 +6,7 @@ release: clean
 	echo "**********************************************"
 	echo "* read ~/installs/pypi.txt before doing this *"
 	echo "**********************************************"
+	read ignore
 	mv README.rst github_README.rst
 	mv PyPi_README.rst README.rst
 	clear; python setup.py sdist bdist_wheel

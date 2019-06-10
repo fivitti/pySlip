@@ -7,9 +7,9 @@ release: #clean
 	@echo "**********************************************"
 	@read ignore
 	@status=$(git status | grep \"modified:\")
-	@test -n "$(status)"; echo 'There are modified files.'; exit 1
+	@test -n $(status); echo 'There are modified files.'; exit 1
 	@status=$(git status | grep \"Your branch is ahead of\")
-	@test -n "$(status)"; echo 'There are uncommitted files.'; exit 2
+	@test -n $(status); echo 'There are uncommitted files.'; exit 2
 #	$(eval RELNUM := $(shell ./bump_release))
 #	cp PyPi_README.rst README.rst
 #	python3 setup.py sdist bdist_wheel

@@ -8,10 +8,18 @@ release: #clean
 	@read ignore
 #	test -n "$(git status | grep \"modified:\")"; echo "There are modified files."; exit 1
 #	test -n "$(git status | grep \"Your branch is ahead of\")"; echo "There are uncommitted files."; exit 2
-
 	@$(eval OUTPUT := $(shell git status | grep "modified:"))
-	@echo $(OUTPUT)
-	@test -n "$(OUTPUT)"; echo "There are modified files."; exit 1
+	@echo "OUTPUT=$(OUTPUT)"
+ifneq ($(OUTPUT), )
+	echo "There are modified files."
+	exit 1
+endif
+	@$(eval OUTPUT := $(shell git status | grep "Your branch is ahead of"))
+	@echo "OUTPUT=$(OUTPUT)"
+ifneq ("$(OUTPUT)", "")
+	echo "There are uncommitted files."
+	exit 2
+endif
 
 #	$(eval RELNUM := $(shell ./bump_release))
 #	cp PyPi_README.rst README.rst

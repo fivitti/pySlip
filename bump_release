@@ -1,0 +1,176 @@
+#!/usr/bin/env python3
+
+"""
+A program to increment the major.minor.build numbers for a GitHub project.
+
+Usage: bump_release [-M|--major] [-m|--minor] [-b|--build]
+
+where -M | --major   bumps the major number, & zeros minor+build
+      -m | --minor   bumps the minor number, & zeros build
+      -b | --build   bumps the build number (the default)
+
+Release numbers are found in:
+
+* the latest git tag
+* setup.py
+
+Check that the numbers from all sources are consistent, bump the release 
+number as required, rewrite setup.py to use the new number and prints
+the new release number to stdout.
+"""
+
+import sys
+import os.path
+import getopt
+import subprocess
+
+
+# name of the config file
+TagConfigFile = 'setup.py'
+
+# variables indicating which number to bump
+(BumpMajor, BumpMinor, BumpBuild) = range(3)
+
+
+def abort(msg):
+    """Print a message and abort."""
+
+    delim = '*' * 60
+    print(delim)
+    print(msg)
+    print(delim)
+    sys.exit(1)
+
+def setup_tag():
+    """Get the configured tag number from the setup file."""
+
+    # assume data doesn't exist in file
+    version_line = None
+    download_line = None
+
+    # read the expected tag number lines
+    with open(TagConfigFile) as fd:
+        for line in fd:
+            line = line.strip()
+            if line.startswith('version='):
+                version_line = line
+            if line.startswith('download_url='):
+                download_line = line
+
+    # make sure we got both
+    if version_line is None or download_line is None:
+        msg = (f"Can't find tag numbers in {TagConfigFile}:\n"
+               f"version_line={version_line}\n"
+               f"download_line={download_line}")
+        abort(msg)
+
+    # extract the release numbers from string, check they are the same
+    #     version_line=version='4.0.5',
+    #     download_url='https://github.com/rzzzwilson/pySlip/releases/tag/4.0.5',
+    version_tag = version_line.split("'")[1]
+    download_tag = os.path.basename(download_line.split("'")[1])
+    if version_tag != download_tag:
+        msg = f"Different release numbers in {TagConfigFile}: '{version_tag}' and '{download_tag}'"
+        abort(msg)
+
+    return version_tag
+
+def write_tag(new_tag):
+    """Update the config file with the new release number."""
+
+    # read all lines from the config file
+    with open(TagConfigFile) as fd:
+        config_data = fd.readlines()
+
+    # open the file for output, emit modified lines
+    #     version='4.0.5',
+    #     download_url='https://github.com/rzzzwilson/pySlip/releases/tag/4.0.5',
+    with open(TagConfigFile, 'w') as fd:
+        for line in config_data:
+            line = line.rstrip(',')
+            line_strip = line.strip()
+            if line_strip.startswith('version='):
+                (prefix, _) = line.split('=')
+                line = f"{prefix}='{new_tag}',\n"
+            if line_strip.startswith('download_url='):
+                (prefix, path) = line.split('=')
+                dirname = os.path.dirname(path)
+                line = f"{prefix}={dirname}/{new_tag}',\n"
+            fd.write(line)
+
+def latest_tag():
+    """Get the latest tag release number."""
+
+    p = subprocess.check_output(['git', 'describe'], text=True)
+    try:
+        (tag, _) = p.split('-', maxsplit=1)
+    except ValueError:
+        return None
+    return tag
+
+def main(bump_what):
+    """Bump the release number according to 'bump_what'."""
+
+    # get the latest git tag number
+    git_tag = latest_tag()
+    if git_tag is None:
+        abort('No release tag number set!?')
+
+    # get tag numbers from setup.py
+    config_tag = setup_tag()
+
+    # check tag numbers are the same
+    if git_tag != config_tag:
+        abort(f'Tags are inconsistent: git_tag={git_tag}, config_tag={config_tag}')
+
+    # bump the appropriate part of the old release number
+    (major, minor, build) = git_tag.split('.')
+    if bump_what == BumpMajor:
+        new_tag = f'{int(major)+1}.0.0'
+    elif bump_what == BumpMinor:
+        new_tag = f'{major}.{int(minor)+1}.0'
+    else:
+        new_tag = f'{major}.{minor}.{int(build)+1}'
+
+    # rewrite the config file to use new release number
+    write_tag(new_tag)
+
+    # return the new release number
+    return new_tag
+
+def usage(msg=None):
+    """Print program help with optional message."""
+
+    if msg:
+        delim = '=' * 60
+        print(delim)
+        print(msg)
+        print(delim)
+    print(__doc__)
+
+# parse the CLI params
+argv = sys.argv[1:]
+
+try:
+    (opts, args) = getopt.getopt(argv, 'bmMh',
+                                 ['build', 'minor', 'major', 'help'])
+except getopt.error:
+    usage()
+    sys.exit(1)
+
+bump_part = BumpBuild
+
+for (opt, param) in opts:
+    if opt in ['-b', '--build']:
+        bump_part = BumpBuild
+    elif opt in ['-m', '--minor']:
+        bump_part = BumpMinor
+    elif opt in ['-M', '--major']:
+        bump_part = BumpMajor
+    elif opt in ['-h', '--help']:
+        usage()
+        sys.exit(0)
+
+# print the new release number to stdout
+print(main(bump_part))
+

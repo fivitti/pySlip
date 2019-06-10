@@ -6,7 +6,7 @@ release: #clean
 	@echo "* read ~/installs/pypi.txt before doing this *"
 	@echo "**********************************************"
 	@read ignore
-	@status="$(git status | grep i\"modified:\")"
+	@status="$(git status | grep \"modified:\")"
 	@test -n "$(status)"; echo 'There are modified files.'; exit 1
 	@status="$(git status | grep \"branch is ahead of\")"
 	echo $(status)

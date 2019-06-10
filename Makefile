@@ -9,6 +9,7 @@ release: #clean
 	@status="$(git status | grep modified)"
 	@test -n "$(status)"; echo 'There are modified files.'; exit 1
 	@status="$(git status | grep \"branch is ahead of\")"
+	echo $(status)
 	@test -n "$(status)"; echo 'There are uncommitted files.'; exit 1
 #	$(eval RELNUM := $(shell ./bump_release))
 #	cp PyPi_README.rst README.rst

@@ -6,11 +6,9 @@ release: #clean
 	@echo "* read ~/installs/pypi.txt before doing this *"
 	@echo "**********************************************"
 	@read ignore
-	@status="$(git status | grep \"modified:\")"
-	echo $(status)
+	@status="$(git status -s | grep \"^ M\")"
 	@test -n "$(status)"; echo 'There are modified files.'; exit 1
-	@status="$(git status | grep \"branch is ahead of\")"
-	echo $(status)
+	@status="$(git status -s | grep \"branch is ahead of\")"
 	@test -n "$(status)"; echo 'There are uncommitted files.'; exit 2
 #	$(eval RELNUM := $(shell ./bump_release))
 #	cp PyPi_README.rst README.rst

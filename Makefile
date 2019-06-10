@@ -6,8 +6,8 @@ release: #clean
 	@echo "* read ~/installs/pypi.txt before doing this *"
 	@echo "**********************************************"
 	@read ignore
-	@test -n $(git status | grep "modified:"); echo "There are modified files."; exit 1
-	@test -n $(git status | grep "Your branch is ahead of"); echo "There are uncommitted files."; exit 2
+	test -n $(git status | grep "modified:"); echo "There are modified files."; exit 1
+	test -n $(git status | grep "Your branch is ahead of"); echo "There are uncommitted files."; exit 2
 #	$(eval RELNUM := $(shell ./bump_release))
 #	cp PyPi_README.rst README.rst
 #	python3 setup.py sdist bdist_wheel

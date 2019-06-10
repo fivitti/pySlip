@@ -7,6 +7,7 @@ release: #clean
 	@echo "**********************************************"
 	@read ignore
 	@status="$(git status | grep \"modified:\")"
+	echo $(status)
 	@test -n "$(status)"; echo 'There are modified files.'; exit 1
 	@status="$(git status | grep \"branch is ahead of\")"
 	echo $(status)

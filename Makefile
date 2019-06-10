@@ -8,6 +8,8 @@ release: #clean
 	@read ignore
 	@status="$(git status | grep modified)"
 	@test -n "$(status)"; echo 'There are modified files.'; exit 1
+	@status="$(git status | grep \"branch is ahead of\")"
+	@test -n "$(status)"; echo 'There are uncommitted files.'; exit 1
 #	$(eval RELNUM := $(shell ./bump_release))
 #	cp PyPi_README.rst README.rst
 #	python3 setup.py sdist bdist_wheel

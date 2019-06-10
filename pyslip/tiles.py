@@ -149,14 +149,11 @@ class BaseTiles(object):
                 msg = ("%s doesn't appear to be a tile cache directory"
                        % tiles_dir)
                 log.critical(msg)
-                raise Exception(msg)
+                raise RuntimeError(msg)
 
             msg = "The tiles directory %s doesn't exist." % tiles_dir
             log.critical(msg)
-            raise Exception(msg)
-
-# possible recursion here?
-#        self.UseLevel(min(self.levels))
+            raise RuntimeError(msg)
 
     def UseLevel(self, level):
         """Prepare to serve tiles from the required level.
@@ -238,7 +235,8 @@ class BaseTiles(object):
     def tile_on_disk(self, level, x, y):
         """Return True if tile at (level, x, y) is on-disk."""
 
-        raise Exception('You must override BaseTiles.tile_on_disk(level, x, y))')
+        msg = 'You must override BaseTiles.tile_on_disk(level, x, y))'
+        raise NotImplementedError(msg)
 
     def setCallback(self, callback):
         """Set the "tile available" callback function.
@@ -247,7 +245,8 @@ class BaseTiles(object):
         """
 
         pass
-        #raise Exception('You must override BaseTiles.setCallback(callback))')
+        #msg = 'You must override BaseTiles.setCallback(callback))'
+        #raise NotImplementedError(msg)
 
     def Geo2Tile(self, xgeo, ygeo):
         """Convert geo to tile fractional coordinates for level in use.
@@ -258,7 +257,8 @@ class BaseTiles(object):
         Note that we assume the point *is* on the map!
         """
 
-        raise Exception('You must override BaseTiles.Geo2Tile(xgeo, ygeo)')
+        msg = 'You must override BaseTiles.Geo2Tile(xgeo, ygeo)'
+        raise NotImplementedError(msg)
 
     def Tile2Geo(self, xtile, ytile):
         """Convert tile fractional coordinates to geo for level in use.
@@ -269,4 +269,5 @@ class BaseTiles(object):
         Note that we assume the point *is* on the map!
         """
 
-        raise Exception('You must override BaseTiles.Tile2Geo(xtile, ytile)')
+        msg = 'You must override BaseTiles.Tile2Geo(xtile, ytile)'
+        raise NotImplementedError(msg)

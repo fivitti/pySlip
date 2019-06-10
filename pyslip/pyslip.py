@@ -111,7 +111,7 @@ class _BufferedCanvas(wx.Panel):
     def Draw(self, dc):
         """Stub: called when the canvas needs to be re-drawn."""
 
-        raise RuntimeException('_BufferedCanvas.Draw() was not overridden!')
+        raise NotImplementedError('_BufferedCanvas.Draw() was not overridden!')
 
     def Update(self):
         """Causes the canvas to be updated."""
@@ -567,10 +567,10 @@ class pySlip(_BufferedCanvas):
 
             # if we can't change level now, raise an error exception
             if not tile_src.UseLevel(self.level):
-                raise Exception('Trying to use level %s in tile obj %s, '
-                                'levels available are %s'
-                                % (str(self.level),
-                                   str(tile_src), str(tile_src.levels)))
+                raise ValueError('Trying to use level %s in tile obj %s, '
+                                 'levels available are %s'
+                                 % (str(self.level),
+                                    str(tile_src), str(tile_src.levels)))
 
         # set the "key tile"
         self.set_key_from_centre(geo)
@@ -645,7 +645,7 @@ class pySlip(_BufferedCanvas):
                 msg = ('Point data must be iterable of tuples: '
                        '(x, y[, dict])\n'
                        'Got: %s' % str(pt))
-                raise Exception(msg)
+                raise RuntimeError(msg)
 
             # plug in any required polygon values (override globals+layer)
             placement = attributes.get('placement', default_placement)
@@ -661,7 +661,7 @@ class pySlip(_BufferedCanvas):
             if placement not in self.valid_placements:
                 msg = ("Point placement value is invalid, got '%s'"
                        % str(placement))
-                raise Exception(msg)
+                raise ValueError(msg)
 
             # append another point to draw data list
             draw_data.append((float(x), float(y), placement,
@@ -737,7 +737,7 @@ class pySlip(_BufferedCanvas):
             else:
                 msg = ('Image data must be iterable of tuples: '
                        '(x, y, fname[, dict])\nGot: %s' % str(d))
-                raise Exception(msg)
+                raise RuntimeError(msg)
 
             # get image specific values, if any
             placement = attributes.get('placement', default_placement)
@@ -764,7 +764,7 @@ class pySlip(_BufferedCanvas):
             if placement not in self.valid_placements:
                 msg = ("Image placement value is invalid, got '%s'"
                        % str(placement))
-                raise Exception(msg)
+                raise ValueError(msg)
 
             draw_data.append((float(lon), float(lat), bmap, w, h, placement,
                               offset_x, offset_y, radius, colour, udata))
@@ -830,7 +830,7 @@ class pySlip(_BufferedCanvas):
                 msg = ('Text data must be iterable of tuples: '
                        '(lon, lat, text, [dict])\n'
                        'Got: %s' % str(t))
-                raise Exception(msg)
+                raise RuntimeError(msg)
 
             # plug in any required defaults
             placement = attributes.get('placement', default_placement)
@@ -851,7 +851,7 @@ class pySlip(_BufferedCanvas):
             if placement not in self.valid_placements:
                 msg = ("Text placement value is invalid, got '%s'"
                        % str(placement))
-                raise Exception(msg)
+                raise ValueError(msg)
 
             draw_data.append((float(lon), float(lat), tdata, placement.lower(),
                               radius, colour, textcolour, fontname, fontsize,
@@ -939,7 +939,7 @@ class pySlip(_BufferedCanvas):
                 msg = ('Polygon data must be iterable of tuples: '
                        '(polygon, [attributes])\n'
                        'Got: %s' % str(d))
-                raise Exception(msg)
+                raise RuntimeError(msg)
 
             # get polygon attributes
             placement = attributes.get('placement', default_placement)
@@ -967,7 +967,7 @@ class pySlip(_BufferedCanvas):
             if placement not in self.valid_placements:
                 msg = ("Polygon placement value is invalid, got '%s'"
                        % str(placement))
-                raise Exception(msg)
+                raise ValueError(msg)
 
             draw_data.append((p, placement, width, colour, close,
                               filled, fillcolour, offset_x, offset_y, udata))
@@ -1038,7 +1038,7 @@ class pySlip(_BufferedCanvas):
                 msg = ('Polyline data must be iterable of tuples: '
                        '(polyline, [attributes])\n'
                        'Got: %s' % str(d))
-                raise Exception(msg)
+                raise RuntimeError(msg)
 
             # get polygon attributes
             placement = attributes.get('placement', default_placement)
@@ -1054,7 +1054,7 @@ class pySlip(_BufferedCanvas):
             if placement not in self.valid_placements:
                 msg = ("Polyline placement value is invalid, got '%s'"
                        % str(placement))
-                raise Exception(msg)
+                raise ValueError(msg)
 
             draw_data.append((p, placement, width, colour,
                               offset_x, offset_y, udata))

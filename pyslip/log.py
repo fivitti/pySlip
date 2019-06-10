@@ -101,7 +101,7 @@ class Log(object):
 
         level  a numeric logging level
 
-        If 'level' is invalid, raise Exception.  If valid, return value.
+        If 'level' is invalid, raise ValueError.  If valid, return value.
         """
 
         try:
@@ -109,12 +109,12 @@ class Log(object):
         except ValueError:
             msg = "Logging level invalid: '%s'" % str(level)
             print(msg)
-            raise Exception(msg)
+            raise ValueError(msg)
 
         if not 0 <= level <= 50:
             msg = "Logging level invalid: '%s'" % str(level)
             print(msg)
-            raise Exception(msg)
+            raise ValueError(msg)
 
         return level
 

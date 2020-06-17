@@ -12,3 +12,4 @@ stamen_watercolor_tiles
 build
 dist
 pyslip.egg-info
+/.env/

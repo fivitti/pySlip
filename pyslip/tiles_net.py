@@ -45,7 +45,8 @@ class TileWorker(threading.Thread):
     """Thread class that gets request from queue, loads tile, calls callback."""
 
     def __init__(self, id_num, server, tilepath, requests, callback,
-                 error_tile, content_type, rerequest_age, error_image):
+                 error_tile, content_type, rerequest_age, error_image,
+                 user_agent):
         """Prepare the tile worker.
 
         id_num         a unique numer identifying the worker instance
@@ -74,6 +75,7 @@ class TileWorker(threading.Thread):
         self.rerequest_age = rerequest_age
         self.error_image = error_image
         self.daemon = True
+        self.user_agent = user_agent
 
     def run(self):
         while True:
@@ -85,7 +87,11 @@ class TileWorker(threading.Thread):
             pixmap = self.error_image
             try:
                 tile_url = self.server + self.tilepath.format(Z=level, X=x, Y=y)
-                response = request.urlopen(request.Request(tile_url))
+                headers = {}
+                if self.user_agent is not None:
+                    headers['User-Agent'] = self.user_agent
+                response = request.urlopen(request.Request(tile_url,
+                                           headers=headers))
                 content_type = response.info().get_content_type()
                 if content_type == self.content_type:
                     data = io.BytesIO(response.read())
@@ -129,7 +135,7 @@ class Tiles(tiles.BaseTiles):
 
     def __init__(self, levels, tile_width, tile_height, tiles_dir, max_lru,
                  servers, url_path, max_server_requests,
-                 refetch_days=RefreshTilesAfterDays):
+                 refetch_days=RefreshTilesAfterDays, user_agent=None):
         """Initialise a Tiles instance.
 
         levels               a list of level numbers that are to be served
@@ -142,6 +148,8 @@ class Tiles(tiles.BaseTiles):
         max_server_requests  maximum number of requests per server
         refetch_days         fetch new server tile if older than this in days
                              (0 means don't ever update tiles)
+        user_agent           User agent added to headers in requests.
+                             It may be required by some tile providers.
         """
 
         # prepare the tile cache directory, if required
@@ -203,7 +211,10 @@ class Tiles(tiles.BaseTiles):
         # test the tile server, get tile at (0, 0, 0)
         test_url = self.servers[0] + self.url_path.format(Z=0, X=0, Y=0)
         try:
-            request.urlopen(test_url)
+            headers = {}
+            if user_agent is not None:
+                headers['User-Agent'] = user_agent
+            request.urlopen(request.Request(test_url, headers=headers))
         except urllib.error.HTTPError as e:
             # if it's fatal, log it and die
             status_code = e.code
@@ -229,7 +240,8 @@ class Tiles(tiles.BaseTiles):
                 worker = TileWorker(num_thread, server, self.url_path,
                                     self.request_queue, self.tile_is_available,
                                     self.error_tile, self.content_type,
-                                    self.rerequest_age, self.error_tile)
+                                    self.rerequest_age, self.error_tile,
+                                    user_agent)
                 self.workers.append(worker)
                 worker.start()
 

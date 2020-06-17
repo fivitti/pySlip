@@ -52,11 +52,13 @@ class Tiles(tiles_net.Tiles):
     TileWidth = 256
     TileHeight = 256
 
-    def __init__(self, tiles_dir=TilesDir):
+    def __init__(self, tiles_dir=TilesDir, user_agent=None):
         """Override the base class for these tiles.
 
         Basically, just fill in the BaseTiles class with values from above
         and provide the Geo2Tile() and Tile2Geo() methods.
+
+        user_agent - "User-Agent" header value
         """
 
         super().__init__(TileLevels,
@@ -64,7 +66,7 @@ class Tiles(tiles_net.Tiles):
                          tiles_dir=tiles_dir,
                          servers=TileServers, url_path=TileURLPath,
                          max_server_requests=MaxServerRequests,
-                         max_lru=MaxLRU)
+                         max_lru=MaxLRU, user_agent=user_agent)
 # TODO: implement map wrap-around
 #        self.wrap_x = True
 #        self.wrap_y = False

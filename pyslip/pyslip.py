@@ -448,6 +448,7 @@ class pySlip(_BufferedCanvas):
         self.view_height = 1
         self.view_offset_x = 0
         self.view_offset_y = 0
+        self.wheel_rotation = 0
 
         # set the tile source object
         self.ChangeTileset(tile_src)
@@ -2088,15 +2089,15 @@ class pySlip(_BufferedCanvas):
         if delayed_paint:
             self.Update()
 
-    def OnLeftDClick(self, event):
-        """Left mouse button double-click.
+    # def OnLeftDClick(self, event):
+    #     """Left mouse button double-click.
 
-        Zoom in (if possible).
-        Zoom out (if possible) if shift key is down.
-        """
+    #     Zoom in (if possible).
+    #     Zoom out (if possible) if shift key is down.
+    #     """
 
-        # ignore next Left UP event
-        self.ignore_next_up = True
+    #     # ignore next Left UP event
+    #     self.ignore_next_up = True
 
 
     def OnMouseWheel(self, event):
@@ -2107,8 +2108,21 @@ class pySlip(_BufferedCanvas):
         y = self.view_height / 2
         gposn = self.View2Geo((x, y))
 
+        rotation = event.GetWheelRotation()
+        
+        if (self.wheel_rotation > 0 and rotation > 0) or \
+           (self.wheel_rotation < 0 and rotation < 0):
+           self.wheel_rotation += rotation
+        else:
+            self.wheel_rotation = rotation
+
+        if abs(self.wheel_rotation) > 100:
+            self.wheel_rotation = 0
+        else:
+            return
+
         # determine which way to zoom, & *can* we zoom?
-        if event.GetWheelRotation() > 0:
+        if rotation > 0:
             if self.GotoLevel(self.level + 1):
                 self.ZoomIn(gposn)
         else:

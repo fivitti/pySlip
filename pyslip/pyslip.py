@@ -1494,7 +1494,7 @@ class pySlip(_BufferedCanvas):
         # step through levels (smallest first) and check view size (degrees)
         for l in self.tile_src.levels:
             level = l
-            (_, _, ppd_x, ppd_y) = self.tile_src.getInfo(l)
+            (_, _, ppd_x, ppd_y) = self.tile_src.GetInfo(l)
             view_deg_width = self.view_width / ppd_x
             view_deg_height = self.view_height / ppd_y
 

@@ -111,3 +111,32 @@ class Tiles(tiles_net.Tiles):
         ygeo = math.degrees(yrad)
 
         return (xgeo, ygeo)
+
+    def GetInfo(self, level):
+        """Get tile info for a particular level.
+
+        level  the level to get tile info for
+
+        Returns (num_tiles_x, num_tiles_y, ppd_x, ppd_y) or None if 'level'
+        doesn't exist.
+        """
+
+        info = super().GetInfo(level)
+        if info is None:
+            return None
+
+        num_tiles_x, num_tiles_y, ppd_x, ppd_y = info
+
+        if ppd_x is not None and ppd_y is not None:
+            return info
+
+        base = 2 ** level
+
+        # While the width (longitude) in degrees is constant, given a zoom
+        # level, for all tiles, this does not happen for the height.
+        # In general, tiles belonging to the same row have equal height in
+        # degrees, but it decreases moving from the equator to the poles.
+        ppd_x = 360 / base
+        ppd_y = 170.1022 / base
+
+        return num_tiles_x, num_tiles_y, ppd_x, ppd_y

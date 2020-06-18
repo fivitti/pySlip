@@ -2104,9 +2104,6 @@ class pySlip(_BufferedCanvas):
         """Mouse wheel event."""
 
         # get centre of view in map coords, want same centre afterwards
-        x = self.view_width / 2
-        y = self.view_height / 2
-        gposn = self.View2Geo((x, y))
 
         rotation = event.GetWheelRotation()
         
@@ -2121,6 +2118,7 @@ class pySlip(_BufferedCanvas):
         else:
             return
 
+        gposn = self.View2Geo(event.GetPosition())
         # determine which way to zoom, & *can* we zoom?
         if rotation > 0:
             if self.GotoLevel(self.level + 1):
